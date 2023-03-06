@@ -1,4 +1,6 @@
 <lcgdict>
   <class name="portabletest::TestSoA"/>
   <class name="portabletest::TestSoA::View"/>
+  <class name="portabletest::TestRecHitSoA"/>
+  <class name="portabletest::TestRecHitSoA::View"/>
 </lcgdict>

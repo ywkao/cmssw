@@ -3,6 +3,7 @@
 
 #include "DataFormats/Portable/interface/alpaka/PortableCollection.h"
 #include "DataFormats/PortableTestObjects/interface/TestSoA.h"
+#include "DataFormats/PortableTestObjects/interface/TestRecHitSoA.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
@@ -15,6 +16,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     // SoA with x, y, z, id fields in device global memory
     using TestDeviceCollection = PortableCollection<TestSoA>;
+    using TestDeviceCollection = PortableCollection<TestRecHitSoA>;
 
   }  // namespace portabletest
 
