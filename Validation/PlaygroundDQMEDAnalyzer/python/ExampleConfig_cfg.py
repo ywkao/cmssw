@@ -21,8 +21,9 @@ process.playgrounddqmedanalyzer = cms.EDProducer('PlaygroundDQMEDAnalyzer',
 process.DQMStore = cms.Service("DQMStore")
 
 process.load("DQMServices.FileIO.DQMFileSaverOnline_cfi")
-process.dqmSaver.tag = 'TEST'
+process.dqmSaver.tag = 'HGCAL'
 process.dqmSaver.path = './eos/'
+process.dqmSaver.runNumber = 123456
 
 process.p1 = cms.Path(process.playgrounddqmedanalyzer + process.dqmSaver)
 
