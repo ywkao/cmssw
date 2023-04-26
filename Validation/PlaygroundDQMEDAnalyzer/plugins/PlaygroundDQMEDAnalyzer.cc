@@ -125,10 +125,21 @@ void PlaygroundDQMEDAnalyzer::analyze(const edm::Event& iEvent, const edm::Event
     // summary for running statistics
     std::vector<RunningStatistics> mRs = myRunStatCollection.get_vector_running_statistics();
     for(int channelId=0; channelId<234; ++channelId) {
-        // TODO: how to set uncertainty?
-        p_correlation -> Fill( channelId+1, mRs[channelId].get_correlation() );
-        p_slope       -> Fill( channelId+1, mRs[channelId].get_slope()       );
-        p_intercept   -> Fill( channelId+1, mRs[channelId].get_intercept()   );
+        // problems with setBinContent(): 1. the plots look empty 2. the entries not as expected
+        p_correlation -> setBinContent( channelId+1, mRs[channelId].get_correlation() );
+        p_slope       -> setBinContent( channelId+1, mRs[channelId].get_slope()       );
+        p_intercept   -> setBinContent( channelId+1, mRs[channelId].get_intercept()   );
+        printf("[DEBUG] channel %3d, corr = %.2f, slope = %.2f, intercept = %.2f\n",
+                channelId,
+                mRs[channelId].get_correlation(),
+                mRs[channelId].get_slope(),
+                mRs[channelId].get_intercept()
+              );
+
+        //// TODO: how to set uncertainty?
+        //p_correlation -> Fill( channelId+1, mRs[channelId].get_correlation() );
+        //p_slope       -> Fill( channelId+1, mRs[channelId].get_slope()       );
+        //p_intercept   -> Fill( channelId+1, mRs[channelId].get_intercept()   );
     }
 }
 
