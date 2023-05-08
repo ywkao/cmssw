@@ -21,6 +21,12 @@
 #include "Validation/PlaygroundDQMEDAnalyzer/interface/RunningCollection.h"
 #include "Validation/PlaygroundDQMEDAnalyzer/interface/LoadCalibrationParameters.h"
 
+#include <TCollection.h> // for TIter
+#include <TGraph.h>
+#include <TH2Poly.h>
+#include <TKey.h>
+#include <TObject.h>
+
 class PlaygroundDQMEDAnalyzer : public DQMEDAnalyzer {
 public:
   explicit PlaygroundDQMEDAnalyzer(const edm::ParameterSet&);
@@ -94,6 +100,11 @@ private:
   MonitorElement* p_correlation ;
   MonitorElement* p_slope       ;
   MonitorElement* p_intercept   ;
+
+  //--------------------------------------------------
+  // for hexagonal histograms (temporary)
+  //--------------------------------------------------
+  TH2Poly *hexagonal_histogram;
 
   //--------------------------------------------------
   // for reading ntuple (temporary)

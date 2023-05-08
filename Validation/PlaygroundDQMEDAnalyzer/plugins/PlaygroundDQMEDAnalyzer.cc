@@ -20,11 +20,43 @@ PlaygroundDQMEDAnalyzer::PlaygroundDQMEDAnalyzer(const edm::ParameterSet& iConfi
     if(calibration_flags[1]) enable_cm_subtraction();
 
     calib_loader.loadParameters();
+
+    // load geometry
+    TString root_geometry = "/afs/cern.ch/work/y/ykao/public/raw_data_handling/hexagons.root";
+    TFile *fgeo = new TFile(root_geometry, "R");
+
+    hexagonal_histogram = new TH2Poly("hexagonal_histogram", "hexagonal_histogram", -30, 30, -40, 25);
+    hexagonal_histogram->SetStats(0);
+    hexagonal_histogram->GetXaxis()->SetTitle("x (cm)");
+    hexagonal_histogram->GetYaxis()->SetTitle("y (cm)");
+    hexagonal_histogram->GetZaxis()->SetTitle("Ordinal numbers");
+
+    int counter = 0;
+    TGraph *gr;
+    TKey *key;
+    TIter nextkey(fgeo->GetDirectory(nullptr)->GetListOfKeys());
+    while ((key = (TKey*)nextkey())) {
+        TObject *obj = key->ReadObj();
+        if(obj->InheritsFrom("TGraph")) {
+            gr = (TGraph*) obj;
+            hexagonal_histogram->AddBin(gr);
+            counter+=1;
+        }
+    }
+
+    for(int i=0; i<counter; ++i) hexagonal_histogram->SetBinContent(i+1, i+1);
+    fgeo->Close();
 }
 
 PlaygroundDQMEDAnalyzer::~PlaygroundDQMEDAnalyzer() {
     // TODO: is the destructor a proper place to export calibration parameters?
     export_calibration_parameters();
+
+    TFile *fout = new TFile("test.root", "RECREATE");
+    fout->cd();
+    hexagonal_histogram->Write();
+    fout->Close();
+
     printf("[INFO] This is the end of the job\n");
 }
 
