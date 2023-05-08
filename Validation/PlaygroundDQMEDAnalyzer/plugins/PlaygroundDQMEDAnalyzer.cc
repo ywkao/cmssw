@@ -20,43 +20,11 @@ PlaygroundDQMEDAnalyzer::PlaygroundDQMEDAnalyzer(const edm::ParameterSet& iConfi
     if(calibration_flags[1]) enable_cm_subtraction();
 
     calib_loader.loadParameters();
-
-    // load geometry
-    TString root_geometry = "/afs/cern.ch/work/y/ykao/public/raw_data_handling/hexagons.root";
-    TFile *fgeo = new TFile(root_geometry, "R");
-
-    hexagonal_histogram = new TH2Poly("hexagonal_histogram", "hexagonal_histogram", -30, 30, -40, 25);
-    hexagonal_histogram->SetStats(0);
-    hexagonal_histogram->GetXaxis()->SetTitle("x (cm)");
-    hexagonal_histogram->GetYaxis()->SetTitle("y (cm)");
-    hexagonal_histogram->GetZaxis()->SetTitle("Ordinal numbers");
-
-    int counter = 0;
-    TGraph *gr;
-    TKey *key;
-    TIter nextkey(fgeo->GetDirectory(nullptr)->GetListOfKeys());
-    while ((key = (TKey*)nextkey())) {
-        TObject *obj = key->ReadObj();
-        if(obj->InheritsFrom("TGraph")) {
-            gr = (TGraph*) obj;
-            hexagonal_histogram->AddBin(gr);
-            counter+=1;
-        }
-    }
-
-    for(int i=0; i<counter; ++i) hexagonal_histogram->SetBinContent(i+1, i+1);
-    fgeo->Close();
 }
 
 PlaygroundDQMEDAnalyzer::~PlaygroundDQMEDAnalyzer() {
     // TODO: is the destructor a proper place to export calibration parameters?
     export_calibration_parameters();
-
-    TFile *fout = new TFile("test.root", "RECREATE");
-    fout->cd();
-    hexagonal_histogram->Write();
-    fout->Close();
-
     printf("[INFO] This is the end of the job\n");
 }
 
@@ -168,6 +136,9 @@ void PlaygroundDQMEDAnalyzer::analyze(const edm::Event& iEvent, const edm::Event
                 mRs[channelId].get_intercept()
               );
 
+        if(channelId<hex_counter)
+            hex_pedestal->setBinContent(channelId+1, mRs[channelId].get_mean_adc());
+            
         //// TODO: how to set uncertainty?
         //p_correlation -> Fill( channelId+1, mRs[channelId].get_correlation() );
         //p_slope       -> Fill( channelId+1, mRs[channelId].get_slope()       );
@@ -207,6 +178,30 @@ void PlaygroundDQMEDAnalyzer::bookHistograms(DQMStore::IBooker& ibook, edm::Run 
     p_correlation = ibook.bookProfile("p_correlation" , ";channel;Correlation" , 234 , -0.5 , 233.5, 10, 0, 1);
     p_slope       = ibook.bookProfile("p_slope"       , ";channel;Slope"       , 234 , -0.5 , 233.5, 100, -5, +5);
     p_intercept   = ibook.bookProfile("p_intercept"   , ";channel;Intercept"   , 234 , -0.5 , 233.5, 100, -5, +5);
+
+    // load geometry
+    TString root_geometry = "/afs/cern.ch/work/y/ykao/public/raw_data_handling/hexagons.root";
+    TFile *fgeo = new TFile(root_geometry, "R");
+
+    hex_channelId = ibook.book2DPoly("hex_channelId", "hex_channelId;x (cm); y (cm)", -30, 30, -40, 25);
+    hex_pedestal  = ibook.book2DPoly("hex_pedestal" , "hex_pedestal;x (cm); y (cm)", -30, 30, -40, 25);
+
+    hex_counter = 0;
+    TGraph *gr;
+    TKey *key;
+    TIter nextkey(fgeo->GetDirectory(nullptr)->GetListOfKeys());
+    while ((key = (TKey*)nextkey())) {
+        TObject *obj = key->ReadObj();
+        if(obj->InheritsFrom("TGraph")) {
+            gr = (TGraph*) obj;
+            hex_channelId->addBin(gr);
+            hex_pedestal->addBin(gr);
+            hex_counter+=1;
+        }
+    }
+
+    for(int i=0; i<hex_counter; ++i) hex_channelId->setBinContent(i+1, i+1);
+    fgeo->Close();
 }
 
 // ------------ auxilliary methods  ------------
@@ -222,6 +217,12 @@ void PlaygroundDQMEDAnalyzer::export_calibration_parameters() {
 
     for(int i=0; i<234; ++i) {
         myfile << Form("%d,%.2f,%.2f,%.2f,%.2f\n", i, mRs[i].get_mean_adc(), mRs[i].get_slope(), mRs[i].get_intercept(), mRs[i].get_correlation());
+
+        // the following method does not work because of L161 in DQMServices/Core/interface/MonitorElement.h
+        if(i<hex_counter) {
+            // double content = p_adc->getBinContent(i+1);
+            // hex_pedestal->setBinContent(i+1, mRs[i].get_mean_adc());
+        }
     }
 
     myfile.close();

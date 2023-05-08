@@ -102,9 +102,12 @@ private:
   MonitorElement* p_intercept   ;
 
   //--------------------------------------------------
-  // for hexagonal histograms (temporary)
+  // for hexagonal histograms (developing)
   //--------------------------------------------------
-  TH2Poly *hexagonal_histogram;
+  int hex_counter;
+  //TH2Poly *hexagonal_histogram;
+  MonitorElement* hex_channelId;
+  MonitorElement* hex_pedestal;
 
   //--------------------------------------------------
   // for reading ntuple (temporary)
