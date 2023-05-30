@@ -147,15 +147,35 @@ void PlaygroundDQMEDAnalyzer::analyze(const edm::Event& iEvent, const edm::Event
 }
 
 void PlaygroundDQMEDAnalyzer::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& run, edm::EventSetup const& iSetup) {
-    ibook.setCurrentFolder(folder_);
-
+    //--------------------------------------------------
+    // Examples
+    //--------------------------------------------------
+    ibook.setCurrentFolder("HGCAL/Examples");
     example_ = ibook.book1D("EXAMPLE", "Example 1D", 20, 0., 10.);
     example2D_ = ibook.book2D("EXAMPLE_2D", "Example 2D", 20, 0, 20, 15, 0, 15);
     example3D_ = ibook.book3D("EXAMPLE_3D", "Example 3D", 20, 0, 20, 15, 0, 15, 25, 0, 25);
     exampleTProfile_ = ibook.bookProfile("EXAMPLE_TPROFILE", "Example TProfile", 20, 0, 20, 15, 0, 15);
     exampleTProfile2D_ = ibook.bookProfile2D("EXAMPLE_TPROFILE2D", "Example TProfile 2D", 20, 0, 20, 15, 0, 15, 0, 100);
 
-    // an instance of distributions
+    //--------------------------------------------------
+    // summary of physical quantities
+    //--------------------------------------------------
+    ibook.setCurrentFolder("HGCAL/Summary");
+    p_adc       = ibook.bookProfile("p_adc"      , ";channel;ADC"      , 234 , 0 , 234 , 175 , -25 , 150 );
+    p_adcm      = ibook.bookProfile("p_adcm"     , ";channel;ADC-1"    , 234 , 0 , 234 , 550 , -50 , 500 );
+    p_tot       = ibook.bookProfile("p_tot"      , ";channel;ToT"      , 234 , 0 , 234 , 100 , -2  , 2   );
+    p_toa       = ibook.bookProfile("p_toa"      , ";channel;ToA"      , 234 , 0 , 234 , 500 , 0   , 500 );
+    p_trigtime  = ibook.bookProfile("p_trigtime" , ";channel;trigtime" , 234 , 0 , 234 , 500 , 0   , 500 );
+    p_status    = ibook.bookProfile("p_status"   , ";channel;status"   , 234 , 0 , 234 , 3   , -1  , 1   );
+
+    p_correlation = ibook.bookProfile("p_correlation" , ";channel;Correlation" , 234 , -0.5 , 233.5, 10, 0, 1);
+    p_slope       = ibook.bookProfile("p_slope"       , ";channel;Slope"       , 234 , -0.5 , 233.5, 100, -5, +5);
+    p_intercept   = ibook.bookProfile("p_intercept"   , ";channel;Intercept"   , 234 , -0.5 , 233.5, 100, -5, +5);
+
+    //--------------------------------------------------
+    // distributions of a specific channel
+    //--------------------------------------------------
+    ibook.setCurrentFolder("HGCAL/Digis");
     h_adc       = ibook.book1D("h_adc"      + tag_channelId , ";ADC;Entries"      , 175 , -25 , 150 );
     h_adcm      = ibook.book1D("h_adcm"     + tag_channelId , ";ADC-1;Entries"    , 550 , -50 , 500 );
     h_tot       = ibook.book1D("h_tot"      + tag_channelId , ";ToT;Entries"      , 100 , -2  , 2   );
@@ -166,23 +186,13 @@ void PlaygroundDQMEDAnalyzer::bookHistograms(DQMStore::IBooker& ibook, edm::Run 
     p2d_adc          = ibook.bookProfile ("p2d_adc"          + tag_channelId , ";CM #minus CM_{pedestal};ADC #minus ADC_{pedestal}", 19, -9.5, 9.5, 39, -9.5, 29.5);
     h2d_adc_trigtime = ibook.book2D      ("h2d_adc_trigtime" + tag_channelId , ";Trigger time;ADC #minus ADC_{pedestal}"           , 50,   30,  80, 39, -9.5, 29.5);
 
-    // summary of physical quantities
-    p_adc       = ibook.bookProfile("p_adc"      , ";channel;ADC"      , 234 , 0 , 234 , 175 , -25 , 150 );
-    p_adcm      = ibook.bookProfile("p_adcm"     , ";channel;ADC-1"    , 234 , 0 , 234 , 550 , -50 , 500 );
-    p_tot       = ibook.bookProfile("p_tot"      , ";channel;ToT"      , 234 , 0 , 234 , 100 , -2  , 2   );
-    p_toa       = ibook.bookProfile("p_toa"      , ";channel;ToA"      , 234 , 0 , 234 , 500 , 0   , 500 );
-    p_trigtime  = ibook.bookProfile("p_trigtime" , ";channel;trigtime" , 234 , 0 , 234 , 500 , 0   , 500 );
-    p_status    = ibook.bookProfile("p_status"   , ";channel;status"   , 234 , 0 , 234 , 3   , -1  , 1   );
-
-    // summary of running statistics
-    p_correlation = ibook.bookProfile("p_correlation" , ";channel;Correlation" , 234 , -0.5 , 233.5, 10, 0, 1);
-    p_slope       = ibook.bookProfile("p_slope"       , ";channel;Slope"       , 234 , -0.5 , 233.5, 100, -5, +5);
-    p_intercept   = ibook.bookProfile("p_intercept"   , ";channel;Intercept"   , 234 , -0.5 , 233.5, 100, -5, +5);
-
+    //--------------------------------------------------
     // load geometry
+    //--------------------------------------------------
     TString root_geometry = "/afs/cern.ch/work/y/ykao/public/raw_data_handling/hexagons.root";
     TFile *fgeo = new TFile(root_geometry, "R");
 
+    ibook.setCurrentFolder("HGCAL/Maps");
     hex_channelId = ibook.book2DPoly("hex_channelId", "hex_channelId;x (cm); y (cm)", -30, 30, -40, 25);
     hex_pedestal  = ibook.book2DPoly("hex_pedestal" , "hex_pedestal;x (cm); y (cm)", -30, 30, -40, 25);
 
@@ -306,7 +316,7 @@ void PlaygroundDQMEDAnalyzer::fill_profiles(int globalChannelId_, double adc_dou
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
 void PlaygroundDQMEDAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
     edm::ParameterSetDescription desc;
-    desc.add<std::string>("folder", "HGCAL/RecHits");
+    desc.add<std::string>("folder", "HGCAL/Digis");
     desc.add<std::string>("DataType", "beam");
     desc.add<std::vector<int>>("CalibrationFlags", {1, 1, 0, 0, 0, 0, 0, 0, 0, 0});
     descriptions.add("playgrounddqmedanalyzer", desc);
