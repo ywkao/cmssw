@@ -21,6 +21,8 @@
 #include "Validation/PlaygroundDQMEDAnalyzer/interface/RunningCollection.h"
 #include "Validation/PlaygroundDQMEDAnalyzer/interface/LoadCalibrationParameters.h"
 
+#include "DataFormats/HGCalDigi/interface/HGCalElectronicsId.h"
+
 #include <TCollection.h> // for TIter
 #include <TGraph.h>
 #include <TH2Poly.h>

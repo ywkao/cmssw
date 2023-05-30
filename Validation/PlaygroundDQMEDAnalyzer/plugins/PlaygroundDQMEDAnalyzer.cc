@@ -220,16 +220,18 @@ void PlaygroundDQMEDAnalyzer::export_calibration_parameters() {
     std::ofstream myfile(csv_file_name.Data());
     myfile << "#------------------------------------------------------------\n";
     myfile << "# info: " << myTag.Data() << "\n";
-    myfile << "# columns: channel, pedestal, slope, intercept, correlation\n";
+    myfile << "# columns: id.raw(), pedestal, slope, intercept, correlation\n";
     myfile << "#------------------------------------------------------------\n";
+
 
     std::vector<RunningStatistics> mRs = myRunStatCollection.get_vector_running_statistics();
 
-    for(int i=0; i<234; ++i) {
-        myfile << Form("%d,%.2f,%.2f,%.2f,%.2f\n", i, mRs[i].get_mean_adc(), mRs[i].get_slope(), mRs[i].get_intercept(), mRs[i].get_correlation());
+    for(int ch=0; ch<234; ++ch) {
+        HGCalElectronicsId id (0, 0, 0, int(ch/78), ch%78);
+        myfile << Form("%d,%.2f,%.2f,%.2f,%.2f\n", id.raw(), mRs[ch].get_mean_adc(), mRs[ch].get_slope(), mRs[ch].get_intercept(), mRs[ch].get_correlation());
 
         // the following method does not work because of L161 in DQMServices/Core/interface/MonitorElement.h
-        if(i<hex_counter) {
+        if(ch<hex_counter) {
             // double content = p_adc->getBinContent(i+1);
             // hex_pedestal->setBinContent(i+1, mRs[i].get_mean_adc());
         }
