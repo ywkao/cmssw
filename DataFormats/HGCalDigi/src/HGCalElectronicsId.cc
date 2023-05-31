@@ -2,11 +2,16 @@
 
 //
 HGCalElectronicsId::HGCalElectronicsId(
-    uint16_t fedid, uint8_t captureblock, uint8_t econdidx, uint8_t econderx, uint8_t halfrocch) {
-  value_ = ((fedid & kFEDIDMask) << kFEDIDShift) | ((captureblock & kCaptureBlockMask) << kCaptureBlockShift) |
+  bool cmflag,uint16_t fedid, uint8_t captureblock, uint8_t econdidx, uint8_t econderx, uint8_t halfrocch) {
+  value_ =
+    ((cmflag & kCommonMode) << kCommonModeShift) |
+    ((fedid & kFEDIDMask) << kFEDIDShift) | ((captureblock & kCaptureBlockMask) << kCaptureBlockShift) |
            ((econdidx & kECONDIdxMask) << kECONDIdxShift) | ((econderx & kECONDeRxMask) << kECONDeRxShift) |
            ((halfrocch & kHalfROCChannelMask) << kHalfROCChannelShift);
 }
+
+//
+bool HGCalElectronicsId::isCM() { return (value_ >> kCommonModeShift) & kCommonMode; }
 
 //
 uint16_t HGCalElectronicsId::fedId() { return (value_ >> kFEDIDShift) & kFEDIDMask; }
