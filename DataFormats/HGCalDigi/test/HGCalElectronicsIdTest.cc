@@ -41,7 +41,8 @@ int main(int argc, char** argv) {
     econderx = myrand() % 12;
     halfrocch = myrand() % 39;
 
-    HGCalElectronicsId eid(fedid, captureblock, econdidx, econderx, halfrocch);
+    bool isCM = false;
+    HGCalElectronicsId eid(isCM, fedid, captureblock, econdidx, econderx, halfrocch);
     assert(fedid == eid.fedId());
     assert(captureblock == eid.captureBlock());
     assert(econdidx == eid.econdIdx());
