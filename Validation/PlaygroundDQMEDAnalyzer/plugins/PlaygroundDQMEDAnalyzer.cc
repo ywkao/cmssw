@@ -223,12 +223,13 @@ void PlaygroundDQMEDAnalyzer::export_calibration_parameters() {
     myfile << "# columns: id.raw(), pedestal, slope, intercept, correlation\n";
     myfile << "#------------------------------------------------------------\n";
 
-
     std::vector<RunningStatistics> mRs = myRunStatCollection.get_vector_running_statistics();
 
     for(int ch=0; ch<234; ++ch) {
-        HGCalElectronicsId id (0, 0, 0, int(ch/78), ch%78);
-        myfile << Form("%d,%.2f,%.2f,%.2f,%.2f\n", id.raw(), mRs[ch].get_mean_adc(), mRs[ch].get_slope(), mRs[ch].get_intercept(), mRs[ch].get_correlation());
+        RunningStatistics rs = mRs[ch];
+        bool isCM = ( ch%39==37 || ch%39==38 );
+        HGCalElectronicsId id (isCM, 0, 0, 0, int(ch/39), ch%39);
+        myfile << Form("%d,%.2f,%.2f,%.2f,%.2f\n", id.raw(), rs.get_mean_adc(), rs.get_slope(), rs.get_intercept(), rs.get_correlation());
 
         // the following method does not work because of L161 in DQMServices/Core/interface/MonitorElement.h
         if(ch<hex_counter) {

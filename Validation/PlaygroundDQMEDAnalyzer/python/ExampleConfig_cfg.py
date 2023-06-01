@@ -14,7 +14,7 @@ process.source = cms.Source('EmptySource')
 process.playgrounddqmedanalyzer = cms.EDProducer('PlaygroundDQMEDAnalyzer',
   folder = cms.string('HGCAL/Digis'),
   DataType = cms.string('beam'),
-  CalibrationFlags = cms.vint32( 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  CalibrationFlags = cms.vint32( 1, 1, 0, 0, 0, 0, 0, 0, 0, 0),
   mightGet = cms.optional.untracked.vstring
 )
 
@@ -23,7 +23,7 @@ process.DQMStore = cms.Service("DQMStore")
 process.load("DQMServices.FileIO.DQMFileSaverOnline_cfi")
 process.dqmSaver.tag = 'HGCAL'
 process.dqmSaver.path = './eos/'
-process.dqmSaver.runNumber = 123465
+process.dqmSaver.runNumber = 123466
 
 process.p1 = cms.Path(process.playgrounddqmedanalyzer + process.dqmSaver)
 
