@@ -49,17 +49,17 @@ public:
   /**
      @short getters
   */
-  uint32_t operator()() { return value_; }
-  uint32_t raw() { return value_; }
-  uint16_t fedId();
-  uint8_t captureBlock();
-  uint8_t econdIdx();
-  uint8_t econdeRx();
-  uint8_t halfrocChannel();
-  uint8_t sequentialHalfrocChannel();
-  bool isCM();
+  uint32_t operator()() const { return value_; }
+  uint32_t raw() const { return value_; }
+  uint16_t fedId() const;
+  uint8_t captureBlock() const;
+  uint8_t econdIdx() const;
+  uint8_t econdeRx() const;
+  uint8_t halfrocChannel() const;
+  uint8_t sequentialHalfrocChannel() const;
+  bool isCM() const;
   
-  void print(std::ostream& out = std::cout) {
+  void print(std::ostream& out = std::cout) const {
     out << "Raw=0x" << std::hex << raw() << std::dec << std::endl
         << "\tFED-ID: " << (uint32_t)fedId() << " Capture Block: " << (uint32_t)captureBlock()
         << " ECON-D idx: " << (uint32_t)econdIdx() << " eRx: " << (uint32_t)econdeRx()
