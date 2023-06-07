@@ -1,0 +1,7 @@
+<use name="FWCore/Framework"/>
+<use name="FWCore/PluginManager"/>
+<use name="FWCore/ParameterSet"/>
+<use name="DataFormats/HGCalDigi"/>
+<use name="DQM/HGCal"/>
+<use name="DQMServices/Core"/>
+<flags EDM_PLUGIN="1"/>
