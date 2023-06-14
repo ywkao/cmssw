@@ -189,12 +189,12 @@ void PlaygroundDQMEDAnalyzer::bookHistograms(DQMStore::IBooker& ibook, edm::Run 
     //--------------------------------------------------
     // load geometry
     //--------------------------------------------------
-    TString root_geometry = "/afs/cern.ch/work/y/ykao/public/raw_data_handling/hexagon_20230606.root";
+    TString root_geometry = "/afs/cern.ch/work/y/ykao/public/raw_data_handling/hexagons_20230613.root";
     TFile *fgeo = new TFile(root_geometry, "R");
 
     ibook.setCurrentFolder("HGCAL/Maps");
-    hex_channelId = ibook.book2DPoly("hex_channelId", "hex_channelId;x (cm); y (cm)", -32, 32, -32, 32);
-    hex_pedestal  = ibook.book2DPoly("hex_pedestal" , "hex_pedestal;x (cm); y (cm)", -32, 32, -32, 32);
+    hex_channelId = ibook.book2DPoly("hex_channelId", "hex_channelId;x (cm); y (cm)", -22, 22, -24, 20);
+    hex_pedestal  = ibook.book2DPoly("hex_pedestal" , "hex_pedestal;x (cm); y (cm)", -22, 22, -24, 20);
 
     hex_counter = 0;
     TGraph *gr;
