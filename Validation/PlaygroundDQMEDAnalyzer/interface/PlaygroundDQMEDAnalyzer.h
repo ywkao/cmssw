@@ -46,7 +46,7 @@ private:
   virtual void     enable_cm_subtraction();
 
   virtual void     fill_histograms();
-  virtual void     fill_profiles(int globalChannelId_, double adc_double_);
+  virtual void     fill_profiles(int globalChannelId_, double adc_double_, double adcm_double_);
 
   virtual void     export_calibration_parameters();
 
@@ -68,6 +68,7 @@ private:
 
   int globalChannelId;
   double adc_double;
+  double adcm_double;
   double adc_channel_CM;
 
   MonitorElement* example_;
@@ -91,10 +92,10 @@ private:
   // summary of physical quantities
   MonitorElement* p_adc      ;
   MonitorElement* p_adcm     ;
+  MonitorElement* p_adc_diff ;
   MonitorElement* p_tot      ;
   MonitorElement* p_toa      ;
   MonitorElement* p_trigtime ;
-  MonitorElement* p_status   ;
 
   // summary for running statistics
   MonitorElement* p_correlation ;
@@ -106,8 +107,11 @@ private:
   //--------------------------------------------------
   int hex_counter;
   //TH2Poly *hexagonal_histogram;
-  MonitorElement* hex_channelId;
+  MonitorElement* hex_padId;
   MonitorElement* hex_pedestal;
+  MonitorElement* hex_adc_minus_adcm;
+  MonitorElement* hex_tot_mean;
+  MonitorElement* hex_expected_beam_center;
 
   //--------------------------------------------------
   // for reading ntuple (temporary)

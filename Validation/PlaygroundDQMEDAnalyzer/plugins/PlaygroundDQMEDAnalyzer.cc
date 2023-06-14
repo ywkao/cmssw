@@ -33,7 +33,6 @@ void PlaygroundDQMEDAnalyzer::analyze(const edm::Event& iEvent, const edm::Event
     using namespace edm;
 
     eventCount_++;
-
     example_->Fill(5);
     example2D_->Fill(eventCount_ / 10, eventCount_ / 10);
     example3D_->Fill(eventCount_ / 10, eventCount_ / 10, eventCount_ / 10.f);
@@ -54,6 +53,7 @@ void PlaygroundDQMEDAnalyzer::analyze(const edm::Event& iEvent, const edm::Event
     int current_half      = 0;
     int recorded_half     = 0;
     double adc_channel_37 = 0.;
+    double adcm_channel_37 = 0.;
 
     Long64_t nbytes = 0, nb = 0;
     for (Long64_t jentry=0; jentry<nentries;jentry++) {
@@ -76,6 +76,7 @@ void PlaygroundDQMEDAnalyzer::analyze(const edm::Event& iEvent, const edm::Event
 
         // convert adc to double
         adc_double = (double) adc;
+        adcm_double = (double) adcm;
 
         // perform pedestal subtraction
         if(flag_perform_pedestal_subtraction) {
@@ -93,6 +94,7 @@ void PlaygroundDQMEDAnalyzer::analyze(const edm::Event& iEvent, const edm::Event
         // record adc of ch37 & fill info of ch37 when processing ch38
         if(globalChannelId % 39 == 37) {
             adc_channel_37 = adc_double;
+            adcm_channel_37 = adc_double;
             continue;
 
         } else if(globalChannelId % 39 == 38) {
@@ -105,7 +107,7 @@ void PlaygroundDQMEDAnalyzer::analyze(const edm::Event& iEvent, const edm::Event
                 adc_channel_37 -= correction;
             }
 
-            fill_profiles(globalChannelId-1, adc_channel_37);
+            fill_profiles(globalChannelId-1, adc_channel_37, adcm_channel_37);
         }
 
         // perform common mode subtraction
@@ -117,7 +119,7 @@ void PlaygroundDQMEDAnalyzer::analyze(const edm::Event& iEvent, const edm::Event
             adc_double -= correction;
         }
 
-        fill_profiles(globalChannelId, adc_double);
+        fill_profiles(globalChannelId, adc_double, adcm_double);
 
         if(globalChannelId==22) fill_histograms();
     } // end of ntpule hit loop
@@ -136,8 +138,12 @@ void PlaygroundDQMEDAnalyzer::analyze(const edm::Event& iEvent, const edm::Event
                 mRs[channelId].get_intercept()
               );
 
-        if(channelId<hex_counter)
+        if(channelId<hex_counter) {
             hex_pedestal->setBinContent(channelId+1, mRs[channelId].get_mean_adc());
+            hex_adc_minus_adcm       -> setBinContent(channelId+1, 0.);
+            hex_tot_mean             -> setBinContent(channelId+1, 0.);
+            hex_expected_beam_center -> setBinContent(channelId+1, 0.);
+        }
             
         //// TODO: how to set uncertainty?
         //p_correlation -> Fill( channelId+1, mRs[channelId].get_correlation() );
@@ -161,12 +167,12 @@ void PlaygroundDQMEDAnalyzer::bookHistograms(DQMStore::IBooker& ibook, edm::Run 
     // summary of physical quantities
     //--------------------------------------------------
     ibook.setCurrentFolder("HGCAL/Summary");
-    p_adc       = ibook.bookProfile("p_adc"      , ";channel;ADC"      , 234 , 0 , 234 , 175 , -25 , 150 );
-    p_adcm      = ibook.bookProfile("p_adcm"     , ";channel;ADC-1"    , 234 , 0 , 234 , 550 , -50 , 500 );
-    p_tot       = ibook.bookProfile("p_tot"      , ";channel;ToT"      , 234 , 0 , 234 , 100 , -2  , 2   );
-    p_toa       = ibook.bookProfile("p_toa"      , ";channel;ToA"      , 234 , 0 , 234 , 500 , 0   , 500 );
-    p_trigtime  = ibook.bookProfile("p_trigtime" , ";channel;trigtime" , 234 , 0 , 234 , 500 , 0   , 500 );
-    p_status    = ibook.bookProfile("p_status"   , ";channel;status"   , 234 , 0 , 234 , 3   , -1  , 1   );
+    p_adc       = ibook.bookProfile("p_adc"      , ";channel;ADC"                 , 234 , 0 , 234 , 175 , -25 , 150 );
+    p_adcm      = ibook.bookProfile("p_adcm"     , ";channel;ADC_{-1}"            , 234 , 0 , 234 , 550 , -50 , 500 );
+    p_adc_diff  = ibook.bookProfile("p_adc_diff" , ";channel;ADC #minus ADC_{-1}" , 234 , 0 , 234 , 550 , -50 , 500 );
+    p_tot       = ibook.bookProfile("p_tot"      , ";channel;ToT"                 , 234 , 0 , 234 , 100 , -2  , 2   );
+    p_toa       = ibook.bookProfile("p_toa"      , ";channel;ToA"                 , 234 , 0 , 234 , 500 , 0   , 500 );
+    p_trigtime  = ibook.bookProfile("p_trigtime" , ";channel;trigtime"            , 234 , 0 , 234 , 500 , 0   , 500 );
 
     p_correlation = ibook.bookProfile("p_correlation" , ";channel;Correlation" , 234 , -0.5 , 233.5, 10, 0, 1);
     p_slope       = ibook.bookProfile("p_slope"       , ";channel;Slope"       , 234 , -0.5 , 233.5, 100, -5, +5);
@@ -193,9 +199,14 @@ void PlaygroundDQMEDAnalyzer::bookHistograms(DQMStore::IBooker& ibook, edm::Run 
     TFile *fgeo = new TFile(root_geometry, "R");
 
     ibook.setCurrentFolder("HGCAL/Maps");
-    hex_channelId = ibook.book2DPoly("hex_channelId", "hex_channelId;x (cm); y (cm)", -22, 22, -24, 20);
-    hex_pedestal  = ibook.book2DPoly("hex_pedestal" , "hex_pedestal;x (cm); y (cm)", -22, 22, -24, 20);
+    TString xytitle = ";x (cm);y (cm)";
+    hex_padId                = ibook.book2DPoly("hex_padId"          , "hex_padId"          + xytitle , -22 , 22 , -24 , 20);
+    hex_pedestal             = ibook.book2DPoly("hex_pedestal"       , "hex_pedestal"       + xytitle , -22 , 22 , -24 , 20);
+    hex_adc_minus_adcm       = ibook.book2DPoly("hex_adc_minus_adcm" , "hex_adc_minus_adcm" + xytitle , -22 , 22 , -24 , 20);
+    hex_tot_mean             = ibook.book2DPoly("hex_tot_mean"       , "hex_tot_mean"       + xytitle , -22 , 22 , -24 , 20);
+    hex_expected_beam_center = ibook.book2DPoly("hex_totMean"        , "hex_totMean"        + xytitle , -22 , 22 , -24 , 20);
 
+    // CAVEAT: the current bin number represents padId, instead of channelId
     hex_counter = 0;
     TGraph *gr;
     TKey *key;
@@ -204,13 +215,16 @@ void PlaygroundDQMEDAnalyzer::bookHistograms(DQMStore::IBooker& ibook, edm::Run 
         TObject *obj = key->ReadObj();
         if(obj->InheritsFrom("TGraph")) {
             gr = (TGraph*) obj;
-            hex_channelId->addBin(gr);
-            hex_pedestal->addBin(gr);
+            hex_padId                -> addBin(gr);
+            hex_pedestal             -> addBin(gr);
+            hex_adc_minus_adcm       -> addBin(gr);
+            hex_tot_mean             -> addBin(gr);
+            hex_expected_beam_center -> addBin(gr);
             hex_counter+=1;
         }
     }
 
-    for(int i=0; i<hex_counter; ++i) hex_channelId->setBinContent(i+1, i+1);
+    for(int i=0; i<hex_counter; ++i) hex_padId->setBinContent(i+1, i+1);
     fgeo->Close();
 }
 
@@ -302,15 +316,16 @@ void PlaygroundDQMEDAnalyzer::fill_histograms()
     h_trigtime -> Fill(trigtime);
 }
 
-void PlaygroundDQMEDAnalyzer::fill_profiles(int globalChannelId_, double adc_double_)
+void PlaygroundDQMEDAnalyzer::fill_profiles(int globalChannelId_, double adc_double_, double adcm_double_)
 {
     myRunStatCollection.add_entry(globalChannelId_, adc_double, adc_channel_CM);
 
-    p_adc      -> Fill(globalChannelId_ , adc_double);
-    p_adcm     -> Fill(globalChannelId_ , adcm      );
-    p_tot      -> Fill(globalChannelId_ , tot       );
-    p_toa      -> Fill(globalChannelId_ , toa       );
-    p_trigtime -> Fill(globalChannelId_ , trigtime  );
+    p_adc      -> Fill(globalChannelId_ , adc_double_              );
+    p_adcm     -> Fill(globalChannelId_ , adcm_double_             );
+    p_adc_diff -> Fill(globalChannelId_ , adc_double_-adcm_double_ );
+    p_tot      -> Fill(globalChannelId_ , tot                      );
+    p_toa      -> Fill(globalChannelId_ , toa                      );
+    p_trigtime -> Fill(globalChannelId_ , trigtime                 );
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------

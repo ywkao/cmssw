@@ -14,7 +14,7 @@ process.source = cms.Source('EmptySource')
 process.playgrounddqmedanalyzer = cms.EDProducer('PlaygroundDQMEDAnalyzer',
   folder = cms.string('HGCAL/Digis'),
   DataType = cms.string('beam'),
-  CalibrationFlags = cms.vint32( 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  CalibrationFlags = cms.vint32( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
   mightGet = cms.optional.untracked.vstring
 )
 
