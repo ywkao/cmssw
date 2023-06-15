@@ -121,6 +121,15 @@ public:
         if (MEtoEdmObject[j].object.Merge(&list) == -1) {
           std::cout << "ERROR MEtoEDM::mergeProducts(): merge failed for '" << name << "'" << std::endl;
         }
+      } else if (MEtoEdmObject[j].object.IsA()->InheritsFrom("TH2Poly")) {
+        // ad-hoc addition because no matching function for call to 'TH2Poly::Add(const TH2Poly*)'
+        int nbins = MEtoEdmObject[j].object.GetNcells() - 9;
+        for(int ibin=1; ibin<nbins+1; ++ibin) {
+            double value1 = MEtoEdmObject[j].object.GetBinContent(ibin);
+            double value2 = newMEtoEDMObject[i].object.GetBinContent(ibin);
+            double total = value1 + value2;
+            MEtoEdmObject[j].object.SetBinContent(ibin, total);
+        }
       } else {
         // this value is also in the new container: add the two
         if (MEtoEdmObject[j].object.GetNbinsX() == newMEtoEDMObject[i].object.GetNbinsX() &&

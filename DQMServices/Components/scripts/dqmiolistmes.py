@@ -49,7 +49,8 @@ if 'Indices;1' in things:
     "TProfiles",
     "TProfile2Ds",
     "TH1Is",
-    "TH2Is"
+    "TH2Is",
+    "TH2Polys"
   ]
   trees = [f[name]["FullName"].array() for name in treenames]
 
