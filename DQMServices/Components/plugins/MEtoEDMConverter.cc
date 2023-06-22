@@ -381,8 +381,10 @@ void MEtoEDMConverter::putData(DQMStore::IGetter& iGetter, T& iPutTo, bool iLumi
         break;
 
       case MonitorElement::Kind::TH2Poly:
-        pOut2p->putMEtoEdmObject(me->getFullname(), *me->getTH2Poly());
-        break;
+        throw cms::Exception("UnimplementedFeature") << "Not implemented for TH2Poly";
+        // Error: use of deleted function 'TH2Poly& TH2Poly::operator=(const TH2Poly&)
+        //pOut2p->putMEtoEdmObject(me->getFullname(), *me->getTH2Poly());
+        //break;
 
       case MonitorElement::Kind::TH3F:
         pOut3->putMEtoEdmObject(me->getFullname(), *me->getTH3F());
