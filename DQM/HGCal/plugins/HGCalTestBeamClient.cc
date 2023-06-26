@@ -69,7 +69,7 @@ void HGCalTestBeamClient::analyze(const edm::Event& iEvent, const edm::EventSetu
         // record adc of ch37 & fill info of ch37 when processing ch38
         if(globalChannelId % 39 == 37) {
             adc_channel_37 = adc_double;
-            adcm_channel_37 = adc_double;
+            adcm_channel_37 = adcm_double;
             continue;
 
         } else if(globalChannelId % 39 == 38) {

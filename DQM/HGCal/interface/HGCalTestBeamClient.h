@@ -365,7 +365,7 @@ void HGCalTestBeamClient::fill_histograms()
 
 void HGCalTestBeamClient::fill_profiles(int globalChannelId_, double adc_double_, double adcm_double_)
 {
-    myRunStatCollection.add_entry(globalChannelId_, adc_double, adc_channel_CM);
+    myRunStatCollection.add_entry(globalChannelId_, adc_double_, adc_channel_CM);
 
     p_adc      -> Fill(globalChannelId_ , adc_double_              );
     p_adcm     -> Fill(globalChannelId_ , adcm_double_             );
