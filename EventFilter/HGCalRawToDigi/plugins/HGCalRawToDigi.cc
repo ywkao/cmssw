@@ -12,6 +12,7 @@
 #include "DataFormats/FEDRawData/interface/FEDRawDataCollection.h"
 #include "DataFormats/HGCalDigi/interface/HGCalElectronicsId.h"
 #include "DataFormats/HGCalDigi/interface/HGCalDigiCollections.h"
+#include "DataFormats/HGCalDigi/interface/HGCalDigiHostCollection.h"
 
 class HGCalRawToDigi : public edm::stream::EDProducer<> {
 public:
@@ -25,6 +26,7 @@ private:
   const edm::EDGetTokenT<FEDRawDataCollection> fedRawToken_;
   const edm::EDPutTokenT<HGCalDigiCollection> digisToken_;
   const edm::EDPutTokenT<HGCalElecDigiCollection> elecDigisToken_;
+  const edm::EDPutTokenT<hgcaldigi::HGCalDigiHostCollection> elecDigisSoAToken_;
 
   const std::vector<unsigned int> fedIds_;
   const unsigned int badECONDMax_;
@@ -36,6 +38,7 @@ HGCalRawToDigi::HGCalRawToDigi(const edm::ParameterSet& iConfig)
     : fedRawToken_(consumes<FEDRawDataCollection>(iConfig.getParameter<edm::InputTag>("src"))),
       digisToken_(produces<HGCalDigiCollection>()),
       elecDigisToken_(produces<HGCalElecDigiCollection>()),
+      elecDigisSoAToken_(produces<hgcaldigi::HGCalDigiHostCollection>()),
       fedIds_(iConfig.getParameter<std::vector<unsigned int> >("fedIds")),
       badECONDMax_(iConfig.getParameter<unsigned int>("badECONDMax")),
       numERxsInECOND_(iConfig.getParameter<unsigned int>("numERxsInECOND")),
@@ -90,6 +93,7 @@ void HGCalRawToDigi::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
       digis.push_back(HGCROCChannelDataFrameSpec(elecid_to_detid(id), data.raw()));
       elec_digis.push_back(data);
     }
+
     if (const auto& bad_econds = unpacker_->badECOND(); !bad_econds.empty()) {
       if (bad_econds.size() > badECONDMax_)
         throw cms::Exception("HGCalRawToDigi:produce")
@@ -103,8 +107,19 @@ void HGCalRawToDigi::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
       });
     }
   }
+
+  //auto elec_digis_soa = std::make_unique<hgcaldigi::HGCalDigiHostCollection>(elec_digis.size(), cms::alpakatools::host());
+  hgcaldigi::HGCalDigiHostCollection elec_digis_soa(elec_digis.size(),cms::alpakatools::host());
+  for (unsigned int i = 0; i < elec_digis.size(); i++) {
+      elec_digis_soa.view()[i].electronicsId() = elec_digis[i].id().raw();
+      elec_digis_soa.view()[i].raw() = elec_digis[i].raw();
+      elec_digis_soa.view()[i].cm() = 0;
+      elec_digis_soa.view()[i].flags() = 0;
+  }
+
   iEvent.emplace(digisToken_, std::move(digis));
   iEvent.emplace(elecDigisToken_, std::move(elec_digis));
+  iEvent.emplace(elecDigisSoAToken_, std::move(elec_digis_soa));
 }
 
 void HGCalRawToDigi::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
