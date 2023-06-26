@@ -117,7 +117,7 @@ void HGCalTestBeamClient::analyze(const edm::Event& iEvent, const edm::EventSetu
             double mean_adc_diff = p_adc_diff->getBinContent(channelId+1);
             double mean_tot = p_tot->getBinContent(channelId+1);
 
-            hex_pedestal->setBinContent(channelId+1, mRs[channelId].get_mean_adc());
+            hex_pedestal       -> setBinContent(channelId+1, mRs[channelId].get_mean_adc());
             hex_adc_minus_adcm -> setBinContent(channelId+1, mean_adc_diff);
             hex_tot_mean       -> setBinContent(channelId+1, mean_tot);
 

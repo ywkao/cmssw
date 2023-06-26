@@ -110,7 +110,7 @@ private:
   //--------------------------------------------------
   int hex_counter;
   //TH2Poly *hexagonal_histogram;
-  MonitorElement* hex_padId;
+  MonitorElement* hex_channelId;
   MonitorElement* hex_pedestal;
   MonitorElement* hex_adc_minus_adcm;
   MonitorElement* hex_tot_mean;
@@ -231,16 +231,16 @@ void HGCalTestBeamClient::bookHistograms(DQMStore::IBooker& ibook, edm::Run cons
     //--------------------------------------------------
     // load geometry
     //--------------------------------------------------
-    TString root_geometry = "/afs/cern.ch/work/y/ykao/public/raw_data_handling/hexagons_20230613.root";
+    TString root_geometry = "/afs/cern.ch/work/y/ykao/public/raw_data_handling/hexagons_20230626.root";
     TFile *fgeo = new TFile(root_geometry, "R");
 
     ibook.setCurrentFolder("HGCAL/Maps");
     TString xytitle = ";x (cm);y (cm)";
-    hex_padId          = ibook.book2DPoly("hex_padId"          , "hex_padId"          + xytitle , -22 , 22 , -24 , 20);
-    hex_pedestal       = ibook.book2DPoly("hex_pedestal"       , "hex_pedestal"       + xytitle , -22 , 22 , -24 , 20);
-    hex_adc_minus_adcm = ibook.book2DPoly("hex_adc_minus_adcm" , "hex_adc_minus_adcm" + xytitle , -22 , 22 , -24 , 20);
-    hex_tot_mean       = ibook.book2DPoly("hex_tot_mean"       , "hex_tot_mean"       + xytitle , -22 , 22 , -24 , 20);
-    hex_beam_center    = ibook.book2DPoly("hex_beam_center"    , "hex_beam_center"    + xytitle , -22 , 22 , -24 , 20);
+    hex_channelId      = ibook.book2DPoly("hex_channelId"      , "hex_channelId"      + xytitle , -26 , 26 , -28 , 24);
+    hex_pedestal       = ibook.book2DPoly("hex_pedestal"       , "hex_pedestal"       + xytitle , -26 , 26 , -28 , 24);
+    hex_adc_minus_adcm = ibook.book2DPoly("hex_adc_minus_adcm" , "hex_adc_minus_adcm" + xytitle , -26 , 26 , -28 , 24);
+    hex_tot_mean       = ibook.book2DPoly("hex_tot_mean"       , "hex_tot_mean"       + xytitle , -26 , 26 , -28 , 24);
+    hex_beam_center    = ibook.book2DPoly("hex_beam_center"    , "hex_beam_center"    + xytitle , -26 , 26 , -28 , 24);
 
     // CAVEAT: the current bin number represents padId, instead of channelId
     hex_counter = 0;
@@ -251,7 +251,7 @@ void HGCalTestBeamClient::bookHistograms(DQMStore::IBooker& ibook, edm::Run cons
         TObject *obj = key->ReadObj();
         if(obj->InheritsFrom("TGraph")) {
             gr = (TGraph*) obj;
-            hex_padId          -> addBin(gr);
+            hex_channelId      -> addBin(gr);
             hex_pedestal       -> addBin(gr);
             hex_adc_minus_adcm -> addBin(gr);
             hex_tot_mean       -> addBin(gr);
@@ -260,7 +260,12 @@ void HGCalTestBeamClient::bookHistograms(DQMStore::IBooker& ibook, edm::Run cons
         }
     }
 
-    for(int i=0; i<hex_counter; ++i) hex_padId->setBinContent(i+1, i+1);
+    for(int i=0; i<hex_counter; ++i) {
+        if(i==0)
+            hex_channelId->setBinContent(i+1, 1e-6);
+        else
+            hex_channelId->setBinContent(i+1, i);
+    }
     fgeo->Close();
 }
 
