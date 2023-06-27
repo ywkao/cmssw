@@ -11,6 +11,8 @@
 #include "DataFormats/HGCalDigi/interface/HGCalDigiCollections.h"
 
 #include <TString.h>
+#include <TFile.h>
+#include <TKey.h>
 
 #include <string>
 #include <fstream>
@@ -33,10 +35,15 @@ private:
   const edm::EDGetTokenT<HGCalElecDigiCollection> elecDigisToken_;
   const edm::EDGetTokenT<std::vector<int> > metadataToken_;
 
+  MonitorElement* p_adc      ;
+  MonitorElement* p_adcm     ;
   MonitorElement* p_adc_minus_adcm1;
-  MonitorElement* hex_adc_minus_adcm1;
-  MonitorElement* hex_tot_median;
+  MonitorElement* hex_channelId;
+  MonitorElement* hex_adc_minus_adcm;
+  MonitorElement* hex_tot_mean;
   MonitorElement* hex_beam_center;
+
+  int hex_counter;
 
   virtual void     export_calibration_parameters();
 
@@ -90,22 +97,67 @@ void HGCalDigisClient::analyze(const edm::Event& iEvent, const edm::EventSetup& 
                                    << "channel = " << ch << ", CM=" << isCM;
       
       // Note: need logial mapping / electronics mapping
-      uint16_t adc_diff = elecDigi.adc() - elecDigi.adcm1(); 
-      p_adc_minus_adcm1->Fill( (uint32_t)elecDigi.id().halfrocChannel(), adc_diff);
-      
-      // Note: need CM info
-      //myRunStatCollection.add_entry(globalChannelId_, adc_double_, adc_channel_CM);
+      HGCalElectronicsId id = elecDigi.id();
+      uint16_t adc      = elecDigi.adc(); 
+      uint16_t adcm     = elecDigi.adcm1(); 
+      uint16_t adc_diff = elecDigi.adc() - elecDigi.adcm1();
+      int globalChannelId = 39*id.econdeRx() + id.halfrocChannel();
+      p_adc             -> Fill( globalChannelId, adc      );
+      p_adcm            -> Fill( globalChannelId, adcm     );
+      p_adc_minus_adcm1 -> Fill( globalChannelId, adc_diff );
+
+      //printf("[INFO] eleId = %d, econdeRx() = %d, halfrocChannel() = %d, chId = %d, adc = %d, adcm = %d, adc_diff = %d\n", id.raw(), id.econdeRx(), id.halfrocChannel(), globalChannelId, adc, adcm, adc_diff);
+      // std::cout << "eleId: " << id.raw() << ","
+      //           << "chId: " << globalChannelId << "," 
+      //           << "adc: " << adc << ","
+      //           << "adc_diff: " << adc_diff << std::endl;
+      // // Note: need CM info
+      // //myRunStatCollection.add_entry(globalChannelId_, adc_double_, adc_channel_CM);
     }
 }
 
 void HGCalDigisClient::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& run, edm::EventSetup const& iSetup) {
     ibook.setCurrentFolder("HGCAL/Digis");
-    p_adc_minus_adcm1   = ibook.bookProfile("p_adc_minus_adcm1"   , ";channel;ADC #minux ADC_{-1}", 234 , 0 , 234 , 175 , -25 , 150 );
+    p_adc             = ibook.bookProfile("p_adc"             , ";channel;ADC #minux ADC_{-1}" , 234 , 0 , 234 , 175 , -25 , 150 );
+    p_adcm            = ibook.bookProfile("p_adcm"            , ";channel;ADC #minux ADC_{-1}" , 234 , 0 , 234 , 175 , -25 , 150 );
+    p_adc_minus_adcm1 = ibook.bookProfile("p_adc_minus_adcm1" , ";channel;ADC #minux ADC_{-1}" , 234 , 0 , 234 , 175 , -25 , 150 );
 
     ibook.setCurrentFolder("HGCAL/Maps");
-    hex_adc_minus_adcm1 = ibook.book2DPoly ("hex_adc_minus_adcm1" , "hex_adc_minus_adcm1;x (arb. unit); y (arb. unit)" , -22 , 22 , -24 , 20);
-    hex_tot_median      = ibook.book2DPoly ("hex_tot_median"      , "hex_tot_median;x (arb. unit); y (arb. unit)"      , -22 , 22 , -24 , 20);
-    hex_beam_center     = ibook.book2DPoly ("hex_beam_center"     , "hex_beam_center;x (arb. unit); y (arb. unit)"     , -22 , 22 , -24 , 20);
+    TString xytitle = ";x (cm);y (cm)";
+    hex_channelId      = ibook.book2DPoly("hex_channelId"      , "hex_channelId"      + xytitle , -26 , 26 , -28 , 24);
+    hex_adc_minus_adcm = ibook.book2DPoly("hex_adc_minus_adcm" , "hex_adc_minus_adcm" + xytitle , -26 , 26 , -28 , 24);
+    hex_tot_mean       = ibook.book2DPoly("hex_tot_mean"       , "hex_tot_mean"       + xytitle , -26 , 26 , -28 , 24);
+    hex_beam_center    = ibook.book2DPoly("hex_beam_center"    , "hex_beam_center"    + xytitle , -26 , 26 , -28 , 24);
+
+    //--------------------------------------------------
+    // load geometry
+    //--------------------------------------------------
+    TString root_geometry = "/afs/cern.ch/work/y/ykao/public/raw_data_handling/hexagons_20230626.root";
+    TFile *fgeo = new TFile(root_geometry, "R");
+
+    hex_counter = 0;
+    TGraph *gr;
+    TKey *key;
+    TIter nextkey(fgeo->GetDirectory(nullptr)->GetListOfKeys());
+    while ((key = (TKey*)nextkey())) {
+        TObject *obj = key->ReadObj();
+        if(obj->InheritsFrom("TGraph")) {
+            gr = (TGraph*) obj;
+            hex_channelId      -> addBin(gr);
+            hex_adc_minus_adcm -> addBin(gr);
+            hex_tot_mean       -> addBin(gr);
+            hex_beam_center    -> addBin(gr);
+            hex_counter+=1;
+        }
+    }
+
+    for(int i=0; i<hex_counter; ++i) {
+        if(i==0)
+            hex_channelId->setBinContent(i+1, 1e-6);
+        else
+            hex_channelId->setBinContent(i+1, i);
+    }
+    fgeo->Close();
 }
 
 void HGCalDigisClient::export_calibration_parameters() {

@@ -11,6 +11,7 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1) )
 
 process.playgrounddqmedanalyzer = cms.EDProducer('HGCalDigisClient',
     Digis = cms.InputTag('hgcalDigis', 'DIGI', 'TEST'),
+    MetaData = cms.InputTag('hgcalEmulatedSlinkRawData','hgcalMetaData'),
 )
 
 process.DQMStore = cms.Service("DQMStore")
