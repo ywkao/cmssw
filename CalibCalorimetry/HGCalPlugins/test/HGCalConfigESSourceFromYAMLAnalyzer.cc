@@ -14,7 +14,6 @@
 #include "FWCore/Framework/interface/ESWatcher.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-
 #include "CondFormats/DataRecord/interface/HGCalCondSerializableConfigRcd.h"
 #include "CondFormats/HGCalObjects/interface/HGCalCondSerializableConfig.h"
 
@@ -33,8 +32,17 @@ public:
 private:
   void analyze(const edm::Event&, const edm::EventSetup& iSetup) override {
     // get timing calibration parameters
-    if (cfgWatcher_.check(iSetup))
-      edm::LogInfo("HGCalConfigESSourceFromYAMLAnalyzer") << "Conditions retrieved:\n" << iSetup.getData(tokenConds_);
+    if (cfgWatcher_.check(iSetup)) {
+      auto conds = iSetup.getData(tokenConds_);
+      size_t nmods = conds.moduleConfigs.size();
+      edm::LogInfo("HGCalConfigESSourceFromYAMLAnalyzer") << "Conditions retrieved for " << nmods << " modules:\n" << conds;
+      for(auto it : conds.moduleConfigs) { // loop over map module electronicsId -> HGCalModuleConfig
+        HGCalModuleConfig moduleConfig(it.second);
+        edm::LogInfo("HGCalConfigESSourceFromYAMLAnalyzer")
+          << "  Module " << it.first << ":\n"
+          << "    charMode " << moduleConfig.charMode;
+      }
+    }
   }
 
   edm::ESWatcher<HGCalCondSerializableConfigRcd> cfgWatcher_;
