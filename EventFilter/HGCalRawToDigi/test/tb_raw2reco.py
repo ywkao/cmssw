@@ -39,16 +39,19 @@ options.register('storeRAWOutput', False, VarParsing.VarParsing.multiplicity.sin
 options.register('storeEmulatorInfo', False, VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int,
                  'also store the emulator metadata')
 options.register('configFile',
-                 '/eos/cms/store/group/dpg_hgcal/tb_hgcal/2023/calibration_module815/calib_withOct2022/80fC/80fC_inj_lowgain_loop_module815_beamtest/pedestal_run/run_20230412_160049/pedestal_run0.yaml',
+                 #'/eos/cms/store/group/dpg_hgcal/tb_hgcal/2023/calibration_module815/calib_withOct2022/80fC/80fC_inj_lowgain_loop_module815_beamtest/pedestal_run/run_20230412_160049/pedestal_run0.yaml',
+                 '/data/user/ykao/CMSSW_13_2_0_pre2/src/pedestal_run0.yaml',
                  VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.string,
                  'config yaml file')
 options.register('pedestalFile',
-                 '/afs/cern.ch/work/y/ykao/public/raw_data_handling/calibration_parameters.txt',
+                 #'/afs/cern.ch/work/y/ykao/public/raw_data_handling/calibration_parameters.txt',
+                 '/data/user/ykao/CMSSW_13_2_0_pre2/src/calibration_parameters.txt',
                  VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.string,
                  'pedestal txt file')
 options.register('inputFiles',
                  #'file:/eos/cms/store/group/dpg_hgcal/tb_hgcal/2023/calibration_module815/calib_withOct2022/160fC/160fC_inj_lowgain_loop_module815_beamtest/pedestal_run/run_20230412_141543/pedestal_run0.root',
-                 'file:/eos/cms/store/group/dpg_hgcal/tb_hgcal/2023/labtest/module822/pedestal_run0.root',
+                 #'file:/eos/cms/store/group/dpg_hgcal/tb_hgcal/2023/labtest/module822/pedestal_run0.root',
+                 'file:/data/user/ykao/CMSSW_13_2_0_pre2/src/pedestal_run0.root',
                  VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.string,
                  'input TB file')
 options.register('GPU', False, VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int,

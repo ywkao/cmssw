@@ -1,18 +1,19 @@
 import FWCore.ParameterSet.Config as cms
-run_on_gpu = False
+run_on_gpu = True 
 
 n_hits_scale_value = 50000 #100000
 
 if run_on_gpu:
-    n_blocks_value=4096
-    n_threads_value=1024
+    n_blocks_value=64
+    n_threads_value=32
 else:
     n_blocks_value=1024
     n_threads_value=4096
 
 process = cms.Process('HGCalRecHitProducerTest')
 process.source = cms.Source("PoolSource",
-   fileNames = cms.untracked.vstring('file:/afs/cern.ch/user/y/yumiao/public/HGCAL_Raw_Data_Handling/Data/Digis/testFakeDigisSoA.root')
+   #fileNames = cms.untracked.vstring('file:/afs/cern.ch/user/y/yumiao/public/HGCAL_Raw_Data_Handling/Data/Digis/testFakeDigisSoA.root')
+   fileNames = cms.untracked.vstring('file:/data/user/ykao/CMSSW_13_2_0_pre2/src/RecoLocalCalo/HGCalRecAlgos/hackathon_output_numEvent100_20230627.root')
 )
 process.load('Configuration.StandardSequences.Accelerators_cff')
 process.load('HeterogeneousCore.AlpakaCore.ProcessAcceleratorAlpaka_cfi')
@@ -41,7 +42,8 @@ process.producerCpu = cms.EDProducer(
     n_hits_scale = cms.int32(n_hits_scale_value),
     pedestal_label = cms.string(''), # for hgCalPedestalsESSource
 )
-process.hgCalPedestalsESSource.filename = '/afs/cern.ch/work/y/ykao/public/raw_data_handling/calibration_parameters.txt'
+#process.hgCalPedestalsESSource.filename = '/afs/cern.ch/work/y/ykao/public/raw_data_handling/calibration_parameters.txt'
+process.hgCalPedestalsESSource.filename = '/data/user/ykao/CMSSW_13_2_0_pre2/src/calibration_parameters.txt'
 process.output = cms.OutputModule("PoolOutputModule",
     fileName = cms.untracked.string("./recHits.root"),
 #     outputCommands = cms.untracked.vstring(
