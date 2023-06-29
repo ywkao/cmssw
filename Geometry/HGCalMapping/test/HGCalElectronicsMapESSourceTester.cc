@@ -11,6 +11,7 @@
 #include "CondFormats/DataRecord/interface/HGCalCondSerializableSiCellChannelInfoRcd.h"
 #include "CondFormats/HGCalObjects/interface/HGCalCondSerializableModuleInfo.h"
 #include "CondFormats/HGCalObjects/interface/HGCalCondSerializableSiCellChannelInfo.h"
+#include "Geometry/HGCalMapping/interface/HGCalElectronicsMappingTools.h"
 
 #include <iostream>
 
@@ -44,7 +45,7 @@ private:
   /**
      @short check what has been put in the event setup at start of the run
    */
-  void beginRun(edm::Run const& iEvent, edm::EventSetup const&) override;
+  void beginRun(edm::Run const& , edm::EventSetup const&) override;
 
   /**
      @short do something event-by-event
@@ -54,7 +55,7 @@ private:
   /**
      @short do another thing end of the run
   */
-  void endRun(edm::Run const& iEvent, edm::EventSetup const&) override {}
+  void endRun(edm::Run const& , edm::EventSetup const&) override {}
 
   /**
      @short do something end of the job
@@ -68,21 +69,42 @@ private:
 
 //
 void HGCalElectronicsMapESSourceTester::beginRun(edm::Run const& iRun, const edm::EventSetup& iSetup) {
-  auto moduleInfo = iSetup.getData(moduleInfoToken_);
-  auto siCellInfo = iSetup.getData(siModuleInfoToken_);
 
-  for(auto m : moduleInfo.params_){
-    if(m.isSiPM) continue;    
-    bool isHD=m.isHD;
-    uint8_t wafType=m.wafType;
-    std::vector<HGCalSiCellChannelInfo> cells=siCellInfo.getAllCellsInModule(isHD,wafType);
-    std::cout << isHD << " " << (int) wafType << " has " << cells.size() << std::endl;
-  }
+  auto moduleInfo = iSetup.getData(moduleInfoToken_);
+  std::tuple<uint16_t,uint8_t,uint8_t,uint8_t> denseIdxMax = moduleInfo.getMaxValuesForDenseIndex();
+  HGCalCondSerializableModuleInfo::ERxBitPatternMap erxbitmap = moduleInfo.getERxBitPattern();
+
+  auto siCellInfo = iSetup.getData(siModuleInfoToken_);
+  std::map<uint32_t,uint32_t> ele2geo=hgcal::mapSiGeoToElectronics(moduleInfo,siCellInfo,false);
+  std::map<uint32_t,uint32_t> geo2ele=hgcal::mapSiGeoToElectronics(moduleInfo,siCellInfo,true);
 
   std::cout << "Read module info with " << moduleInfo.params_.size() << " entries" << std::endl
-            << "Read si cell info with " << siCellInfo.params_.size() << " entries" << std::endl;
-
+            << "Max values for dense indexing are" << std::endl
+            << "\tmax fed=" << (uint32_t)(std::get<0>(denseIdxMax)) << std::endl
+            << "\tmax capture=" << (uint32_t)(std::get<1>(denseIdxMax)) << std::endl
+            << "\tmax econd=" << (uint32_t)(std::get<2>(denseIdxMax)) << std::endl
+            << "\tmax eRx=" << (uint32_t)(std::get<3>(denseIdxMax)) << std::endl
+            << "Read si cell info with " << siCellInfo.params_.size() << " entries" << std::endl
+            << "ID maps #ele2geo=" << ele2geo.size() << " #geo2ele=" << geo2ele.size() << std::endl;
+  std::cout << "e-Rx enable bit patterns" << std::endl;
+  for(auto it : erxbitmap){
+    std::cout << "\t" << it.first << " : " << it.second << std::endl;
+  }
   
+  assert(ele2geo.size()==geo2ele.size());
+
+  for(auto it : ele2geo) {
+    assert(geo2ele.count(it.second)==1);
+    assert(geo2ele[it.second]==it.first);
+  }
+  
+  for(auto it : geo2ele) {
+    assert(ele2geo.count(it.second)==1);
+    assert(ele2geo[it.second]==it.first);
+  }
+
+  std::cout << "1:1 correspondences found for physical cells" << std::endl;
+
 }
 
 

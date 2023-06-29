@@ -14,8 +14,7 @@
 struct HGCalModuleInfo {
   bool zside,isSiPM,isHD;
   int plane, u, v;
-  uint8_t wafType;
-  int econdidx, captureblock, slink, captureblockidx, fedid;
+  uint16_t fedid,slink,wafType,captureblock,econdidx,captureblockidx;
   COND_SERIALIZABLE;
 };
 
@@ -27,6 +26,7 @@ class HGCalCondSerializableModuleInfo {
 public:
 
   typedef std::tuple<bool,int,int,int> ModuleInfoKey_t;
+  typedef std::map<uint32_t, uint16_t> ERxBitPatternMap;
   
   HGCalCondSerializableModuleInfo() {}
   virtual ~HGCalCondSerializableModuleInfo() {}
@@ -70,13 +70,20 @@ public:
      elecidAsKey - if false the geomId is used as the key
    */
   std::map<ModuleInfoKey_t,ModuleInfoKey_t> getAsSimplifiedModuleLocatorMap(bool elecAsKey=true) const;
+
+  /**
+     @short returns <max s-link, max capture block, max econ-d idx, max eRx> to build a dense index
+   */
+  std::tuple<uint16_t,uint16_t,uint16_t,uint16_t> getMaxValuesForDenseIndex() const;
+
+  /**
+     @short returns eRxBitPattern
+   */
+  ERxBitPatternMap getERxBitPattern() const;
   
   //parameters to serialize
   std::vector<HGCalModuleInfo> params_;
 
-
-
-  
   COND_SERIALIZABLE;
 };
 

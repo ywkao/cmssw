@@ -48,3 +48,37 @@ std::map<HGCalCondSerializableModuleInfo::ModuleInfoKey_t,HGCalCondSerializableM
   
   return module_keys;
 }
+
+//
+std::tuple<uint16_t,uint16_t,uint16_t,uint16_t> HGCalCondSerializableModuleInfo::getMaxValuesForDenseIndex() const {
+
+  uint16_t maxfedid(0),maxcaptureblock(0),maxecondidx(0),maxerx(0);
+  for(auto m : params_) {
+    maxfedid=std::max(m.fedid,maxfedid);
+    maxcaptureblock=std::max(m.captureblock,maxcaptureblock);
+    maxecondidx=std::max(m.econdidx,maxecondidx);
+    uint16_t nerx=6*(1+m.isHD);
+    maxerx=std::max(nerx,maxerx);
+  }
+
+  return std::tuple<uint16_t,uint16_t,uint16_t,uint16_t>(maxfedid,maxcaptureblock,maxecondidx,maxerx);
+}
+
+//
+HGCalCondSerializableModuleInfo::ERxBitPatternMap HGCalCondSerializableModuleInfo::getERxBitPattern() const {
+
+  std::tuple<uint16_t,uint16_t,uint16_t,uint16_t> maxValsForDenseIdx=getMaxValuesForDenseIndex();
+  uint16_t maxCB=std::get<1>(maxValsForDenseIdx);
+  uint16_t maxEcon=std::get<2>(maxValsForDenseIdx);
+  uint16_t maxERx=std::get<3>(maxValsForDenseIdx);
+  
+  HGCalCondSerializableModuleInfo::ERxBitPatternMap erxbit;
+  for(auto m : params_) {
+    uint32_t rtn = m.fedid * maxCB + m.captureblock;
+    rtn = rtn * maxEcon + m.econdidx;
+    rtn = rtn * maxERx;
+    uint8_t nerx=6*(1+m.isHD);
+    erxbit[rtn]=(1<<nerx)-1;
+  }
+  return erxbit;
+}

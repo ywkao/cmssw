@@ -17,6 +17,10 @@
 
 #include "CondFormats/DataRecord/interface/HGCalCondSerializableConfigRcd.h"
 #include "CondFormats/HGCalObjects/interface/HGCalCondSerializableConfig.h"
+#include "CondFormats/DataRecord/interface/HGCalCondSerializableModuleInfoRcd.h"
+#include "CondFormats/HGCalObjects/interface/HGCalCondSerializableModuleInfo.h"
+
+
 
 class HGCalRawToDigi : public edm::stream::EDProducer<> {
 public:
@@ -33,13 +37,16 @@ private:
   const edm::EDPutTokenT<hgcaldigi::HGCalDigiHostCollection> elecDigisSoAToken_;
   edm::ESWatcher<HGCalCondSerializableConfigRcd> configWatcher_;
   edm::ESGetToken<HGCalCondSerializableConfig,HGCalCondSerializableConfigRcd> configToken_;
-
+  edm::ESWatcher<HGCalCondSerializableModuleInfoRcd> eleMapWatcher_;
+  edm::ESGetToken<HGCalCondSerializableModuleInfo, HGCalCondSerializableModuleInfoRcd> moduleInfoToken_;
+  HGCalCondSerializableModuleInfo::ERxBitPatternMap erxEnableBits_;
+  
   const std::vector<unsigned int> fedIds_;
   const unsigned int badECONDMax_;
   const unsigned int numERxsInECOND_;
   const std::unique_ptr<HGCalUnpacker> unpacker_;
   HGCalModuleConfig moduleConfig_; // current module
-  
+
 };
 
 HGCalRawToDigi::HGCalRawToDigi(const edm::ParameterSet& iConfig)
@@ -48,7 +55,9 @@ HGCalRawToDigi::HGCalRawToDigi(const edm::ParameterSet& iConfig)
       elecCMsToken_(produces<HGCalElecDigiCollection>("CM")),
       elecDigisSoAToken_(produces<hgcaldigi::HGCalDigiHostCollection>()),
       configToken_(esConsumes<HGCalCondSerializableConfig,HGCalCondSerializableConfigRcd>(
-            edm::ESInputTag(iConfig.getParameter<std::string>("config_label")))),
+                         iConfig.getParameter<edm::ESInputTag>("config_label"))),
+      moduleInfoToken_(esConsumes<HGCalCondSerializableModuleInfo,HGCalCondSerializableModuleInfoRcd>(
+                         iConfig.getParameter<edm::ESInputTag>("module_info_label"))),
       fedIds_(iConfig.getParameter<std::vector<unsigned int> >("fedIds")),
       badECONDMax_(iConfig.getParameter<unsigned int>("badECONDMax")),
       numERxsInECOND_(iConfig.getParameter<unsigned int>("numERxsInECOND")),
@@ -64,11 +73,33 @@ HGCalRawToDigi::HGCalRawToDigi(const edm::ParameterSet& iConfig)
                               .channelMax = iConfig.getParameter<unsigned int>("channelMax"),
                               .commonModeMax = iConfig.getParameter<unsigned int>("commonModeMax")})) {}
 
+//
 void HGCalRawToDigi::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
   // retrieve the FED raw data
   const auto& raw_data = iEvent.get(fedRawToken_);
 
+  // retrieve module info
+  if(eleMapWatcher_.check(iSetup)){
+
+    auto moduleInfo = iSetup.getData(moduleInfoToken_);
+
+    //get max values in the current run
+    std::tuple<uint16_t,uint16_t,uint16_t,uint16_t> maxForDenseIdx=moduleInfo.getMaxValuesForDenseIndex();
+    std::cout << "Max values for dense-indexing "
+              << "max slink=" << (uint32_t)std::get<0>(maxForDenseIdx) << " "
+              << "max capture block=" << (uint32_t)std::get<1>(maxForDenseIdx) << " "
+              << "max econ-D=" << (uint32_t)std::get<2>(maxForDenseIdx) << " "
+              << "max eRx index=" << (uint32_t)std::get<3>(maxForDenseIdx) << std::endl;
+
+    //get enable patterns
+    erxEnableBits_ = moduleInfo.getERxBitPattern();
+    std::cout << "eRx enabled bits" << std::endl;
+    for(auto it : erxEnableBits_)
+      std::cout << it.first << " = " << "0x" << std::hex << (uint32_t)(it.second) << std::dec << std::endl;
+  }
+  
+  
   // retrieve configuration from YAML files
   if (configWatcher_.check(iSetup)) {
     auto conds = iSetup.getData(configToken_);
@@ -172,6 +203,7 @@ void HGCalRawToDigi::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
   iEvent.emplace(elecDigisSoAToken_, std::move(elec_digis_soa));
 }
 
+//
 void HGCalRawToDigi::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
   desc.add<edm::InputTag>("src", edm::InputTag("rawDataCollector"));
@@ -188,7 +220,8 @@ void HGCalRawToDigi::fillDescriptions(edm::ConfigurationDescriptions& descriptio
   desc.add<unsigned int>("badECONDMax", 200)->setComment("maximum number of bad ECON-D's");
   desc.add<std::vector<unsigned int> >("fedIds", {});
   desc.add<unsigned int>("numERxsInECOND", 12)->setComment("number of eRxs in each ECON-D payload");
-  desc.add<std::string>("config_label", "")->setComment("label for HGCalConfigESSourceFromYAML reader");
+  desc.add<edm::ESInputTag>("config_label", edm::ESInputTag(""))->setComment("label for HGCalConfigESSourceFromYAML reader");
+  desc.add<edm::ESInputTag>("module_info_label", edm::ESInputTag(""))->setComment("label for HGCalModuleInfoESSource");
   descriptions.add("hgcalDigis", desc);
 }
 
