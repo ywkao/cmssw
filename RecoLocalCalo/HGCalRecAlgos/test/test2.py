@@ -11,7 +11,8 @@ process.load('HeterogeneousCore.AlpakaCore.ProcessAcceleratorAlpaka_cfi')
 process.MessageLogger.TestAlpakaAnalyzer = cms.untracked.PSet()
 
 # either run the producer on a gpu (if available) and copy the product to the cpu, or run the producer directly on the cpu
-process.testProducer = cms.EDProducer('TestAlpakaProducer@alpaka',
+process.testProducer = cms.EDProducer('HGCalRecHitProducer2@alpaka',
+#process.testProducer = cms.EDProducer('TestAlpakaProducer@alpaka',
     size = cms.int32(42),
     # alpaka.backend can be set to a specific backend to force using it, or be omitted or left empty to use the defult backend;
     # depending on the architecture and available hardware, the supported backends are "serial_sync", "cuda_async", "rocm_async"
