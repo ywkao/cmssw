@@ -83,7 +83,7 @@ process.RandomNumberGeneratorService = cms.Service("RandomNumberGeneratorService
 process.source = cms.Source('EmptyIOVSource',
     timetype = cms.string('runnumber'),
     firstValue = cms.uint64(1),
-    lastValue = cms.uint64(1),
+    lastValue = cms.uint64(100),
     interval = cms.uint64(1)
 )
 
