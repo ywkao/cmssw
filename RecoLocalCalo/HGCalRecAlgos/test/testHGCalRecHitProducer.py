@@ -1,7 +1,8 @@
 import FWCore.ParameterSet.Config as cms
 run_on_gpu = True 
+#run_on_gpu = False 
 
-n_hits_scale_value = 50000 #100000
+n_hits_scale_value = 1
 
 if run_on_gpu:
     n_blocks_value=64
@@ -26,6 +27,8 @@ process.MessageLogger.cerr.INFO.limit = cms.untracked.int32(10000000)
 #     'HGCalRecHitProducer@alpaka',
 #     alpaka = cms.untracked.Pset( backend = cms.untracked.string("serial_sync"))
 # )
+
+"""
 process.producerGpu = cms.EDProducer(
     'alpaka_cuda_async::HGCalRecHitProducer',
     digis = cms.InputTag('hgcalDigis', '', 'TEST'),
@@ -42,6 +45,11 @@ process.producerCpu = cms.EDProducer(
     n_hits_scale = cms.int32(n_hits_scale_value),
     pedestal_label = cms.string(''), # for hgCalPedestalsESSource
 )
+"""
+
+process.producer = cms.EDProducer('HGCalRecHitProducer@alpaka')
+
+
 #process.hgCalPedestalsESSource.filename = '/afs/cern.ch/work/y/ykao/public/raw_data_handling/calibration_parameters.txt'
 process.hgCalPedestalsESSource.filename = '/data/user/ykao/CMSSW_13_2_0_pre2/src/calibration_parameters.txt'
 process.output = cms.OutputModule("PoolOutputModule",
@@ -52,6 +60,10 @@ process.output = cms.OutputModule("PoolOutputModule",
 #         'keep *_producerCpu_*_*',
 #
 )
+"""
 process.path = cms.Path(process.producerGpu if run_on_gpu else process.producerCpu)
+"""
+process.path = cms.Path(process.producer)
+
 process.output_path = cms.EndPath(process.output)
 process.maxEvents.input = 10
