@@ -49,17 +49,15 @@ process.producerCpu = cms.EDProducer(
 )
 """
 
-#process.alpakaESProducerB = cms.ESProducer("TestAlpakaESProducerB@alpaka", explicitLabel = cms.string("explicitLabel"))
-
 process.testAnalyzer = cms.EDAnalyzer('TestAlpakaAnalyzer',
     source = cms.InputTag('producer')
 )
-#process.intProduct = cms.EDProducer("IntProducer", ivalue = cms.int32(42))
 
 process.producer = cms.EDProducer('HGCalRecHitProducer@alpaka',
     size = cms.int32(42),
+    n_blocks = cms.int32(n_blocks_value),
+    n_threads = cms.int32(n_threads_value),
 )
-
 
 #process.hgCalPedestalsESSource.filename = '/afs/cern.ch/work/y/ykao/public/raw_data_handling/calibration_parameters.txt'
 process.hgCalPedestalsESSource.filename = '/data/user/ykao/CMSSW_13_2_0_pre2/src/calibration_parameters.txt'
@@ -69,22 +67,16 @@ process.output = cms.OutputModule("PoolOutputModule",
         'drop *',
         'keep *_producer_*_*',
         )
-#     outputCommands = cms.untracked.vstring(
-#         'drop *',
-#         'keep *_producerGpu_*_*',
-#         'keep *_producerCpu_*_*',
-#
 )
 """
 process.path = cms.Path(process.producerGpu if run_on_gpu else process.producerCpu)
 """
 process.t = cms.Task(
-#    process.intProduct,
     process.producer
 )
 
 process.p = cms.Path(
-    process.testAnalyzer,
+#    process.testAnalyzer,
     process.t
 )
 

@@ -18,7 +18,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   class HGCalRecHitProducer : public global::EDProducer<> {
   public:
     HGCalRecHitProducer(edm::ParameterSet const& config)
-        : deviceToken_{produces()}, size_{config.getParameter<int32_t>("size")} {}
+        : deviceToken_{produces()}, size_{config.getParameter<int32_t>("size")},
+          algo_{HGCalRecHitCalibrationAlgorithms(
+            config.getParameter<int>("n_blocks"),
+            config.getParameter<int>("n_threads"))}
+    {}
 
     void produce(edm::StreamID sid, device::Event& event, device::EventSetup const&) const override {
       // run the algorithm, potentially asynchronously
@@ -32,6 +36,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
       edm::ParameterSetDescription desc;
       desc.add<int32_t>("size");
+      desc.add<int>("n_blocks");
+      desc.add<int>("n_threads");
       descriptions.addWithDefaultLabel(desc);
     }
 
