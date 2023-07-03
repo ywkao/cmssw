@@ -166,7 +166,7 @@ void HGCalDigisClient::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& 
 
         TGraph *gr;
         TKey *key;
-        TString root_geometry = "/afs/cern.ch/work/y/ykao/public/raw_data_handling/hexagons_20230626.root";
+        TString root_geometry = "/data/user/ykao/CMSSW_13_2_0_pre2/src/hexagons_20230626.root";
         TFile *fgeo = new TFile(root_geometry, "R");
         TIter nextkey(fgeo->GetDirectory(nullptr)->GetListOfKeys());
 

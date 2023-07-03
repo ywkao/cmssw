@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Config as cms
 run_on_gpu = False
 
-n_hits_scale_value = 50000 #100000
+n_hits_scale_value = 1
 
 if run_on_gpu:
     n_blocks_value=4096
@@ -12,7 +12,7 @@ else:
 
 process = cms.Process('HGCalRecHitProducerTest')
 process.source = cms.Source("PoolSource",
-   fileNames = cms.untracked.vstring('file:/afs/cern.ch/user/y/yumiao/public/HGCAL_Raw_Data_Handling/Data/Digis/testFakeDigisSoA.root')
+   fileNames = cms.untracked.vstring('file:file:/data/user/ykao/CMSSW_13_2_0_pre2/src/RecoLocalCalo/HGCalRecAlgos/hackathon_output_numEvent100_20230627.root')
 )
 process.load('Configuration.StandardSequences.Accelerators_cff')
 process.load('HeterogeneousCore.AlpakaCore.ProcessAcceleratorAlpaka_cfi')
