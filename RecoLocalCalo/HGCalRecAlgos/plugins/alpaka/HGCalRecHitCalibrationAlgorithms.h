@@ -25,7 +25,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   public:
     void fill(Queue& queue, portabletest::TestDeviceCollection& collection, double xvalue = 0.) const;
     HGCalRecHitCalibrationAlgorithms(int n_blocks_, int n_threads_) : n_blocks(n_blocks_), n_threads(n_threads_) {}
-    std::unique_ptr<HGCalRecHitHostCollection> calibrate(Queue& queue, HGCalDigiHostCollection const& host_digis);
+    std::unique_ptr<HGCalRecHitDeviceCollection> calibrate(Queue& queue, HGCalDigiHostCollection const& host_digis);
+    //void calibrate(Queue& queue, HGCalDigiHostCollection const& host_digis);
 
     // if converting host digis to device rechits turns out too slow, we should copy host digis to device digis and then
     // convert to device rechits on device
