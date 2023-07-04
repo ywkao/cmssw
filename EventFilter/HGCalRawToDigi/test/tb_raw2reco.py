@@ -56,7 +56,7 @@ options.register('inputFiles',
                  'input TB file')
 options.register('GPU', False, VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int,
                  'run on GPU')
-options.maxEvents = 100  # number of events to emulate
+options.maxEvents = 10  # number of events to emulate
 options.output = 'output.root'  # output EDM file
 options.secondaryOutput = 'output.raw'  # output streamer file
 options.parseArguments()
@@ -83,7 +83,7 @@ process.RandomNumberGeneratorService = cms.Service("RandomNumberGeneratorService
 process.source = cms.Source('EmptyIOVSource',
     timetype = cms.string('runnumber'),
     firstValue = cms.uint64(1),
-    lastValue = cms.uint64(100),
+    lastValue = cms.uint64(10),
     interval = cms.uint64(1)
 )
 
