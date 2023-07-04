@@ -53,7 +53,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     edm::ESWatcher<HGCalCondSerializablePedestalsRcd> cfgWatcher_;
     edm::ESGetToken<HGCalCondSerializablePedestals, HGCalCondSerializablePedestalsRcd> tokenConds_;
     const edm::EDGetTokenT<hgcaldigi::HGCalDigiHostCollection> digisToken_;
-    const edm::EDPutTokenT<hgcalrechit::HGCalRecHitHostCollection> recHitsToken_;
+    const device::EDPutToken<hgcalrechit::HGCalRecHitDeviceCollection> recHitsToken_;
     HGCalRecHitCalibrationAlgorithms calibrator_;  // cannot be "const" because the calibrate() method is not const
     int n_hits_scale;
   };
