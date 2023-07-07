@@ -23,8 +23,8 @@
 #include "CondFormats/DataRecord/interface/HGCalCondSerializableConfigRcd.h"
 #include "CondFormats/HGCalObjects/interface/HGCalCondSerializableConfig.h"
 
-// include for save calibration parameter
-#include "RecoLocalCalo/HGCalRecAlgos/interface/HGCalCalibrationParameterProvider.h"
+// // include for save calibration parameter
+// #include "RecoLocalCalo/HGCalRecAlgos/interface/HGCalCalibrationParameterProvider.h"
 
 // includes for size parameters
 #include "CondFormats/DataRecord/interface/HGCalCondSerializableModuleInfoRcd.h"
@@ -61,14 +61,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     void produce(device::Event&, device::EventSetup const&) override;
     void beginRun(edm::Run const&, edm::EventSetup const&) override;
-    edm::ESWatcher<HGCalCondSerializablePedestalsRcd> cfgWatcher_;
+    // edm::ESWatcher<HGCalCondSerializablePedestalsRcd> cfgWatcher_;
     edm::ESGetToken<HGCalCondSerializablePedestals, HGCalCondSerializablePedestalsRcd> tokenConds_;
     edm::ESGetToken<HGCalCondSerializableModuleInfo, HGCalCondSerializableModuleInfoRcd> moduleInfoToken_;
 
     const edm::EDGetTokenT<hgcaldigi::HGCalDigiHostCollection> digisToken_;
     const device::EDPutToken<hgcalrechit::HGCalRecHitDeviceCollection> recHitsToken_;
     HGCalRecHitCalibrationAlgorithms calibrator_;  // cannot be "const" because the calibrate() method is not const
-    HGCalCalibrationParameterProvider calibrationParameterProvider_;
+    // HGCalCalibrationParameterProvider calibrationParameterProvider_;
     int n_hits_scale;
   };
 
@@ -82,19 +82,19 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         calibrator_{HGCalRecHitCalibrationAlgorithms(
           iConfig.getParameter<int>("n_blocks"),
           iConfig.getParameter<int>("n_threads"))},
-        calibrationParameterProvider_(),
+        // calibrationParameterProvider_(),
         n_hits_scale{iConfig.getParameter<int>("n_hits_scale")}
     {}
     
   void HGCalRecHitProducer::beginRun(edm::Run const& iRun, edm::EventSetup const& iSetup){
-    auto moduleInfo = iSetup.getData(moduleInfoToken_);
-    std::tuple<uint16_t,uint8_t,uint8_t,uint8_t> denseIdxMax = moduleInfo.getMaxValuesForDenseIndex();    
-    calibrationParameterProvider_.initialize(HGCalCalibrationParameterProviderConfig{.EventSLinkMax=std::get<0>(denseIdxMax),
-                                      .sLinkCaptureBlockMax=std::get<1>(denseIdxMax),
-                                      .captureBlockECONDMax=std::get<2>(denseIdxMax),
-                                      .econdERXMax=std::get<3>(denseIdxMax),
-                                      .erxChannelMax = 37+2,//+2 for the two common modes
-    });
+    // auto moduleInfo = iSetup.getData(moduleInfoToken_);
+    // std::tuple<uint16_t,uint8_t,uint8_t,uint8_t> denseIdxMax = moduleInfo.getMaxValuesForDenseIndex();    
+    // calibrationParameterProvider_.initialize(HGCalCalibrationParameterProviderConfig{.EventSLinkMax=std::get<0>(denseIdxMax),
+    //                                   .sLinkCaptureBlockMax=std::get<1>(denseIdxMax),
+    //                                   .captureBlockECONDMax=std::get<2>(denseIdxMax),
+    //                                   .econdERXMax=std::get<3>(denseIdxMax),
+    //                                   .erxChannelMax = 37+2,//+2 for the two common modes
+    // });
   }
 
   void HGCalRecHitProducer::produce(device::Event& iEvent, device::EventSetup const& iSetup) {
@@ -108,32 +108,32 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     int newSize = oldSize * n_hits_scale;
     auto hostDigis = HGCalDigiHostCollection(newSize, queue);
 
-    // Check if there are new conditions and read them
-    if (cfgWatcher_.check(iSetup)){
+    // // Check if there are new conditions and read them
+    // if (cfgWatcher_.check(iSetup)){
 
-      auto conds = iSetup.getData(tokenConds_);
-      size_t nconds = conds.params_.size();
-      LogDebug("HGCalCalibrationParamter") << "Conditions retrieved:\n" << nconds;
+    //   auto conds = iSetup.getData(tokenConds_);
+    //   size_t nconds = conds.params_.size();
+    //   LogDebug("HGCalCalibrationParamter") << "Conditions retrieved:\n" << nconds;
 
-      // Print out all conditions readout
-      HGCalRecHitCalibrationAlgorithms::CalibParams calibParams;
-      LogDebug("HGCalCalibrationParamter") << "   ID  eRx  Channel  isCM?  Pedestal  CM slope  CM offset  kappa(BX-1)" << std::endl;
-      for(auto it : conds.params_) {
-        HGCalElectronicsId id(it.first);
-        HGCalFloatPedestals table = conds.getFloatPedestals(it.second);
-        calibrationParameterProvider_[id.raw()].pedestal = table.pedestal;
-        calibrationParameterProvider_[id.raw()].cm_slope = table.cm_slope;
-        calibrationParameterProvider_[id.raw()].cm_offset = table.cm_offset;
-        calibrationParameterProvider_[id.raw()].kappa_bxm1 = table.kappa_bxm1;
+    //   // Print out all conditions readout
+    //   HGCalRecHitCalibrationAlgorithms::CalibParams calibParams;
+    //   LogDebug("HGCalCalibrationParamter") << "   ID  eRx  Channel  isCM?  Pedestal  CM slope  CM offset  kappa(BX-1)" << std::endl;
+    //   for(auto it : conds.params_) {
+    //     HGCalElectronicsId id(it.first);
+    //     HGCalFloatPedestals table = conds.getFloatPedestals(it.second);
+    //     calibrationParameterProvider_[id.raw()].pedestal = table.pedestal;
+    //     calibrationParameterProvider_[id.raw()].cm_slope = table.cm_slope;
+    //     calibrationParameterProvider_[id.raw()].cm_offset = table.cm_offset;
+    //     calibrationParameterProvider_[id.raw()].kappa_bxm1 = table.kappa_bxm1;
 
-        LogDebug("HGCalCalibrationParamter") << std::setw(5) << std::dec << (uint32_t)id.raw() << " " << std::setw(4) << std::dec << (uint32_t)id.econdeRx() << " "
-                  << std::setw(8) << (uint32_t)id.halfrocChannel() << " " << std::setw(6) << (uint32_t)id.isCM() << " "
-                  << std::setw(9) << std::setprecision(3) << calibrationParameterProvider_[id.raw()].pedestal << " " << std::setw(9) << calibrationParameterProvider_[id.raw()].cm_slope << " "
-                  << std::setw(10) << calibrationParameterProvider_[id.raw()].cm_offset << " " << std::setw(12) << calibrationParameterProvider_[id.raw()].kappa_bxm1;
-      }
+    //     LogDebug("HGCalCalibrationParamter") << std::setw(5) << std::dec << (uint32_t)id.raw() << " " << std::setw(4) << std::dec << (uint32_t)id.econdeRx() << " "
+    //               << std::setw(8) << (uint32_t)id.halfrocChannel() << " " << std::setw(6) << (uint32_t)id.isCM() << " "
+    //               << std::setw(9) << std::setprecision(3) << calibrationParameterProvider_[id.raw()].pedestal << " " << std::setw(9) << calibrationParameterProvider_[id.raw()].cm_slope << " "
+    //               << std::setw(10) << calibrationParameterProvider_[id.raw()].cm_offset << " " << std::setw(12) << calibrationParameterProvider_[id.raw()].kappa_bxm1;
+    //   }
 
-      
-      }
+    //   
+    //   }
 
     for(int i=0; i<newSize;i++){
       hostDigis.view()[i].electronicsId() = hostDigisIn.view()[i%oldSize].electronicsId();

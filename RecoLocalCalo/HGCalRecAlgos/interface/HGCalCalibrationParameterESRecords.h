@@ -1,0 +1,9 @@
+#ifndef RecoLocalCalo_HGCalRecAlgos_interface_HGCalCalibrationParameterESRecords_h
+#define RecoLocalCalo_HGCalRecAlgos_interface_HGCalCalibrationParameterESRecords_h
+
+#include "FWCore/Framework/interface/EventSetupRecordImplementation.h"
+#include "FWCore/Framework/interface/DependentRecordImplementation.h"
+
+class HGCalCalibParamHostCollectionESRecord : public edm::eventsetup::EventSetupRecordImplementation<HGCalCalibParamHostCollectionESRecord> {};
+
+#endif // RecoLocalCalo_HGCalRecAlgos_interface_HGCalCalibrationParameterESRecords_h
