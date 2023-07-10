@@ -1,6 +1,14 @@
+#include "FWCore/Framework/interface/MakerMacros.h"
+#include "FWCore/Framework/interface/SourceFactory.h"
+#include "FWCore/Framework/interface/ESHandle.h"
+#include "FWCore/Framework/interface/ESProducer.h"
+#include "FWCore/Framework/interface/ESProducts.h"
 #include "FWCore/Framework/interface/ESTransientHandle.h"
+#include "FWCore/Framework/interface/EventSetupRecordIntervalFinder.h"
+#include "FWCore/ParameterSet/interface/FileInPath.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Utilities/interface/ESGetToken.h"
+
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/ESGetToken.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/ESProducer.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/ModuleFactory.h"
@@ -8,47 +16,46 @@
 #include "HeterogeneousCore/AlpakaInterface/interface/host.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
 
-#include "CondFormats/DataRecord/interface/HGCalCondSerializablePedestalsRcd.h"
-#include "CondFormats/HGCalObjects/interface/HGCalCondSerializablePedestals.h"
 #include "CondFormats/DataRecord/interface/HGCalCondSerializableModuleInfoRcd.h"
 #include "CondFormats/HGCalObjects/interface/HGCalCondSerializableModuleInfo.h"
 
+#include "DataFormats/Math/interface/libminifloat.h"
+
 #include "RecoLocalCalo/HGCalRecAlgos/interface/HGCalCalibrationParameterProvider.h"
-#include "RecoLocalCalo/HGCalRecAlgos/interface/HGCalCalibrationParameterESRecords.h"
+#include "RecoLocalCalo/HGCalRecAlgos/interface/HGCalCalibrationParameterHostCollectionRcd.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/HGCalCalibrationParameterHostCollection.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/alpaka/HGCalCalibrationParameterDeviceCollection.h"
 
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
-  /**
-   * This class demonstrates and ESProducer on the data model 1 that
-   * consumes a standard host ESProduct and converts the data into
-   * PortableCollection, and implicitly transfers the data product to device
-   */
+
   class HGCalRecHitCalibrationESProducer : public ESProducer {
   public:
-    HGCalRecHitCalibrationESProducer(edm::ParameterSet const& iConfig) : ESProducer(iConfig) {
+
+    HGCalRecHitCalibrationESProducer(edm::ParameterSet const& iConfig)
+      : ESProducer(iConfig),
+        filename_(iConfig.getParameter<std::string>("filename")) {
+
       auto cc = setWhatProduced(this);
-      // tokenConds_ = cc.consumesFrom<HGCalCondSerializablePedestals, HGCalCondSerializablePedestalsRcd, edm::Transition::BeginRun>(edm::ESInputTag(iConfig.getParameter<std::string>("pedestal_label")));
-      // moduleInfoToken_ = cc.consumesFrom<HGCalCondSerializableModuleInfo, HGCalCondSerializableModuleInfoRcd, edm::Transition::BeginRun>(edm::ESInputTag(iConfig.getParameter<edm::ESInputTag>("ModuleInfo")));
-
-      tokenConds_ = cc.consumes<HGCalCondSerializablePedestals, HGCalCondSerializablePedestalsRcd>(edm::ESInputTag(iConfig.getParameter<std::string>("pedestal_label")));
-      moduleInfoToken_ = cc.consumes<HGCalCondSerializableModuleInfo,HGCalCondSerializableModuleInfoRcd>(edm::ESInputTag(iConfig.getParameter<edm::ESInputTag>("ModuleInfo")));
+      moduleInfoToken_ = cc.consumes();
+      //moduleInfoToken_ = cc.consumes<HGCalCondSerializableModuleInfo,HGCalCondSerializableModuleInfoRcd>(edm::ESInputTag(iConfig.getParameter<edm::ESInputTag>("ModuleInfo")));
     }
-
-    // void beginRun(edm::Run const& iRun, const edm::EventSetup& iSetup) override {
-    //     input = iSetup.getData(tokenConds_);
-    //     moduleInfo = iSetup.getData(moduleInfoToken_);
-    // }
 
     static void fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
       edm::ParameterSetDescription desc;
-      desc.add<std::string>("pedestal_label", "");
+      desc.add<std::string>("filename", {});
       desc.add<edm::ESInputTag>("ModuleInfo",edm::ESInputTag(""));
       descriptions.addWithDefaultLabel(desc);
     }
 
-    std::optional<hgcalrechit::HGCalCalibParamHostCollection> produce(HGCalCondSerializablePedestalsRcd const& iRecord) {
+    std::optional<hgcalrechit::HGCalCalibParamHostCollection> produce(HGCalCondSerializableModuleInfoRcd const& iRecord) {
+      auto const& moduleInfo = iRecord.get(moduleInfoToken_);
 
+      // load config
       std::tuple<uint16_t,uint8_t,uint8_t,uint8_t> denseIdxMax = moduleInfo.getMaxValuesForDenseIndex();    
 
       HGCalCalibrationParameterProviderConfig ccp; // config_calib_provider
@@ -63,25 +70,34 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       product.view().config() = ccp;
 
-      for(auto it : input.params_) {
-        HGCalElectronicsId id(it.first);
-        HGCalFloatPedestals table = input.getFloatPedestals(it.second);
+      // load calib parameters
+      edm::FileInPath fip(filename_);
+      std::ifstream file(fip.fullPath());
+      std::string line;
+      uint32_t id;
+      float ped,cm_slope,cm_off,kappa_bxm1;
+      while(std::getline(file, line)) {
+        if(line.find("Channel")!=std::string::npos || line.find("#")!=std::string::npos) continue;
 
-        uint32_t idx = ccp.denseMap(id.raw()); 
-        product.view()[idx].pedestal()   = table.pedestal;
-        product.view()[idx].CM_slope()   = table.cm_slope;
-        product.view()[idx].CM_offset()  = table.cm_offset;
-        product.view()[idx].BXm1_kappa() = table.kappa_bxm1;
+        std::istringstream stream(line);
+        stream >> id >> ped >> cm_slope >> cm_off >> kappa_bxm1;
+
+        //reduce to half-point float and fill the pedestals of this channel
+        uint32_t idx = ccp.denseMap(id); // convert electronicsId to idx from denseMap 
+        product.view()[idx].pedestal()   = MiniFloatConverter::float32to16(ped);
+        product.view()[idx].CM_slope()   = MiniFloatConverter::float32to16(cm_slope);
+        product.view()[idx].CM_offset()  = MiniFloatConverter::float32to16(cm_off);
+        product.view()[idx].BXm1_kappa() = MiniFloatConverter::float32to16(kappa_bxm1);
       }
 
       return product;
-    }
+    } // end of produce()
 
   private:
-    edm::ESGetToken<HGCalCondSerializablePedestals, HGCalCondSerializablePedestalsRcd> tokenConds_;
     edm::ESGetToken<HGCalCondSerializableModuleInfo, HGCalCondSerializableModuleInfoRcd> moduleInfoToken_;
-    HGCalCondSerializablePedestals input;
     HGCalCondSerializableModuleInfo moduleInfo;
+
+    const std::string filename_;
   };
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
