@@ -1,5 +1,5 @@
-#ifndef RecoLocalCalo_HGCalRecAlgos_interface_HGCalCalibrationParameterSoA_h
-#define RecoLocalCalo_HGCalRecAlgos_interface_HGCalCalibrationParameterSoA_h
+#ifndef DataFormats_HGCalRecHit_interface_HGCalCalibrationParameterSoA_h
+#define DataFormats_HGCalRecHit_interface_HGCalCalibrationParameterSoA_h
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -24,4 +24,4 @@ namespace hgcalrechit {
   
 }  // namespace hgcalrechit
 
-#endif  // RecoLocalCalo_HGCalRecAlgos_interface_HGCalCalibrationParameterSoA_h
+#endif  // DataFormats_HGCalRecHit_interface_HGCalCalibrationParameterSoA_h

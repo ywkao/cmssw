@@ -14,4 +14,20 @@
   ]]>
   </read>
   <class name="edm::Wrapper<hgcalrechit::HGCalRecHitHostCollection>" splitLevel="0"/>
+
+  <class name="hgcalrechit::HGCalCalibParamSoA"/>
+  <class name="hgcalrechit::HGCalCalibParamSoA::View"/>
+  <class name="hgcalrechit::HGCalCalibParamHostCollection"/>
+  <read
+    sourceClass="hgcalrechit::HGCalCalibParamHostCollection"
+    targetClass="hgcalrechit::HGCalCalibParamHostCollection"
+    version="[1-]"
+    source="hgcalrechit::HGCalCalibParamSoA layout_;"
+    target="buffer_,layout_,view_"
+    embed="false">
+  <![CDATA[
+    hgcalrechit::HGCalCalibParamHostCollection::ROOTReadStreamer(newObj, onfile.layout_);
+  ]]>
+  </read>
+  <class name="edm::Wrapper<hgcalrechit::HGCalCalibParamHostCollection>" splitLevel="0"/>
 </lcgdict>

@@ -2,3 +2,5 @@
 #include "DataFormats/Common/interface/Wrapper.h"
 #include "DataFormats/HGCalRecHit/interface/HGCalRecHitSoA.h"
 #include "DataFormats/HGCalRecHit/interface/alpaka/HGCalRecHitDeviceCollection.h"
+#include "DataFormats/HGCalRecHit/interface/HGCalCalibrationParameterSoA.h"
+#include "DataFormats/HGCalRecHit/interface/alpaka/HGCalCalibrationParameterDeviceCollection.h"

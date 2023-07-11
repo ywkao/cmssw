@@ -1,9 +1,9 @@
-#ifndef RecoLocalCalo_HGCalRecAlgos_interface_alpaka_HGCalCalibrationParameterDeviceCollection_h
-#define RecoLocalCalo_HGCalRecAlgos_interface_alpaka_HGCalCalibrationParameterDeviceCollection_h
+#ifndef DataFormats_HGCalRecHit_interface_alpaka_HGCalCalibrationParameterDeviceCollection_h
+#define DataFormats_HGCalRecHit_interface_alpaka_HGCalCalibrationParameterDeviceCollection_h
 
 #include "DataFormats/Portable/interface/alpaka/PortableCollection.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
-#include "RecoLocalCalo/HGCalRecAlgos/interface/HGCalCalibrationParameterSoA.h"
+#include "DataFormats/HGCalRecHit/interface/HGCalCalibrationParameterSoA.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -20,4 +20,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-#endif  // RecoLocalCalo_HGCalRecAlgos_interface_alpaka_HGCalCalibrationParameterDeviceCollection_h
+#endif  // DataFormats_HGCalRecHit_interface_alpaka_HGCalCalibrationParameterDeviceCollection_h

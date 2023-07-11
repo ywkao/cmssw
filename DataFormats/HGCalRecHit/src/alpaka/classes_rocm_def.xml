@@ -2,4 +2,7 @@
   <class name="alpaka_rocm_async::hgcalrechit::HGCalRecHitDeviceCollection" persistent="false"/>
   <class name="edm::DeviceProduct<alpaka_rocm_async::hgcalrechit::HGCalRecHitDeviceCollection>" persistent="false"/>
   <class name="edm::Wrapper<edm::DeviceProduct<alpaka_rocm_async::hgcalrechit::HGCalRecHitDeviceCollection>>" persistent="false"/>
+  <class name="alpaka_rocm_async::hgcalrechit::HGCalCalibParamDeviceCollection" persistent="false"/>
+  <class name="edm::DeviceProduct<alpaka_rocm_async::hgcalrechit::HGCalCalibParamDeviceCollection>" persistent="false"/>
+  <class name="edm::Wrapper<edm::DeviceProduct<alpaka_rocm_async::hgcalrechit::HGCalCalibParamDeviceCollection>>" persistent="false"/>
 </lcgdict>
