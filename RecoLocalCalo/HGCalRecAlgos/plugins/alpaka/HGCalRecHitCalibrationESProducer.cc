@@ -19,13 +19,12 @@
 #include "CondFormats/DataRecord/interface/HGCalCondSerializableModuleInfoRcd.h"
 #include "CondFormats/HGCalObjects/interface/HGCalCondSerializableModuleInfo.h"
 
-#include "DataFormats/HGCalRecHit/interface/HGCalCalibrationParameterHostCollection.h"
-#include "DataFormats/HGCalRecHit/interface/alpaka/HGCalCalibrationParameterDeviceCollection.h"
 #include "DataFormats/Math/interface/libminifloat.h"
 
 #include "RecoLocalCalo/HGCalRecAlgos/interface/HGCalCalibrationParameterProvider.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/HGCalCalibrationParameterHostCollectionRcd.h"
-
+#include "RecoLocalCalo/HGCalRecAlgos/interface/HGCalCalibrationParameterHostCollection.h"
+#include "RecoLocalCalo/HGCalRecAlgos/interface/alpaka/HGCalCalibrationParameterDeviceCollection.h"
 
 #include <string>
 #include <iostream>
