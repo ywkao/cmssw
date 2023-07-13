@@ -46,7 +46,7 @@ options.register('configFile',
                  VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.string,
                  'config yaml file')
 options.register('pedestalFile',
-                 '/afs/cern.ch/work/y/ykao/public/raw_data_handling/calibration_parameters.txt',
+                 '/eos/cms/store/group/dpg_hgcal/comm_hgcal/ykao/calibration_parameters.txt',
                  VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.string,
                  'pedestal txt file')
 options.register('inputFiles',
@@ -56,22 +56,15 @@ options.register('inputFiles',
 options.register('GPU', False, VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int,
                  'run on GPU')
 options.register('runNumber', 1, VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int, 'run number')
-options.register('maxEventsPerLS', 1000, VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int, 'max. events per lumi section')
+options.register('maxEventsPerLS', 100000, VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int, 'max. events per lumi section')
 options.register('firstLS', 1, VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int, 'first lumi section')
 
-
-
-options.maxEvents = 100  # number of events to emulate
-options.output = 'output.root'  # output EDM file
-options.secondaryOutput = 'output.raw'  # output streamer file
 options.parseArguments()
 
-process.load('EventFilter.HGCalRawToDigi.hgcalEmulatedSlinkRawData_cfi')
-process.load('EventFilter.HGCalRawToDigi.hgcalDigis_cfi')
+#message logger
 process.load("FWCore.MessageService.MessageLogger_cfi")
-process.load('Configuration.StandardSequences.Accelerators_cff')
-process.load('HeterogeneousCore.AlpakaCore.ProcessAcceleratorAlpaka_cfi')
-if options.debug:
+process.MessageLogger.cerr.FwkReport.reportEvery = 50000
+if options.debug:    
     process.MessageLogger.cerr.threshold = "DEBUG"
     process.MessageLogger.debugModules = ["*"]
     process.MessageLogger.cerr.DEBUG = cms.untracked.PSet(
@@ -79,17 +72,22 @@ if options.debug:
     )
 
 
-process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(options.maxEvents))
 process.RandomNumberGeneratorService = cms.Service("RandomNumberGeneratorService",
     hgcalEmulatedSlinkRawData = cms.PSet(initialSeed = cms.untracked.uint32(42))
 )
 
+#source is empty source
 process.source = cms.Source("EmptySource",
                             numberEventsInRun = cms.untracked.uint32(options.maxEvents),
                             firstRun = cms.untracked.uint32(options.runNumber),
                             numberEventsInLuminosityBlock = cms.untracked.uint32(options.maxEventsPerLS),
                             firstLuminosityBlock = cms.untracked.uint32(options.firstLS) )
 
+#RAW 2 DIGI and UNPACKER
+process.load('EventFilter.HGCalRawToDigi.hgcalEmulatedSlinkRawData_cfi')
+process.load('EventFilter.HGCalRawToDigi.hgcalDigis_cfi')
+process.load('Configuration.StandardSequences.Accelerators_cff')
+process.load('HeterogeneousCore.AlpakaCore.ProcessAcceleratorAlpaka_cfi')
 # steer the emulator part
 process.hgcalEmulatedSlinkRawData.emulatorType = options.mode
 if process.hgcalEmulatedSlinkRawData.emulatorType == 'hgcmodule':
@@ -98,9 +96,6 @@ if process.hgcalEmulatedSlinkRawData.emulatorType == 'hgcmodule':
     process.hgcalEmulatedSlinkRawData.storeEmulatorInfo = bool(options.storeEmulatorInfo)
 elif process.hgcalEmulatedSlinkRawData.emulatorType == 'slinkfromraw':
     process.hgcalEmulatedSlinkRawData.inputs = cms.untracked.vstring(options.inputFiles)
-
-    
-print(process.hgcalEmulatedSlinkRawData.emulatorType)
 
 # steer the number of capture blocks
 if options.randomActiveCaptureBlocks:
@@ -154,10 +149,8 @@ process.hgcalDigis.econdHeaderMarker=cms.uint32(options.econdHeaderMarker)
 
     
 #
-# TESTERS
+# TRANSLATOR TO PHASE I COLLECTION
 #
-process.load('EventFilter.HGCalRawToDigi.hgCalSoATester_cfi')
-process.hgCalSoATester.Digis=cms.InputTag('hgcalDigis','DIGI')
 process.load('RecoLocalCalo.HGCalRecAlgos.hgCalRecHitsFromSoAproducer_cfi')
 
 #
@@ -196,62 +189,54 @@ else:
         n_threads = cms.int32(4096),
     )
 
-#
-# DQM
-#
-process.hgCalDigisClient = cms.EDProducer('HGCalDigisClient',
-                                          Digis = cms.InputTag('hgcalDigis', ''),
-                                          MetaData = cms.InputTag('hgcalEmulatedSlinkRawData','hgcalMetaData'),
-                                          ModuleMapping = cms.ESInputTag(''), )
-process.hgCalDigisClientHarvester = cms.EDProducer('HGCalDigisClientHarvester',
-                                                   ModuleMapping = process.hgCalDigisClient.ModuleMapping,
-                                                   HexTemplateFile = cms.string('/afs/cern.ch/work/y/ykao/public/raw_data_handling/hexagons_20230626.root'),
-                                                   Level0CalibOut = cms.string('level0_calib_params.txt'),)
-process.DQMStore = cms.Service("DQMStore")
-process.load("DQMServices.FileIO.DQMFileSaverOnline_cfi")
-process.dqmSaver.tag = 'HGCAL'
-process.dqmSaver.runNumber = options.runNumber
+#filter on empty events
+process.load('EventFilter.HGCalRawToDigi.hgCalEmptyEventFilter_cfi')
+process.hgCalEmptyEventFilter.src = process.hgcalDigis.src
+process.hgCalEmptyEventFilter.fedIds = process.hgcalDigis.fedIds
 
-#path
-process.p = cms.Path(process.hgcalEmulatedSlinkRawData * process.hgcalDigis                # RAW->DIGI
-                     * process.hgcalRecHit                                                 # DIGI->RECO
-                     #* process.hgCalDigisClient * process.hgCalDigisClientHarvester * process.dqmSaver # DQM
-                     #* process.hgCalSoATester * process.hgCalRecHitsFromSoAproducer        # TESTERS / Phase I TRANSLATORS
-)
+#main path
+process.p = cms.Path(process.hgcalEmulatedSlinkRawData*process.hgCalEmptyEventFilter #RAW GENERATION (filtered on empty)
+                     *process.hgcalDigis                                             #RAW->DIGI
+                     *process.hgcalRecHit                                            #DIGI->RECO
+                     *process.hgCalRecHitsFromSoAproducer                            #Phase I format translator (RecHits for NANO)                     
+                     )
 
 if options.dumpFRD:
     process.dump = cms.EDAnalyzer("DumpFEDRawDataProduct",
         label = cms.untracked.InputTag('hgcalEmulatedSlinkRawData','hgcalFEDRawData'),
         feds = cms.untracked.vint32(options.fedId),
-        dumpPayload = cms.untracked.bool(True)
+        dumpPaylo2ad = cms.untracked.bool(True)
     )
     process.p *= process.dump
 
-process.outpath = cms.EndPath()
 
+#output
+process.outpath = cms.EndPath()
 if options.storeOutput:
     process.output = cms.OutputModule("PoolOutputModule",
-        fileName = cms.untracked.string(options.output),
-        outputCommands = cms.untracked.vstring(
-            'drop *',
-            'keep *_hgcalEmulatedSlinkRawData_*_*',
-            'keep *_hgcalDigis_*_*',
-            'keep *_hgcalRecHit_*_*',
-            'keep *_hgCalRecHitsFromSoAproducer_*_*',
-        )
-    )
+                                      fileName = cms.untracked.string(options.output),
+                                      outputCommands = cms.untracked.vstring(
+                                          'drop *',
+                                          'keep *_hgcalEmulatedSlinkRawData_*_*',
+                                          'keep *_hgcalDigis_*_*',
+                                          'keep *_hgcalRecHit_*_*',
+                                          'keep *_hgCalRecHitsFromSoAproducer_*_*',
+                                      ),
+                                      SelectEvents = cms.untracked.PSet( SelectEvents = cms.vstring('p') )
+                                  )
     process.outpath += process.output
 
 if options.storeRAWOutput:
     process.outputRAW = cms.OutputModule("FRDOutputModule",
-        source = cms.InputTag('hgcalEmulatedSlinkRawData','hgcalFEDRawData'),
-        frdVersion = cms.untracked.uint32(6),
-        frdFileVersion = cms.untracked.uint32(1),
-        fileName = cms.untracked.string(options.secondaryOutput)
-    )
+                                         source = cms.InputTag('hgcalEmulatedSlinkRawData'),
+                                         frdVersion = cms.untracked.uint32(6),
+                                         frdFileVersion = cms.untracked.uint32(1),
+                                         fileName = cms.untracked.string(options.output.replace('.root','.raw')),
+                                         SelectEvents = cms.untracked.PSet( SelectEvents = cms.vstring('p') )
+                                     )
     process.outpath += process.outputRAW
 
-#add timing
+#add timing for FWK jobs report
 process.Timing = cms.Service("Timing",
                              summaryOnly = cms.untracked.bool(True),
                              useJobReport = cms.untracked.bool(True))

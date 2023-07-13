@@ -77,7 +77,6 @@ FEDRawDataCollection SlinkFromRaw::next() {
   assert(b!=nullptr);
   if(!b->validPattern())
     throw cms::Exception("[HGCalSlinkFromRaw::next]") << "SlinkBoe has invalid pattern";
-  uint32_t sourceId=b->sourceId();
   
   // Access the Slink trailer ("end-of-event")
   const hgcal_slinkfromraw::SlinkEoe *e(rEvent->slinkEoe());
@@ -95,19 +94,20 @@ FEDRawDataCollection SlinkFromRaw::next() {
   if(pEcond==nullptr)
     throw cms::Exception("[HGCalSlinkFromRaw::next]") << "Null pointer to ECON-D payload";
           
-  //copy to the event      
+  //get payload and its length
   auto *payload=record_->getPayload();
   auto payloadLength=record_->payloadLength()-2;
 
-  //this is a hack to store 32b as [MSB 32b | LSB 32b]
+  //FIXME: this is a hack for Paul's file which reverts the 
+  //ECOND pseudo-endianness wrt to capture block and s-link
+  //so we invert the first 3 64b word (s-link + capture block)
   //unclear how the final system will be
-  for(auto i=0; i<payloadLength; i++) {
-    std::cout << "0x" << std::hex << (payload[i]>>32) << "\t" << (payload[i] & 0xffffffff) << std::endl;
-    //    if(i!=3)
+  for(auto i=0; i<=2; i++) {
     payload[i]=((payload[i]&0xffffffff)<<32) | payload[i]>>32;
   }
+
+  //put in the event
   size_t total_event_size = payloadLength/sizeof(char);
-  std::cout << "Total event size in bytes is:" << total_event_size << " sourceId=" << sourceId << std::endl;
   auto& fed_data = raw_data.FEDData(1); //data for one FED
   fed_data.resize(total_event_size);
   auto* ptr = fed_data.data();
