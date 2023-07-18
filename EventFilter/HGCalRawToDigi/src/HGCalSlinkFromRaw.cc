@@ -96,18 +96,22 @@ FEDRawDataCollection SlinkFromRaw::next() {
           
   //get payload and its length
   auto *payload=record_->getPayload();
-  auto payloadLength=record_->payloadLength()-2;
+  auto payloadLength=record_->payloadLength();
 
-  //FIXME: this is a hack for Paul's file which reverts the 
+  //  for(auto i=0; i<=payloadLength; i++)
+  //    std::cout <<std::dec << i << "  " << std::hex << payload[i] << std::endl;
+  
+  //NOTE these were hacks for Paul's file which reverts the 
   //ECOND pseudo-endianness wrt to capture block and s-link
   //so we invert the first 3 64b word (s-link + capture block)
   //unclear how the final system will be
-  for(auto i=0; i<=2; i++) {
+  //payloadLength-=2;
+  for(auto i=0; i<payloadLength; i++) {
     payload[i]=((payload[i]&0xffffffff)<<32) | payload[i]>>32;
   }
 
-  //put in the event
-  size_t total_event_size = payloadLength/sizeof(char);
+  //put in the event (last word is a 0xdeadbeefdeadbeef which can be disregarded)
+  size_t total_event_size = (payloadLength-1)*sizeof(uint64_t)/sizeof(char);
   auto& fed_data = raw_data.FEDData(1); //data for one FED
   fed_data.resize(total_event_size);
   auto* ptr = fed_data.data();

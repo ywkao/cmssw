@@ -193,11 +193,14 @@ void HGCalDigisClient::analyze(const edm::Event& iEvent, const edm::EventSetup& 
       HGCalElectronicsId eleid(econd.eleid);
       MonitorKey_t k(eleid.zSide(), eleid.fedId(),eleid.captureBlock(), eleid.econdIdx());
       int ibin=modbins_[k];
-      if(econd.cbFlag()) p_econdquality->Fill(ibin,1);
-      if(econd.htFlag()) p_econdquality->Fill(ibin,2);
-      if(econd.eboFlag()) p_econdquality->Fill(ibin,3);
-      if(econd.matchFlag()) p_econdquality->Fill(ibin,4);
-      if(econd.truncatedFlag()) p_econdquality->Fill(ibin,5);
+      if(econd.cbFlag()) p_econdquality->Fill(ibin,0);
+      if(econd.htFlag()) p_econdquality->Fill(ibin,1);
+      if(econd.eboFlag()) p_econdquality->Fill(ibin,2);
+      if(econd.matchFlag()) p_econdquality->Fill(ibin,3);
+      if(econd.truncatedFlag()) p_econdquality->Fill(ibin,4);
+      if(econd.wrongHeaderMarker()) p_econdquality->Fill(ibin,5);
+      if(econd.payloadOverflows()) p_econdquality->Fill(ibin,6);
+      if(econd.payloadMismatches()) p_econdquality->Fill(ibin,7);
     }
   }
   
@@ -214,20 +217,23 @@ void HGCalDigisClient::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& 
 
   //book monitoring elements (histos, profiles, etc.)
   ibook.setCurrentFolder("HGCAL/Digis");
-  p_econdquality = ibook.book2D("p_econdquality", ";ECON-D;Quality flags",nmods,0.5,nmods+0.5,5,0.5,5.5);
+  p_econdquality = ibook.book2D("p_econdquality", ";ECON-D;Quality flags",nmods,0,nmods,8,0,8);
   p_econdquality->setBinLabel(1,"CB",2);
   p_econdquality->setBinLabel(2,"H/T",2);
   p_econdquality->setBinLabel(3,"E/B/O",2);
   p_econdquality->setBinLabel(4,"M",2);
   p_econdquality->setBinLabel(5,"Trunc",2);
+  p_econdquality->setBinLabel(6,"Marker",2);
+  p_econdquality->setBinLabel(7,"Payload (OF)",2);
+  p_econdquality->setBinLabel(8,"Payload (mismatch)",2);
 
   for(auto m : moduleInfo.params_) {
     
     TString tag=Form("%d_%d_%d_%d",m.zside,m.plane,m.u,m.v);
     MonitorKey_t k(m.zside,m.plane,m.u,m.v);
-    modbins_[k]=modbins_.size()+1;
+    modbins_[k]=modbins_.size();
     TString modlabel(tag);
-    p_econdquality->setBinLabel(modbins_[k],modlabel.ReplaceAll("_",",").Data(),1);
+    p_econdquality->setBinLabel(modbins_[k]+1,modlabel.ReplaceAll("_",",").Data(),1);
 
     int nch(39*6*(1+m.isHD));
     p_hitcount[k] = ibook.book1D("hitcount_"+tag,           ";Channel; #hits",   nch, 0, nch);
