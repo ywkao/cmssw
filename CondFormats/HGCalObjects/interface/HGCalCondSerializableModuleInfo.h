@@ -42,7 +42,12 @@ public:
   /**
      @short retrieve module info from electronics id information (ECON-D idx, Capture Block idx, FED ID)
   */
-  HGCalModuleInfo getModule(int ,int ,int ,bool) const;
+  HGCalModuleInfo getModule(int ,int ,int) const;
+
+  /**
+     @short retrieve module info from electronics id
+  */
+  HGCalModuleInfo getModule(HGCalElectronicsId& ) const;
 
   /**
      @short retrieve module info from geometry
@@ -52,7 +57,7 @@ public:
   /**
      @short Module location from electronics id information (plane,u,v,isSiPM)
   */
-  std::tuple<int,int,int,bool> getModuleLocation(int ,int ,int ,bool) const;
+  std::tuple<int,int,int,bool> getModuleLocation(int ,int ,int ) const;
   
   /**
      @short Module location from ElectronicsId (plane,u,v,isSiPM)
@@ -64,9 +69,14 @@ public:
   */
   std::tuple<int,int,int> getModuleElectronicsIdentifiers(int ,int ,int ,bool , bool ) const;
 
+   /*
+    @short retireve HGCalElectronicsId from geometry and channel ROC fields
+  */
+  HGCalElectronicsId getModuleElectronicsId(int ,int ,int ,bool , bool ,uint8_t ,uint8_t ) const;
+
   /**
      @short retrieves a map elecId <-> geomId
-     (zside,fedid,captureblock,econd) <-> (zside, plane, u, v)
+     (zside,slink,captureblock,econd) <-> (zside, plane, u, v)
      elecidAsKey - if false the geomId is used as the key
    */
   std::map<ModuleInfoKey_t,ModuleInfoKey_t> getAsSimplifiedModuleLocatorMap(bool elecAsKey=true) const;
@@ -77,9 +87,27 @@ public:
   std::tuple<uint16_t,uint16_t,uint16_t,uint16_t> getMaxValuesForDenseIndex() const;
 
   /**
+     @short returns s-link index for a fedid
+   */
+  std::map<uint16_t,uint16_t> getFedToSlinkMap() {
+    std::map<uint16_t,uint16_t> fed2slink;
+    for(auto m : params_) fed2slink[m.fedid]=m.slink;
+    return fed2slink;
+  }
+  
+  /**
      @short returns eRxBitPattern
    */
   ERxBitPatternMap getERxBitPattern() const;
+  
+  /**
+     @short computes the dense index for the erx bit pattern
+   */
+  static uint32_t erxBitPatternMapDenseIndex(uint16_t slink, uint16_t captureblock, uint16_t econdidx, uint16_t maxCB,uint16_t maxEcon){
+    uint32_t rtn=slink * maxCB + captureblock;
+    rtn = rtn * maxEcon + econdidx;
+    return rtn;
+  }
   
   //parameters to serialize
   std::vector<HGCalModuleInfo> params_;

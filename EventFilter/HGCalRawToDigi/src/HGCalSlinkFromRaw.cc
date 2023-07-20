@@ -1,6 +1,4 @@
 #include "EventFilter/HGCalRawToDigi/interface/HGCalSlinkFromRaw.h"
-#include "FWCore/MessageLogger/interface/MessageLogger.h"
-#include "FWCore/Utilities/interface/Exception.h"
 
 // example reader by P.Dauncey, using https://gitlab.cern.ch/pdauncey/hgcal10glinkreceiver
 
@@ -23,95 +21,104 @@ SlinkFromRaw::SlinkFromRaw(const edm::ParameterSet &iConfig) : SlinkEmulatorBase
 FEDRawDataCollection SlinkFromRaw::next() {
 
   FEDRawDataCollection raw_data;
-  
+
   //open for the first time
   if( fileReader_.closed() ) {
     auto inputfile = inputfiles_[ifile_];
-    fileReader_.open(inputfile);
+    fileReader_.open(inputfile);    
   }
 
-  //no more records in the file
-  if(!fileReader_.read(record_)) {
+  //no more records in the file, move to next
+  if(!nextRecord()) {
     ifile_++;
-
+  
     if(ifile_>=inputfiles_.size())
-      throw cms::Exception("SlinkFromRaw::next") << "No more files";
+      throw cms::Exception("[HGCalSlinkFromRaw::next]") << "no more files";
+   
     fileReader_.close();
     auto inputfile=inputfiles_[ifile_];
     fileReader_.open(inputfile);
-  }
 
-  edm::LogInfo("SlinkFromRaw: Reading record from file #") << ifile_ << "nevents=" << nEvents_ << "\n";
+    return next();      
+  }
   
-  // Set up specific records to interpet the formats
-  const hgcal_slinkfromraw::RecordStarting *rStart((hgcal_slinkfromraw::RecordStarting*)record_);
-  const hgcal_slinkfromraw::RecordStopping *rStop ((hgcal_slinkfromraw::RecordStopping*)record_);
-  const hgcal_slinkfromraw::RecordRunning  *rEvent((hgcal_slinkfromraw::RecordRunning*)record_);
-  if(record_->state()==hgcal_slinkfromraw::FsmState::Starting) {
-    rStart->print();
-    std::cout << std::endl;
-  } else if(record_->state()==hgcal_slinkfromraw::FsmState::Stopping) {
+  //if record is stop or starting read again
+  if(record_->state()==hgcal_slinkfromraw::FsmState::Stopping){
+    edm::LogInfo("SlinkFromRaw") << "RecordStopping will search for next";
+    const hgcal_slinkfromraw::RecordStopping *rStop((hgcal_slinkfromraw::RecordStopping*)record_);
     rStop->print();
-    std::cout << std::endl;
-  } else {
-                
-    // We have a new event
-    nEvents_++;
-    bool print(nEvents_<=1);
-    if(print) {
-      rEvent->print();
-      std::cout << std::endl;
-    }
-
-    // Check id is correct
-    if(!rEvent->valid()) rEvent->print();
-                
-    // Access the Slink header ("begin-of-event")
-    // This should always be present; check pattern is correct
-    const hgcal_slinkfromraw::SlinkBoe *b(rEvent->slinkBoe());
-    assert(b!=nullptr);
-    if(!b->validPattern()) b->print();
-    
-    // Access the Slink trailer ("end-of-event")
-    // This should always be present; check pattern is correct
-    const hgcal_slinkfromraw::SlinkEoe *e(rEvent->slinkEoe());
-    assert(e!=nullptr);
-    if(!e->validPattern()) e->print();
-                
-    // Access the BE packet header
-    const hgcal_slinkfromraw::BePacketHeader *bph(rEvent->bePacketHeader());
-    if(bph!=nullptr && print) bph->print();
-    
-    // Access ECON-D packet as an array of 32-bit words
-    const uint32_t *pEcond(rEvent->econdPayload());
-    
-    // Check this is not an empty event
-    if(pEcond!=nullptr) {
-                    
-      if(print) {
-        std::cout << "First 10 words of ECON-D packet" << std::endl;
-        std::cout << std::hex << std::setfill('0');
-        for(unsigned i(0);i<10;i++) {
-          std::cout << "0x" << std::setw(8) << pEcond[i] << std::endl;
-        }
-        std::cout << std::dec << std::setfill(' ');
-        std::cout << std::endl;
-      }
-
-      //record_->print();
-      
-      //copy to the event      
-      auto *payload=record_->getPayload();
-      auto payloadLength=record_->payloadLength()-2;
-      std::cout << payload << " " << payloadLength/sizeof(uint32_t) << std::endl;
-      size_t total_event_size = payloadLength/sizeof(char);
-      std::cout << "\t -> " << total_event_size << std::endl;
-      auto& fed_data = raw_data.FEDData(1);
-      fed_data.resize(total_event_size);
-      auto* ptr = fed_data.data();
-      memcpy(ptr, (char*)payload, total_event_size);
-    }
+    return next();
   }
+  if(record_->state()==hgcal_slinkfromraw::FsmState::Starting) {
+    edm::LogInfo("SlinkFromRaw") << "RecordStarting will search for next";
+    const hgcal_slinkfromraw::RecordStarting *rStart((hgcal_slinkfromraw::RecordStarting*)record_);
+    rStart->print();
+    return next();
+  }
+
+  //analyze event
+  edm::LogInfo("SlinkFromRaw: Reading record from file #") << ifile_ << "nevents=" << nEvents_ << "\n";
+  const hgcal_slinkfromraw::RecordRunning  *rEvent((hgcal_slinkfromraw::RecordRunning*)record_);
+  if(!rEvent->valid())
+    throw cms::Exception("[HGCalSlinkFromRaw::next]") << "record running is invalid";
+  nEvents_++;
+  bool print(nEvents_<=1);
+  if(print) {     
+    rEvent->print();
+  }
+
+  //FIXME: these have to be read from the TCDS block
+  metaData_.trigType_=0;
+  metaData_.trigTime_=0;
+  metaData_.trigWidth_=0;
+    
+  // Access the Slink header ("begin-of-event")
+  const hgcal_slinkfromraw::SlinkBoe *b(rEvent->slinkBoe());
+  assert(b!=nullptr);
+  if(!b->validPattern())
+    throw cms::Exception("[HGCalSlinkFromRaw::next]") << "SlinkBoe has invalid pattern";
+  
+  // Access the Slink trailer ("end-of-event")
+  const hgcal_slinkfromraw::SlinkEoe *e(rEvent->slinkEoe());
+  assert(e!=nullptr);
+  if(!e->validPattern())
+    throw cms::Exception("[HGCalSlinkFromRaw::next]") << "SlinkEoe has invalid pattern";
+  
+  // Access the BE packet header
+  const hgcal_slinkfromraw::BePacketHeader *bph(rEvent->bePacketHeader());
+  if(bph==nullptr)
+    throw cms::Exception("[HGCalSlinkFromRaw::next]") << "Null pointer to BE packet header";
+  
+  // Access ECON-D packet as an array of 32-bit words
+  const uint32_t *pEcond(rEvent->econdPayload());
+  if(pEcond==nullptr)
+    throw cms::Exception("[HGCalSlinkFromRaw::next]") << "Null pointer to ECON-D payload";
+          
+  //get payload and its length
+  auto *payload=record_->getPayload();
+  auto payloadLength=record_->payloadLength();
+
+  //  for(auto i=0; i<=payloadLength; i++)
+  //    std::cout <<std::dec << i << "  " << std::hex << payload[i] << std::endl;
+  
+  //NOTE these were hacks for Paul's file which reverts the 
+  //ECOND pseudo-endianness wrt to capture block and s-link
+  //so we invert the first 3 64b word (s-link + capture block)
+  //unclear how the final system will be
+  //payloadLength-=2;
+  for(auto i=0; i<payloadLength; i++) {
+    payload[i]=((payload[i]&0xffffffff)<<32) | payload[i]>>32;
+  }
+
+  //put in the event (last word is a 0xdeadbeefdeadbeef which can be disregarded)
+  size_t total_event_size = (payloadLength-1)*sizeof(uint64_t)/sizeof(char);
+  auto& fed_data = raw_data.FEDData(1); //data for one FED
+  fed_data.resize(total_event_size);
+  auto* ptr = fed_data.data();
+  memcpy(ptr, (char*)payload, total_event_size);
+  
 
   return raw_data;
 }
+  
+  

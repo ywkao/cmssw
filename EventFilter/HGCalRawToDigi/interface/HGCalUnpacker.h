@@ -13,15 +13,16 @@
 
 #include "DataFormats/HGCalDigi/interface/HGCROCChannelDataFrame.h"
 #include "DataFormats/HGCalDigi/interface/HGCalElectronicsId.h"
+#include "DataFormats/HGCalDigi/interface/HGCalFlaggedECONDInfo.h"
 
 #include <cstdint>
 #include <functional>
 #include <vector>
 
 struct HGCalUnpackerConfig {
-  uint32_t sLinkBOE{0x0};               ///< S-Link BOE pattern
-  uint32_t captureBlockReserved{0x3f};  ///< Capture block reserved pattern
-  uint32_t econdHeaderMarker{0x154};    ///< ECON-D header Marker pattern
+  uint32_t sLinkBOE{0x2a};              ///< S-Link BOE pattern
+  uint32_t cbHeaderMarker{0x5f};        ///< Capture block reserved pattern for a new event
+  uint32_t econdHeaderMarker{0x154};    ///< ECON-D header Marker pattern for a new event
   uint32_t sLinkCaptureBlockMax{10};    ///< maximum number of capture blocks in one S-Link
   uint32_t captureBlockECONDMax{12};    ///< maximum number of ECON-Ds in one capture block
   uint32_t econdERXMax{12};             ///< maximum number of eRxs in one ECON-D
@@ -29,6 +30,7 @@ struct HGCalUnpackerConfig {
   uint32_t payloadLengthMax{469};       ///< maximum length of payload length
   uint32_t channelMax{7000000};         ///< maximum number of channels unpacked
   uint32_t commonModeMax{4000000};      ///< maximum number of common modes unpacked
+  bool applyFWworkaround{false};        ///this flag is used to deal with some firmware features 
 };
 
 /// This class is designed to unpack raw data from HGCal, formatted as S-Links, capture blocks, and ECON-Ds, to HGCROC channel data.
@@ -43,10 +45,10 @@ public:
     kSLinkFEDIdMask = 0b1111111111,
   };
   enum CaptureBlockHeaderShift {
-    kCaptureBlockReservedShift = 26,
+    kCaptureBlockReservedShift = 25,
   };
   enum CaptureBlockMask {
-    kCaptureBlockReservedMask = 0b111111,
+    kCaptureBlockReservedMask = 0b1111111,
     kCaptureBlockECONDStatusMask = 0b111,
   };
   enum ECONDHeaderShift {
@@ -83,8 +85,10 @@ public:
   /// parse input in S-Link format
   /// \param[in] inputArray input as 32-bits words vector.
   /// \param[in] enabledERXMapping map from S-Link indices to enabled eRx in this ECON-D
+  /// \param[in] fed2slink mapping of fed ids to S-link indices
   void parseSLink(const std::vector<uint32_t>& inputArray,
-                  const std::function<uint16_t(uint16_t sLink, uint8_t captureBlock, uint8_t econd)>& enabledERXMapping);
+                  const std::function<uint16_t(uint16_t sLink, uint8_t captureBlock, uint8_t econd)>& enabledERXMapping,
+                  const std::function<uint16_t(uint16_t fedid)>& fed2slink);
   /// parse input in capture block format
   /// \param[in] inputArray input as 32-bits words vector.
   /// \param[in] enabledERXMapping map from capture block indices to enabled eRx in this ECON-D
@@ -103,8 +107,10 @@ public:
   const std::vector<uint16_t>& commonModeSum() const{ return commonModeSum_; }
   /// \return vector of HGCROCChannelDataFrame<ElecID>(ID, value) for common modes
   const std::vector<HGCROCChannelDataFrame<HGCalElectronicsId> >& commonModeData() const { return commonModeData_; }
-  /// \return vector of badECOND index in 32-bit array
-  const std::vector<uint32_t>& badECOND() const { return badECOND_; }
+
+
+  /// \return vector of flagged ECOND information
+  const HGCalFlaggedECONDInfoCollection& flaggedECOND() const { return flaggedECOND_; }
 
 private:
   const uint32_t erxBodyLeftShift_[16] = {2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -132,7 +138,8 @@ private:
   std::vector<HGCROCChannelDataFrame<HGCalElectronicsId> > channelData_;  ///< Array for unpacked channels
   std::vector<uint16_t> commonModeSum_;
   std::vector<HGCROCChannelDataFrame<HGCalElectronicsId> > commonModeData_;   ///< Array for unpacked common modes
-  std::vector<uint32_t> badECOND_;         ///< Array of indices of bad ECON-Ds
+  HGCalFlaggedECONDInfoCollection flaggedECOND_;         ///< Array with flagged ECON-D information
+
 };
 
 #endif

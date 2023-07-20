@@ -38,32 +38,34 @@ options.register('storeRAWOutput', False, VarParsing.VarParsing.multiplicity.sin
                  'also store the RAW output into a streamer file')
 options.register('storeEmulatorInfo', False, VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int,
                  'also store the emulator metadata')
+options.register('slinkBOE', 0x2a, VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int,'Begin of event marker for S-link')
+options.register('cbHeaderMarker', 0x5f, VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int,'Begin of event marker for BE/capture block')
+options.register('econdHeaderMarker', 0x154, VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int,'Begin of event marker for ECON-D')
+options.register('applyFWworkaround', False, VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.bool,'Patch unpacker behavior to deal with firmware known features')
 options.register('configFile',
                  '/eos/cms/store/group/dpg_hgcal/tb_hgcal/2023/calibration_module815/calib_withOct2022/80fC/80fC_inj_lowgain_loop_module815_beamtest/pedestal_run/run_20230412_160049/pedestal_run0.yaml',
                  VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.string,
                  'config yaml file')
-options.register('pedestalFile',
-                 '/afs/cern.ch/work/y/ykao/public/raw_data_handling/calibration_parameters.txt',
+options.register('conditions',
+                 'default',
                  VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.string,
-                 'pedestal txt file')
+                 'conditions tag')
 options.register('inputFiles',
-                 #'file:/eos/cms/store/group/dpg_hgcal/tb_hgcal/2023/calibration_module815/calib_withOct2022/160fC/160fC_inj_lowgain_loop_module815_beamtest/pedestal_run/run_20230412_141543/pedestal_run0.root',
                  'file:/eos/cms/store/group/dpg_hgcal/tb_hgcal/2023/labtest/module822/pedestal_run0.root',
                  VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.string,
                  'input TB file')
 options.register('GPU', False, VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int,
                  'run on GPU')
-options.maxEvents = 100  # number of events to emulate
-options.output = 'output.root'  # output EDM file
-options.secondaryOutput = 'output.raw'  # output streamer file
+options.register('runNumber', 1, VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int, 'run number')
+options.register('maxEventsPerLS', 100000, VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int, 'max. events per lumi section')
+options.register('firstLS', 1, VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int, 'first lumi section')
+
 options.parseArguments()
 
-process.load('EventFilter.HGCalRawToDigi.hgcalEmulatedSlinkRawData_cfi')
-process.load('EventFilter.HGCalRawToDigi.hgcalDigis_cfi')
+#message logger
 process.load("FWCore.MessageService.MessageLogger_cfi")
-process.load('Configuration.StandardSequences.Accelerators_cff')
-process.load('HeterogeneousCore.AlpakaCore.ProcessAcceleratorAlpaka_cfi')
-if options.debug:
+process.MessageLogger.cerr.FwkReport.reportEvery = 50000
+if options.debug:    
     process.MessageLogger.cerr.threshold = "DEBUG"
     process.MessageLogger.debugModules = ["*"]
     process.MessageLogger.cerr.DEBUG = cms.untracked.PSet(
@@ -71,27 +73,30 @@ if options.debug:
     )
 
 
-process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(options.maxEvents))
 process.RandomNumberGeneratorService = cms.Service("RandomNumberGeneratorService",
     hgcalEmulatedSlinkRawData = cms.PSet(initialSeed = cms.untracked.uint32(42))
 )
 
-#process.source = cms.Source("EmptySource")
-process.source = cms.Source('EmptyIOVSource',
-    timetype = cms.string('runnumber'),
-    firstValue = cms.uint64(1),
-    lastValue = cms.uint64(1),
-    interval = cms.uint64(1)
-)
+#source is empty source
+process.source = cms.Source("EmptySource",
+                            numberEventsInRun = cms.untracked.uint32(options.maxEvents),
+                            firstRun = cms.untracked.uint32(options.runNumber),
+                            numberEventsInLuminosityBlock = cms.untracked.uint32(options.maxEvents), #could use maxEventsPerLS),
+                            firstLuminosityBlock = cms.untracked.uint32(options.firstLS) )
 
-
+#RAW 2 DIGI and UNPACKER
+process.load('EventFilter.HGCalRawToDigi.hgcalEmulatedSlinkRawData_cfi')
+process.load('EventFilter.HGCalRawToDigi.hgcalDigis_cfi')
+process.load('Configuration.StandardSequences.Accelerators_cff')
+process.load('HeterogeneousCore.AlpakaCore.ProcessAcceleratorAlpaka_cfi')
 # steer the emulator part
 process.hgcalEmulatedSlinkRawData.emulatorType = options.mode
 if process.hgcalEmulatedSlinkRawData.emulatorType == 'hgcmodule':
     #process.hgcalEmulatedSlinkRawData.treeName = cms.untracked.string('unpacker_data/hgcroc')
     process.hgcalEmulatedSlinkRawData.inputs = cms.untracked.vstring(options.inputFiles)
-process.hgcalEmulatedSlinkRawData.storeEmulatorInfo = bool(options.storeEmulatorInfo)
-print(process.hgcalEmulatedSlinkRawData.emulatorType)
+    process.hgcalEmulatedSlinkRawData.storeEmulatorInfo = bool(options.storeEmulatorInfo)
+elif process.hgcalEmulatedSlinkRawData.emulatorType == 'slinkfromraw':
+    process.hgcalEmulatedSlinkRawData.inputs = cms.untracked.vstring(options.inputFiles)
 
 # steer the number of capture blocks
 if options.randomActiveCaptureBlocks:
@@ -136,15 +141,18 @@ process.hgcalDigis.numERxsInECOND = options.numERxsPerECOND
 process.hgcalDigis.captureBlockECONDMax = max(  # allows to mess with unconventional, high number of ECON-Ds per capture block
     process.hgcalDigis.captureBlockECONDMax,
     len([ec for ec in process.hgcalEmulatedSlinkRawData.slinkParams.ECONDs if ec.active]))
+
 process.hgcalDigis.config_label = cms.ESInputTag('') # for HGCalConfigESSourceFromYAML
 process.hgcalDigis.module_info_label = cms.ESInputTag('') # for HGCalModuleInfoESSource
-
+process.hgcalDigis.slinkBOE=cms.uint32(options.slinkBOE)
+process.hgcalDigis.cbHeaderMarker=cms.uint32(options.cbHeaderMarker)
+process.hgcalDigis.econdHeaderMarker=cms.uint32(options.econdHeaderMarker)
+process.hgcalDigis.applyFWworkaround=options.applyFWworkaround
+    
 #
-# TESTERS
+# TRANSLATOR TO PHASE I COLLECTION
 #
-process.load('EventFilter.HGCalRawToDigi.hgCalSoATester_cfi')
-process.hgCalSoATester.Digis=cms.InputTag('hgcalDigis','DIGI')
-process.load('RecoLocalCalo.HGCalRecAlgos.hgCalSoARecHitTester_cfi')
+process.load('RecoLocalCalo.HGCalRecAlgos.hgCalRecHitsFromSoAproducer_cfi')
 
 #
 # CONDITIONS AND CONFIGURATIONS
@@ -153,15 +161,14 @@ process.load('RecoLocalCalo.HGCalRecAlgos.hgCalSoARecHitTester_cfi')
 process.load('CalibCalorimetry.HGCalPlugins.hgCalConfigESSourceFromYAML_cfi') # read yaml config file(s)
 process.hgCalConfigESSourceFromYAML.filename = options.configFile
 
+# CONDITIONS
 # RecHit producer: pedestal txt file for DIGI -> RECO calibration
-process.load('CalibCalorimetry.HGCalPlugins.hgCalPedestalsESSource_cfi') # read txt pedestal file for calibration
-process.hgCalPedestalsESSource.filename = options.pedestalFile
-
 # Logical mapping
+process.load('CalibCalorimetry.HGCalPlugins.hgCalPedestalsESSource_cfi') 
 process.load('Geometry.HGCalMapping.hgCalModuleInfoESSource_cfi')
-process.hgCalModuleInfoESSource.filename = 'Geometry/HGCalMapping/data/modulelocator_tb.txt'
 process.load('Geometry.HGCalMapping.hgCalSiModuleInfoESSource_cfi')
-process.hgCalSiModuleInfoESSource.filename = 'Geometry/HGCalMapping/data/WaferCellMapTraces.txt'
+from DPGAnalysis.HGCalTools.tb2023_cfi import configTBConditions
+configTBConditions(process,options.conditions)
 
 if options.GPU:
     process.hgcalRecHit = cms.EDProducer(
@@ -182,24 +189,17 @@ else:
         n_threads = cms.int32(4096),
     )
 
-#
-# DQM
-#
-process.tbdqmedanalyzer = cms.EDProducer('HGCalDigisClient',
-                                         Digis = cms.InputTag('hgcalDigis','DIGI'),
-                                         MetaData = cms.InputTag('hgcalEmulatedSlinkRawData','hgcalMetaData'),
-                                         ModuleMapping = cms.string(''),)
+#filter on empty events
+process.load('EventFilter.HGCalRawToDigi.hgCalEmptyEventFilter_cfi')
+process.hgCalEmptyEventFilter.src = process.hgcalDigis.src
+process.hgCalEmptyEventFilter.fedIds = process.hgcalDigis.fedIds
 
-process.DQMStore = cms.Service("DQMStore")
-process.load("DQMServices.FileIO.DQMFileSaverOnline_cfi")
-process.dqmSaver.tag = 'HGCAL'
-process.dqmSaver.runNumber = 123480
-
-process.p = cms.Path(process.hgcalEmulatedSlinkRawData * process.hgcalDigis   #RAW->DIGI
-                     * process.hgcalRecHit                                    #DIGI->RECO
-                     * process.tbdqmedanalyzer * process.dqmSaver             #DQM
-                     * process.hgCalSoATester * process.hgCalSoARecHitTester  #TESTERS
-)
+#main path
+process.p = cms.Path(process.hgcalEmulatedSlinkRawData*process.hgCalEmptyEventFilter #RAW GENERATION (filtered on empty)
+                     *process.hgcalDigis                                             #RAW->DIGI
+                     *process.hgcalRecHit                                            #DIGI->RECO
+                     *process.hgCalRecHitsFromSoAproducer                            #Phase I format translator (RecHits for NANO)                     
+                     )
 
 if options.dumpFRD:
     process.dump = cms.EDAnalyzer("DumpFEDRawDataProduct",
@@ -209,25 +209,37 @@ if options.dumpFRD:
     )
     process.p *= process.dump
 
-process.outpath = cms.EndPath()
 
+#output
+process.outpath = cms.EndPath()
 if options.storeOutput:
     process.output = cms.OutputModule("PoolOutputModule",
-        fileName = cms.untracked.string(options.output),
-        outputCommands = cms.untracked.vstring(
-            'drop *',
-            'keep *_hgcalEmulatedSlinkRawData_*_*',
-            'keep *_hgcalDigis_*_*',
-            'keep *_hgcalRecHit_*_*',
-        )
-    )
+                                      fileName = cms.untracked.string(options.output),
+                                      outputCommands = cms.untracked.vstring(
+                                          'drop *',
+                                          'keep *_hgcalEmulatedSlinkRawData_*_*',
+                                          'keep *_hgcalDigis_*_*',
+                                          'keep *_hgcalRecHit_*_*',
+                                          'keep *_hgCalRecHitsFromSoAproducer_*_*',
+                                      ),
+                                      SelectEvents = cms.untracked.PSet( SelectEvents = cms.vstring('p') )
+                                  )
     process.outpath += process.output
 
 if options.storeRAWOutput:
     process.outputRAW = cms.OutputModule("FRDOutputModule",
-        source = cms.InputTag('hgcalEmulatedSlinkRawData'),
-        frdVersion = cms.untracked.uint32(6),
-        frdFileVersion = cms.untracked.uint32(1),
-        fileName = cms.untracked.string(options.secondaryOutput)
-    )
+                                         source = cms.InputTag('hgcalEmulatedSlinkRawData'),
+                                         frdVersion = cms.untracked.uint32(6),
+                                         frdFileVersion = cms.untracked.uint32(1),
+                                         fileName = cms.untracked.string(options.output.replace('.root','.raw')),
+                                         SelectEvents = cms.untracked.PSet( SelectEvents = cms.vstring('p') )
+                                     )
     process.outpath += process.outputRAW
+
+#add timing and mem (too slow) for FWK jobs report
+process.Timing = cms.Service("Timing",
+                             summaryOnly = cms.untracked.bool(True),
+                             useJobReport = cms.untracked.bool(True))
+#process.SimpleMemoryCheck = cms.Service("SimpleMemoryCheck",
+#                                        ignoreTotal = cms.untracked.int32(1),
+#                                        jobReportOutputOnly = cms.untracked.bool(True) )

@@ -23,33 +23,35 @@
 #include "DataFormats/FEDRawData/interface/FEDRawDataCollection.h"
 #include "DataFormats/FEDRawData/interface/FEDHeader.h"
 #include "DataFormats/FEDRawData/interface/FEDTrailer.h"
-
 #include "DataFormats/HGCalDigi/interface/HGCalRawDataEmulatorInfo.h"
 #include "EventFilter/HGCalRawToDigi/interface/HGCalFrameGenerator.h"
 #include "EventFilter/HGCalRawToDigi/interface/HGCalSlinkFromRaw.h"
 
+#include "CondFormats/DataRecord/interface/HGCalCondSerializableConfigRcd.h"
+#include "CondFormats/HGCalObjects/interface/HGCalCondSerializableConfig.h"
+
+
 class HGCalSlinkEmulator : public edm::stream::EDProducer<> {
 public:
   explicit HGCalSlinkEmulator(const edm::ParameterSet&);
-
   static void fillDescriptions(edm::ConfigurationDescriptions&);
-
 private:
+  void beginRun(edm::Run const&, edm::EventSetup const&) override;
   void produce(edm::Event&, const edm::EventSetup&) override;
-
+  FEDRawDataCollection produceWithoutSlink(edm::Event& iEvent, const edm::EventSetup& iSetup);
+  
   const unsigned int fed_id_;
-
   const bool store_emul_info_;
   const bool store_fed_header_trailer_;
   std::string emul_type_;
-  
   const edm::EDPutTokenT<FEDRawDataCollection> fedRawToken_;
   const edm::EDPutTokenT<HGCalTestSystemMetaData> metadataToken_;
-
   edm::Service<edm::RandomNumberGenerator> rng_;
   edm::EDPutTokenT<HGCalSlinkEmulatorInfo> fedEmulInfoToken_;
   hgcal::HGCalFrameGenerator frame_gen_;
   std::unique_ptr<hgcal::SlinkFromRaw> raw_reader_;
+  edm::ESGetToken<HGCalCondSerializableConfig,HGCalCondSerializableConfigRcd> configToken_;
+  HGCalModuleConfig moduleConfig_;
 };
 
 //
@@ -60,7 +62,10 @@ HGCalSlinkEmulator::HGCalSlinkEmulator(const edm::ParameterSet& iConfig)
       emul_type_(iConfig.getParameter<std::string>("emulatorType")),
       fedRawToken_(produces<FEDRawDataCollection>("hgcalFEDRawData")),
       metadataToken_(produces<HGCalTestSystemMetaData>("hgcalMetaData")),
-      frame_gen_(iConfig) {
+      frame_gen_(iConfig),
+      configToken_(esConsumes<HGCalCondSerializableConfig,HGCalCondSerializableConfigRcd,edm::Transition::BeginRun>(
+                     iConfig.getParameter<edm::ESInputTag>("ModuleConfig")))
+{
   
   if (emul_type_=="slinkfromraw") {
     raw_reader_ = std::make_unique<hgcal::SlinkFromRaw>(iConfig);
@@ -82,19 +87,47 @@ HGCalSlinkEmulator::HGCalSlinkEmulator(const edm::ParameterSet& iConfig)
 }
 
 //
-void HGCalSlinkEmulator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-                                                                                     
-  //raw s-link can be put directly to the event
-  if(emul_type_=="slinkfromraw") {
-    FEDRawDataCollection raw_data = raw_reader_->next();
-    iEvent.emplace(fedRawToken_, std::move(raw_data));
-    return;
-  }
+void HGCalSlinkEmulator::beginRun(edm::Run const& iRun, edm::EventSetup const& iSetup){
+  auto conds = iSetup.getData(configToken_);
+  moduleConfig_ = conds.moduleConfigs[0];
+}
 
-  //add metadata
-  auto metadata = frame_gen_.produceMetaData();
-  iEvent.emplace(metadataToken_, std::move(metadata));
+
+//
+void HGCalSlinkEmulator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
+
+  //produce raw / meta data
+  FEDRawDataCollection raw_data;
+  HGCalTestSystemMetaData meta_data;
+
+  // try{
+  if(emul_type_=="slinkfromraw") {
+    raw_data = raw_reader_->next();
+    meta_data = raw_reader_->nextMetaData();
+  } else {
+    raw_data = produceWithoutSlink(iEvent,iSetup);
+    meta_data = frame_gen_.produceMetaData();
+    
+    // store the emulation information for events without real s-link, if requested
+    if (store_emul_info_)
+      iEvent.emplace(fedEmulInfoToken_, frame_gen_.lastSlinkEmulatedInfo());
+    
+  }
+  // } catch(cms::Exception &e){
+  //  LogDebug("HGCalSlinkEmulator::produce") << e.what();
+  // }
+
+  meta_data.injgain_ = moduleConfig_.injgain;
+  meta_data.injcalib_ = moduleConfig_.injcalib;
   
+  iEvent.emplace(fedRawToken_, std::move(raw_data));
+  iEvent.emplace(metadataToken_, std::move(meta_data));
+}
+
+
+//
+FEDRawDataCollection HGCalSlinkEmulator::produceWithoutSlink(edm::Event& iEvent, const edm::EventSetup& iSetup) {
+
   //otherwise generate a new frame
   frame_gen_.setRandomEngine(rng_->getEngine(iEvent.streamID()));
 
@@ -148,12 +181,9 @@ void HGCalSlinkEmulator::produce(edm::Event& iEvent, const edm::EventSetup& iSet
     ptr += FEDTrailer::length;
   }
 
-  iEvent.emplace(fedRawToken_, std::move(raw_data));
-
-  // store the emulation information if requested
-  if (store_emul_info_)
-    iEvent.emplace(fedEmulInfoToken_, frame_gen_.lastSlinkEmulatedInfo());
+  return raw_data;
 }
+
 
 //
 void HGCalSlinkEmulator::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
@@ -172,6 +202,7 @@ void HGCalSlinkEmulator::fillDescriptions(edm::ConfigurationDescriptions& descri
   desc.add<bool>("fedHeaderTrailer", false)->setComment("also add FED header/trailer info");
   desc.add<bool>("storeEmulatorInfo", false)
       ->setComment("also append a 'truth' auxiliary info to the output event content");
+  desc.add<edm::ESInputTag>("ModuleConfig", edm::ESInputTag(""))->setComment("label for HGCalConfigESSourceFromYAML reader");
   descriptions.add("hgcalEmulatedSlinkRawData", desc);
 }
 
