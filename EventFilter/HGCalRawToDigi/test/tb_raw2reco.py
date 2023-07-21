@@ -167,7 +167,7 @@ process.hgCalConfigESSourceFromYAML.filename = options.configFile
 process.load('CalibCalorimetry.HGCalPlugins.hgCalPedestalsESSource_cfi') 
 process.load('Geometry.HGCalMapping.hgCalModuleInfoESSource_cfi')
 process.load('Geometry.HGCalMapping.hgCalSiModuleInfoESSource_cfi')
-from DPGAnalysis.HGCalTools.tb2023_cfi import configTBConditions
+from DPGAnalysis.HGCalTools.tb2023_cfi import configTBConditions,addPerformanceReports
 configTBConditions(process,options.conditions)
 
 if options.GPU:
@@ -236,10 +236,4 @@ if options.storeRAWOutput:
                                      )
     process.outpath += process.outputRAW
 
-#add timing and mem (too slow) for FWK jobs report
-process.Timing = cms.Service("Timing",
-                             summaryOnly = cms.untracked.bool(True),
-                             useJobReport = cms.untracked.bool(True))
-#process.SimpleMemoryCheck = cms.Service("SimpleMemoryCheck",
-#                                        ignoreTotal = cms.untracked.int32(1),
-#                                        jobReportOutputOnly = cms.untracked.bool(True) )
+addPerformanceReports(process)
