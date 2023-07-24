@@ -6,7 +6,7 @@
 
 // HGCal digis data formats
 #include "DataFormats/HGCalDigi/interface/HGCalElectronicsId.h"
-#include "DataFormats/HGCalDigi/interface/HGCROCChannelDataFrame.h"
+//#include "DataFormats/HGCalDigi/interface/HGCROCChannelDataFrame.h"
 
 // Host and devide HGCal RecHit data formats
 #include "DataFormats/HGCalDigi/interface/HGCalDigiHostCollection.h"

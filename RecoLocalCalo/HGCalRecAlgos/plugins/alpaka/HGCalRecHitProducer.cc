@@ -8,9 +8,11 @@
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "FWCore/Utilities/interface/StreamID.h"
-#include "HeterogeneousCore/AlpakaCore/interface/alpaka/EDPutToken.h"
-#include "HeterogeneousCore/AlpakaCore/interface/alpaka/Event.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/stream/EDProducer.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/EDPutToken.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/ESGetToken.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/Event.h"
+#include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/CopyToDevice.h"
 #include "RecoLocalCalo/HGCalRecAlgos/plugins/alpaka/HGCalRecHitCalibrationAlgorithms.h"
 
@@ -23,6 +25,9 @@
 #include "CondFormats/DataRecord/interface/HGCalCondSerializableConfigRcd.h"
 #include "CondFormats/HGCalObjects/interface/HGCalCondSerializableConfig.h"
 
+#include "RecoLocalCalo/HGCalRecAlgos/interface/HGCalCalibrationParameterESRecord.h"
+#include "RecoLocalCalo/HGCalRecAlgos/interface/HGCalCalibrationParameterHostCollection.h"
+
 // // include for save calibration parameter
 // #include "RecoLocalCalo/HGCalRecAlgos/interface/HGCalCalibrationParameterProvider.h"
 
@@ -32,7 +37,6 @@
 
 // include for debug info
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
-
 
 #include <future>
 
@@ -62,10 +66,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     void produce(device::Event&, device::EventSetup const&) override;
     void beginRun(edm::Run const&, edm::EventSetup const&) override;
     // edm::ESWatcher<HGCalCondSerializablePedestalsRcd> cfgWatcher_;
-    edm::ESGetToken<HGCalCondSerializablePedestals, HGCalCondSerializablePedestalsRcd> tokenConds_;
-    edm::ESGetToken<HGCalCondSerializableModuleInfo, HGCalCondSerializableModuleInfoRcd> moduleInfoToken_;
-
+    // edm::ESGetToken<HGCalCondSerializablePedestals, HGCalCondSerializablePedestalsRcd> tokenConds_;
     const edm::EDGetTokenT<hgcaldigi::HGCalDigiHostCollection> digisToken_;
+    device::ESGetToken<hgcalrechit::HGCalCalibParamHostCollection, HGCalCalibrationParameterESRecord> esToken_;
+    edm::ESGetToken<HGCalCondSerializableModuleInfo, HGCalCondSerializableModuleInfoRcd> moduleInfoToken_;
     const device::EDPutToken<hgcalrechit::HGCalRecHitDeviceCollection> recHitsToken_;
     HGCalRecHitCalibrationAlgorithms calibrator_;  // cannot be "const" because the calibrate() method is not const
     // HGCalCalibrationParameterProvider calibrationParameterProvider_;
@@ -73,18 +77,21 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   };
 
   HGCalRecHitProducer::HGCalRecHitProducer(const edm::ParameterSet& iConfig)
-      : tokenConds_(esConsumes<HGCalCondSerializablePedestals, HGCalCondSerializablePedestalsRcd>(
-          edm::ESInputTag(iConfig.getParameter<std::string>("pedestal_label")))),
+      : //tokenConds_(esConsumes<HGCalCondSerializablePedestals, HGCalCondSerializablePedestalsRcd>(
+        //  edm::ESInputTag(iConfig.getParameter<std::string>("pedestal_label")))),
+        digisToken_{consumes<hgcaldigi::HGCalDigiHostCollection>(iConfig.getParameter<edm::InputTag>("digis"))},
+        //esToken_{esConsumes<hgcalrechit::HGCalCalibParamHostCollection, HGCalCalibrationParameterESRecord>(iConfig.getParameter<edm::ESInputTag>("eventSetupSource"))},
         moduleInfoToken_(esConsumes<HGCalCondSerializableModuleInfo,HGCalCondSerializableModuleInfoRcd,edm::Transition::BeginRun>(
           iConfig.getParameter<edm::ESInputTag>("ModuleInfo"))),
-        digisToken_{consumes<hgcaldigi::HGCalDigiHostCollection>(iConfig.getParameter<edm::InputTag>("digis"))},
         recHitsToken_{produces()},
         calibrator_{HGCalRecHitCalibrationAlgorithms(
           iConfig.getParameter<int>("n_blocks"),
           iConfig.getParameter<int>("n_threads"))},
         // calibrationParameterProvider_(),
         n_hits_scale{iConfig.getParameter<int>("n_hits_scale")}
-    {}
+    {
+      esToken_ = esConsumes(iConfig.getParameter<edm::ESInputTag>("eventSetupSource"));
+    }
     
   void HGCalRecHitProducer::beginRun(edm::Run const& iRun, edm::EventSetup const& iSetup){
     // auto moduleInfo = iSetup.getData(moduleInfoToken_);
@@ -107,6 +114,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     int oldSize = hostDigisIn.view().metadata().size();
     int newSize = oldSize * n_hits_scale;
     auto hostDigis = HGCalDigiHostCollection(newSize, queue);
+
+    [[maybe_unused]] auto const& esData = iSetup.getData(esToken_);
 
     // // Check if there are new conditions and read them
     // if (cfgWatcher_.check(iSetup)){
@@ -164,10 +173,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   void HGCalRecHitProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
     edm::ParameterSetDescription desc;
     desc.add<edm::InputTag>("digis", edm::InputTag("hgcalDigis", "DIGI", "TEST"));
+    desc.add("eventSetupSource", edm::ESInputTag{});
     desc.add<int>("n_blocks", -1);
     desc.add<int>("n_threads", -1);
     desc.add<int>("n_hits_scale", -1);
-    desc.add<std::string>("pedestal_label", "");
+    // desc.add<std::string>("pedestal_label", "");
     desc.add<edm::ESInputTag>("ModuleInfo",edm::ESInputTag(""));
     descriptions.addWithDefaultLabel(desc);
   }
