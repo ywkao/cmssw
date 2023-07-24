@@ -164,21 +164,21 @@ process.load('CalibCalorimetry.HGCalPlugins.hgCalPedestalsESSource_cfi') # read 
 process.hgCalPedestalsESSource.filename = options.pedestalFile
 
 # Logical mapping
+process.hgcalCalibrationParameterESRecord = cms.ESSource('EmptyESSource',
+    recordName = cms.string('HGCalCondSerializableModuleInfoRcd'),
+    iovIsRunNotTime = cms.bool(True),
+    firstValid = cms.vuint32(1)
+)
+
 process.load('Geometry.HGCalMapping.hgCalModuleInfoESSource_cfi')
 process.hgCalModuleInfoESSource.filename = 'Geometry/HGCalMapping/data/modulelocator_tb.txt'
 process.load('Geometry.HGCalMapping.hgCalSiModuleInfoESSource_cfi')
 process.hgCalSiModuleInfoESSource.filename = 'Geometry/HGCalMapping/data/WaferCellMapTraces.txt'
 
 # Alpaka ESProducer
-process.load("HeterogeneousCore.CUDACore.ProcessAcceleratorCUDA_cfi")
+process.load('HeterogeneousCore.CUDACore.ProcessAcceleratorCUDA_cfi')
 
-process.hgcalCalibrationParameterESRecord = cms.ESSource("EmptyESSource",
-    recordName = cms.string('HGCalCalibrationParameterESRecord'),
-    iovIsRunNotTime = cms.bool(True),
-    firstValid = cms.vuint32(1)
-)
-
-process.hgcalCalibrationESProducer = cms.ESProducer("HGCalRecHitCalibrationESProducer@alpaka",
+process.hgcalCalibrationESProducer = cms.ESProducer('HGCalRecHitCalibrationESProducer@alpaka',
     filename = cms.string(options.pedestalFile),
     ModuleInfo = cms.ESInputTag('')
 )
@@ -187,9 +187,8 @@ if options.GPU:
     process.hgcalRecHit = cms.EDProducer(
         'alpaka_cuda_async::HGCalRecHitProducer',
         digis = cms.InputTag('hgcalDigis', '', 'TEST'),
-        eventSetupSource = cms.ESInputTag("hgcalCalibrationESProducer", ""),
+        eventSetupSource = cms.ESInputTag('hgcalCalibrationESProducer', ''),
         n_hits_scale = cms.int32(1),
-        # pedestal_label = cms.string(''), # for HGCalPedestalsESSource
         n_blocks = cms.int32(4096),
         n_threads = cms.int32(1024),
     )
@@ -197,9 +196,8 @@ else:
     process.hgcalRecHit = cms.EDProducer(
         'alpaka_serial_sync::HGCalRecHitProducer',
         digis = cms.InputTag('hgcalDigis', '', 'TEST'),
-        eventSetupSource = cms.ESInputTag("hgcalCalibrationESProducer", ""),
+        eventSetupSource = cms.ESInputTag('hgcalCalibrationESProducer', ''),
         n_hits_scale = cms.int32(1),
-        # pedestal_label = cms.string(''), # for HGCalPedestalsESSource
         n_blocks = cms.int32(1024),
         n_threads = cms.int32(4096),
     )

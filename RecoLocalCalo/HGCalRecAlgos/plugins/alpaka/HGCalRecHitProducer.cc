@@ -68,8 +68,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // edm::ESWatcher<HGCalCondSerializablePedestalsRcd> cfgWatcher_;
     // edm::ESGetToken<HGCalCondSerializablePedestals, HGCalCondSerializablePedestalsRcd> tokenConds_;
     const edm::EDGetTokenT<hgcaldigi::HGCalDigiHostCollection> digisToken_;
-    device::ESGetToken<hgcalrechit::HGCalCalibParamHostCollection, HGCalCalibrationParameterESRecord> esToken_;
-    edm::ESGetToken<HGCalCondSerializableModuleInfo, HGCalCondSerializableModuleInfoRcd> moduleInfoToken_;
+    //device::ESGetToken<hgcalrechit::HGCalCalibParamHostCollection, HGCalCalibrationParameterESRecord> esToken_;
+    device::ESGetToken<hgcalrechit::HGCalCalibParamHostCollection, HGCalCondSerializableModuleInfoRcd> esToken_;
+    // edm::ESGetToken<HGCalCondSerializableModuleInfo, HGCalCondSerializableModuleInfoRcd> moduleInfoToken_;
     const device::EDPutToken<hgcalrechit::HGCalRecHitDeviceCollection> recHitsToken_;
     HGCalRecHitCalibrationAlgorithms calibrator_;  // cannot be "const" because the calibrate() method is not const
     // HGCalCalibrationParameterProvider calibrationParameterProvider_;
@@ -81,8 +82,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         //  edm::ESInputTag(iConfig.getParameter<std::string>("pedestal_label")))),
         digisToken_{consumes<hgcaldigi::HGCalDigiHostCollection>(iConfig.getParameter<edm::InputTag>("digis"))},
         //esToken_{esConsumes<hgcalrechit::HGCalCalibParamHostCollection, HGCalCalibrationParameterESRecord>(iConfig.getParameter<edm::ESInputTag>("eventSetupSource"))},
-        moduleInfoToken_(esConsumes<HGCalCondSerializableModuleInfo,HGCalCondSerializableModuleInfoRcd,edm::Transition::BeginRun>(
-          iConfig.getParameter<edm::ESInputTag>("ModuleInfo"))),
+        // moduleInfoToken_(esConsumes<HGCalCondSerializableModuleInfo,HGCalCondSerializableModuleInfoRcd,edm::Transition::BeginRun>(
+        //   iConfig.getParameter<edm::ESInputTag>("ModuleInfo"))),
         recHitsToken_{produces()},
         calibrator_{HGCalRecHitCalibrationAlgorithms(
           iConfig.getParameter<int>("n_blocks"),
