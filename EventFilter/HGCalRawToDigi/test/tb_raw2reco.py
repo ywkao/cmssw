@@ -184,8 +184,7 @@ process.hgcalCalibrationESProducer = cms.ESProducer('HGCalRecHitCalibrationESPro
 )
 
 if options.GPU:
-    process.hgcalRecHit = cms.EDProducer(
-        'alpaka_cuda_async::HGCalRecHitProducer',
+    process.hgcalRecHit = cms.EDProducer( 'alpaka_cuda_async::HGCalRecHitProducer',
         digis = cms.InputTag('hgcalDigis', '', 'TEST'),
         eventSetupSource = cms.ESInputTag('hgcalCalibrationESProducer', ''),
         n_hits_scale = cms.int32(1),
@@ -193,8 +192,7 @@ if options.GPU:
         n_threads = cms.int32(1024),
     )
 else:
-    process.hgcalRecHit = cms.EDProducer(
-        'alpaka_serial_sync::HGCalRecHitProducer',
+    process.hgcalRecHit = cms.EDProducer( 'alpaka_serial_sync::HGCalRecHitProducer',
         digis = cms.InputTag('hgcalDigis', '', 'TEST'),
         eventSetupSource = cms.ESInputTag('hgcalCalibrationESProducer', ''),
         n_hits_scale = cms.int32(1),

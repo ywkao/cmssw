@@ -65,30 +65,19 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     void produce(device::Event&, device::EventSetup const&) override;
     void beginRun(edm::Run const&, edm::EventSetup const&) override;
-    // edm::ESWatcher<HGCalCondSerializablePedestalsRcd> cfgWatcher_;
-    // edm::ESGetToken<HGCalCondSerializablePedestals, HGCalCondSerializablePedestalsRcd> tokenConds_;
     const edm::EDGetTokenT<hgcaldigi::HGCalDigiHostCollection> digisToken_;
-    //device::ESGetToken<hgcalrechit::HGCalCalibParamHostCollection, HGCalCalibrationParameterESRecord> esToken_;
     device::ESGetToken<hgcalrechit::HGCalCalibParamHostCollection, HGCalCondSerializableModuleInfoRcd> esToken_;
-    // edm::ESGetToken<HGCalCondSerializableModuleInfo, HGCalCondSerializableModuleInfoRcd> moduleInfoToken_;
     const device::EDPutToken<hgcalrechit::HGCalRecHitDeviceCollection> recHitsToken_;
     HGCalRecHitCalibrationAlgorithms calibrator_;  // cannot be "const" because the calibrate() method is not const
-    // HGCalCalibrationParameterProvider calibrationParameterProvider_;
     int n_hits_scale;
   };
 
   HGCalRecHitProducer::HGCalRecHitProducer(const edm::ParameterSet& iConfig)
-      : //tokenConds_(esConsumes<HGCalCondSerializablePedestals, HGCalCondSerializablePedestalsRcd>(
-        //  edm::ESInputTag(iConfig.getParameter<std::string>("pedestal_label")))),
-        digisToken_{consumes<hgcaldigi::HGCalDigiHostCollection>(iConfig.getParameter<edm::InputTag>("digis"))},
-        //esToken_{esConsumes<hgcalrechit::HGCalCalibParamHostCollection, HGCalCalibrationParameterESRecord>(iConfig.getParameter<edm::ESInputTag>("eventSetupSource"))},
-        // moduleInfoToken_(esConsumes<HGCalCondSerializableModuleInfo,HGCalCondSerializableModuleInfoRcd,edm::Transition::BeginRun>(
-        //   iConfig.getParameter<edm::ESInputTag>("ModuleInfo"))),
+      : digisToken_{consumes<hgcaldigi::HGCalDigiHostCollection>(iConfig.getParameter<edm::InputTag>("digis"))},
         recHitsToken_{produces()},
         calibrator_{HGCalRecHitCalibrationAlgorithms(
           iConfig.getParameter<int>("n_blocks"),
           iConfig.getParameter<int>("n_threads"))},
-        // calibrationParameterProvider_(),
         n_hits_scale{iConfig.getParameter<int>("n_hits_scale")}
     {
       esToken_ = esConsumes(iConfig.getParameter<edm::ESInputTag>("eventSetupSource"));
@@ -178,8 +167,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     desc.add<int>("n_blocks", -1);
     desc.add<int>("n_threads", -1);
     desc.add<int>("n_hits_scale", -1);
-    // desc.add<std::string>("pedestal_label", "");
-    desc.add<edm::ESInputTag>("ModuleInfo",edm::ESInputTag(""));
     descriptions.addWithDefaultLabel(desc);
   }
 
