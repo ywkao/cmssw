@@ -36,6 +36,20 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
   };
 
+  // struct HGCalRecHitCalibrationKernel_pedestalCorrection {
+  //   template <typename TAcc>
+  //   ALPAKA_FN_ACC void operator()(TAcc const& acc, HGCalDigiDeviceCollection::View digis, HGCalCalibParamDeviceCollection::View calib) const {
+  //     auto const& config_calib_param = calib.config();
+  //     for (auto index : elements_with_stride(acc, digis.metadata().size())) {
+  //       if ((digis[index].flags() >> kPedestalCorrection) & 1){
+  //         uint32_t idx = config_calib_param.denseMap(digis[index].electronicsId());
+  //         float pedestalValue = calib[idx].pedestal();
+  //         digis[index].adc() -= pedestalValue;
+  //       }
+  //     }
+  //   }
+  // };
+
   struct HGCalRecHitCalibrationKernel_pedestalCorrection {
     template <typename TAcc>
     ALPAKA_FN_ACC void operator()(TAcc const& acc, HGCalDigiDeviceCollection::View digis, float pedestalValue) const {
@@ -82,7 +96,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     calibParams = newCalibParams;
   }
 
-  std::unique_ptr<HGCalRecHitDeviceCollection> HGCalRecHitCalibrationAlgorithms::calibrate(Queue& queue, HGCalDigiHostCollection const& host_digis) {
+  std::unique_ptr<HGCalRecHitDeviceCollection> HGCalRecHitCalibrationAlgorithms::calibrate(Queue& queue, HGCalDigiHostCollection const& host_digis, HGCalCalibParamDeviceCollection const& device_calib_provider) {
     LogDebug("HGCalRecHitCalibrationAlgorithms") << "\n\nINFO -- Start of calibrate\n\n" << std::endl;
 
     LogDebug("HGCalRecHitCalibrationAlgorithms")<<"N blocks: "<<n_blocks<<"\tN threads: "<<n_threads<<std::endl;
@@ -98,6 +112,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     alpaka::memcpy(queue, device_digis.buffer(), host_digis.const_buffer());
 
     float pedestalValue = n_hits_to_print; // dummy value
+    //alpaka::exec<Acc1D>(queue, grid, HGCalRecHitCalibrationKernel_pedestalCorrection{}, device_digis.view(), device_calib_provider.view());
     alpaka::exec<Acc1D>(queue, grid, HGCalRecHitCalibrationKernel_pedestalCorrection{}, device_digis.view(), pedestalValue);
     LogDebug("HGCalRecHitCalibrationAlgorithms") << "Digis after pedestal calibration: " << std::endl;
     print_digi_device(device_digis, n_hits_to_print);

@@ -58,7 +58,7 @@ options.register('firstLS', 1, VarParsing.VarParsing.multiplicity.singleton, Var
 
 
 
-options.maxEvents = 100  # number of events to emulate
+options.maxEvents = 5  # number of events to emulate
 options.output = 'output.root'  # output EDM file
 options.secondaryOutput = 'output.raw'  # output streamer file
 options.parseArguments()
