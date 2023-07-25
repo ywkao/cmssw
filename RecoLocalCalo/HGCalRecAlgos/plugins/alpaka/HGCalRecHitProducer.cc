@@ -102,47 +102,24 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::cout << "\n\nINFO -- Start of produce\n\n" << std::endl;
     
     // Load calibration parameters & Read digis
-    auto const& hostCalibrationParameterProvider = iSetup.getData(esToken_);
+    auto const& deviceCalibrationParameterProvider = iSetup.getData(esToken_);
     auto const& hostDigisIn = iEvent.get(digisToken_);
+
+    // Check if there are new conditions and read them
+    if (cfgWatcher_.check(iSetup)){
+      auto const& config_calib_param = deviceCalibrationParameterProvider.view().config();
+      for(int i=0; i<deviceCalibrationParameterProvider.view().metadata().size(); i++) {
+          LogDebug("HGCalCalibrationParamter") << "idx = " << i << ", "
+                    << "pedestal = " << deviceCalibrationParameterProvider.view()[i].pedestal() << ", "
+                    << "CM_slope = " << deviceCalibrationParameterProvider.view()[i].CM_slope() << ", "
+                    << "CM_offset = " << deviceCalibrationParameterProvider.view()[i].CM_offset() << ", "
+                    << "BXm1_kappa = " << deviceCalibrationParameterProvider.view()[i].BXm1_kappa() << "\n";
+      }
+    }
 
     int oldSize = hostDigisIn.view().metadata().size();
     int newSize = oldSize * n_hits_scale;
     auto hostDigis = HGCalDigiHostCollection(newSize, queue);
-
-    // Check if there are new conditions and read them
-    if (cfgWatcher_.check(iSetup)){
-
-      auto const& config_calib_param = hostCalibrationParameterProvider.view().config();
-      for(int i=0; i<hostCalibrationParameterProvider.view().metadata().size(); i++) {
-          printf("(%3d) ", i);
-          printf("pedestal = %.2f, ", hostCalibrationParameterProvider.view()[i].pedestal());
-          printf("CM_slope = %.2f, ", hostCalibrationParameterProvider.view()[i].CM_slope());
-          printf("CM_offset = %.2f, ", hostCalibrationParameterProvider.view()[i].CM_offset());
-          printf("BXm1_kappa = %.2f\n", hostCalibrationParameterProvider.view()[i].BXm1_kappa());
-      }
-
-      // auto conds = iSetup.getData(tokenConds_);
-      // size_t nconds = conds.params_.size();
-      // LogDebug("HGCalCalibrationParamter") << "Conditions retrieved:\n" << nconds;
-
-      // // Print out all conditions readout
-      // HGCalRecHitCalibrationAlgorithms::CalibParams calibParams;
-      // LogDebug("HGCalCalibrationParamter") << "   ID  eRx  Channel  isCM?  Pedestal  CM slope  CM offset  kappa(BX-1)" << std::endl;
-      // for(auto it : conds.params_) {
-      //   HGCalElectronicsId id(it.first);
-      //   HGCalFloatPedestals table = conds.getFloatPedestals(it.second);
-      //   calibrationParameterProvider_[id.raw()].pedestal = table.pedestal;
-      //   calibrationParameterProvider_[id.raw()].cm_slope = table.cm_slope;
-      //   calibrationParameterProvider_[id.raw()].cm_offset = table.cm_offset;
-      //   calibrationParameterProvider_[id.raw()].kappa_bxm1 = table.kappa_bxm1;
-
-      //   LogDebug("HGCalCalibrationParamter") << std::setw(5) << std::dec << (uint32_t)id.raw() << " " << std::setw(4) << std::dec << (uint32_t)id.econdeRx() << " "
-      //             << std::setw(8) << (uint32_t)id.halfrocChannel() << " " << std::setw(6) << (uint32_t)id.isCM() << " "
-      //             << std::setw(9) << std::setprecision(3) << calibrationParameterProvider_[id.raw()].pedestal << " " << std::setw(9) << calibrationParameterProvider_[id.raw()].cm_slope << " "
-      //             << std::setw(10) << calibrationParameterProvider_[id.raw()].cm_offset << " " << std::setw(12) << calibrationParameterProvider_[id.raw()].kappa_bxm1;
-      // }
-
-    }
 
     for(int i=0; i<newSize;i++){
       hostDigis.view()[i].electronicsId() = hostDigisIn.view()[i%oldSize].electronicsId();
@@ -160,7 +137,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::cout << "\n\nINFO -- calling calibrate method" << std::endl;
 
     auto start = now();
-    auto recHits = calibrator_.calibrate(queue, hostDigis, hostCalibrationParameterProvider);
+    auto recHits = calibrator_.calibrate(queue, hostDigis, deviceCalibrationParameterProvider);
     alpaka::wait(queue);
     auto stop = now();
 

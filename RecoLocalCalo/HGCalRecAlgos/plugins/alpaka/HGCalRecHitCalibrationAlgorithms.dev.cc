@@ -36,26 +36,14 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
   };
 
-  // struct HGCalRecHitCalibrationKernel_pedestalCorrection {
-  //   template <typename TAcc>
-  //   ALPAKA_FN_ACC void operator()(TAcc const& acc, HGCalDigiDeviceCollection::View digis, HGCalCalibParamDeviceCollection::View calib) const {
-  //     auto const& config_calib_param = calib.config();
-  //     for (auto index : elements_with_stride(acc, digis.metadata().size())) {
-  //       if ((digis[index].flags() >> kPedestalCorrection) & 1){
-  //         uint32_t idx = config_calib_param.denseMap(digis[index].electronicsId());
-  //         float pedestalValue = calib[idx].pedestal();
-  //         digis[index].adc() -= pedestalValue;
-  //       }
-  //     }
-  //   }
-  // };
-
   struct HGCalRecHitCalibrationKernel_pedestalCorrection {
     template <typename TAcc>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, HGCalDigiDeviceCollection::View digis, float pedestalValue) const {
+    ALPAKA_FN_ACC void operator()(TAcc const& acc, HGCalDigiDeviceCollection::View digis, HGCalCalibParamDeviceCollection::ConstView calib) const {
+      auto const& config_calib_param = calib.config();
       for (auto index : elements_with_stride(acc, digis.metadata().size())) {
-        if ((digis[index].flags() >> kPedestalCorrection) & 1){
-          //calibParams[digis[index].electronicsId()];
+        if ((digis[index].flags() >> kPedestalCorrection) & 1) {
+          uint32_t idx = config_calib_param.denseMap(digis[index].electronicsId());
+          float pedestalValue = calib[idx].pedestal();
           digis[index].adc() -= pedestalValue;
         }
       }
@@ -111,9 +99,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     HGCalDigiDeviceCollection device_digis(host_digis.view().metadata().size(), queue);
     alpaka::memcpy(queue, device_digis.buffer(), host_digis.const_buffer());
 
-    float pedestalValue = n_hits_to_print; // dummy value
-    //alpaka::exec<Acc1D>(queue, grid, HGCalRecHitCalibrationKernel_pedestalCorrection{}, device_digis.view(), device_calib_provider.view());
-    alpaka::exec<Acc1D>(queue, grid, HGCalRecHitCalibrationKernel_pedestalCorrection{}, device_digis.view(), pedestalValue);
+    alpaka::exec<Acc1D>(queue, grid, HGCalRecHitCalibrationKernel_pedestalCorrection{}, device_digis.view(), device_calib_provider.view());
     LogDebug("HGCalRecHitCalibrationAlgorithms") << "Digis after pedestal calibration: " << std::endl;
     print_digi_device(device_digis, n_hits_to_print);
 
