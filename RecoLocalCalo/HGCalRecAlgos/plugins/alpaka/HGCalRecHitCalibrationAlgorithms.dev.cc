@@ -34,13 +34,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       }
     }
   };
-  
+
   struct HGCalRecHitCalibrationKernel_pedestalCorrection {
     template <typename TAcc>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, HGCalDigiDeviceCollection::View digis, HGCalRecHitDeviceCollection::View rechits, float pedestalValue) const {
+    ALPAKA_FN_ACC void operator()(TAcc const& acc, HGCalDigiDeviceCollection::View digis, HGCalRecHitDeviceCollection::View rechits, HGCalCalibParamDeviceCollection::ConstView calib) const {
+      auto const& config_calib_param = calib.config();
       for (auto index : elements_with_stride(acc, digis.metadata().size())) {
         if ((digis[index].tctp()==0) && (digis[index].flags() >> kPedestalCorrection) & 1){
-          //calibParams[digis[index].electronicsId()];
+          uint32_t idx = config_calib_param.denseMap(digis[index].electronicsId());
+          float pedestalValue = calib[idx].pedestal();
           rechits[index].energy() = digis[index].adc() - pedestalValue;
         }
       }
@@ -49,8 +51,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   struct HGCalRecHitCalibrationKernel_commonModeCorrection {
     template <typename TAcc>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, HGCalDigiDeviceCollection::View digis, HGCalRecHitDeviceCollection::View rechits, float commonModeValue) const {
+    ALPAKA_FN_ACC void operator()(TAcc const& acc, HGCalDigiDeviceCollection::View digis, HGCalRecHitDeviceCollection::View rechits, HGCalCalibParamDeviceCollection::ConstView calib) const {
+      auto const& config_calib_param = calib.config();
       for (auto index : elements_with_stride(acc, rechits.metadata().size())) {
+        uint32_t idx = config_calib_param.denseMap(digis[index].electronicsId());
+        float commonModeValue = calib[idx].CM_slope() * digis[index].cm() + calib[idx].CM_offset();
         rechits[index].energy() -= commonModeValue;
       }
     }
@@ -58,8 +63,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
   struct HGCalRecHitCalibrationKernel_ADCmCorrection {
     template <typename TAcc>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, HGCalDigiDeviceCollection::View digis, HGCalRecHitDeviceCollection::View rechits,float ADCmValue) const {
+    ALPAKA_FN_ACC void operator()(TAcc const& acc, HGCalDigiDeviceCollection::View digis, HGCalRecHitDeviceCollection::View rechits, HGCalCalibParamDeviceCollection::ConstView calib) const {
+      auto const& config_calib_param = calib.config();
       for (auto index : elements_with_stride(acc, rechits.metadata().size())) {
+        uint32_t idx = config_calib_param.denseMap(digis[index].electronicsId());
+        float ADCmValue = calib[idx].BXm1_kappa() * digis[index].adcm1(); // placeholder
         rechits[index].adc() -= ADCmValue;
       }
     }
@@ -82,8 +90,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     calibParams = newCalibParams;
   }
 
-  std::unique_ptr<HGCalRecHitDeviceCollection> HGCalRecHitCalibrationAlgorithms::calibrate(Queue& queue, HGCalDigiHostCollection const& host_digis) {
- 
+  std::unique_ptr<HGCalRecHitDeviceCollection> HGCalRecHitCalibrationAlgorithms::calibrate(Queue& queue, HGCalDigiHostCollection const& host_digis, HGCalCalibParamDeviceCollection const& device_calib_provider) {
 
     LogDebug("HGCalRecHitCalibrationAlgorithms") << "\n\nINFO -- Start of calibrate\n\n" << std::endl;
 
@@ -101,19 +108,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     int n_hits_to_print = 10;
     print_recHit_device(queue, *device_recHits, n_hits_to_print);
    
-    float pedestalValue = 0.f; // placeholder
-    alpaka::exec<Acc1D>(queue, grid, HGCalRecHitCalibrationKernel_pedestalCorrection{}, device_digis.view(), device_recHits->view(), pedestalValue);
+    alpaka::exec<Acc1D>(queue, grid, HGCalRecHitCalibrationKernel_pedestalCorrection{}, device_digis.view(), device_recHits->view(), device_calib_provider.view());
     LogDebug("HGCalRecHitCalibrationAlgorithms") << "RecHits after pedestal calibration: " << std::endl;
     print_recHit_device(queue, *device_recHits, n_hits_to_print);
 
-    float commonModeValue = 0.f; // placeholder
-    alpaka::exec<Acc1D>(queue, grid, HGCalRecHitCalibrationKernel_commonModeCorrection{}, device_digis.view(), device_recHits->view(), commonModeValue);
+    alpaka::exec<Acc1D>(queue, grid, HGCalRecHitCalibrationKernel_commonModeCorrection{}, device_digis.view(), device_recHits->view(), device_calib_provider.view());
     LogDebug("HGCalRecHitCalibrationAlgorithms") << "Digis after CM calibration: " << std::endl;
     print_digi_device(device_digis, n_hits_to_print);
 
     /*
     float ADCmValue = n_hits_to_print; // dummy value
-    alpaka::exec<Acc1D>(queue, grid, HGCalRecHitCalibrationKernel_ADCmCorrection{}, device_digis.view(), ADCmValue);
+    alpaka::exec<Acc1D>(queue, grid, HGCalRecHitCalibrationKernel_ADCmCorrection{}, device_digis.view(), device_calib_provider.view());
     LogDebug("HGCalRecHitCalibrationAlgorithms") << "Digis after ADCm calibration: " << std::endl;
     print_digi_device(device_digis, n_hits_to_print);
         
