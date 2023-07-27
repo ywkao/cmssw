@@ -122,7 +122,10 @@ ECONDInput HGCalModuleTreeReader::next() {
 
 //
 HGCalTestSystemMetaData HGCalModuleTreeReader::nextMetaData() {
-  auto key=it_data_->first;
+  auto it = it_data_;
+  --it;
+  auto key=it->first;
+  //auto key=it_data_->first;
   if(metadata_.count(key)==0) return HGCalTestSystemMetaData();
   return metadata_[key];
 }
