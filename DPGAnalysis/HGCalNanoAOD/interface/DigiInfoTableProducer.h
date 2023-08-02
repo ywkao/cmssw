@@ -39,7 +39,11 @@ template <typename T1, typename T2>
   ~DigiInfoTableProducer() override {}
 
   bool virtual findMatch(const typename T1::value_type& hit, const typename T2::value_type& digi, const std::map<uint32_t,uint32_t>& info) {
-    throw cms::Exception("DigiInfoTableProducer:findMacth") << "Virtual function findMatch is not implemented!";
+    throw cms::Exception("DigiInfoTableProducer:findMatch") << "Virtual function findMatch is not implemented!";
+  }
+
+  uint32_t virtual findMatchEleId(const typename T1::value_type& hit, const std::map<uint32_t,uint32_t> & ele2geo_) {
+    throw cms::Exception("DigiInfoTableProducer:findMatchEleId") << "Virtual function findMatchEleId is not implemented!";
   }
 
   uint32_t virtual getElecID(const typename T2::value_type& digi) {
@@ -78,12 +82,17 @@ template <typename T1, typename T2>
     throw cms::Exception("DigiInfoTableProducer:adcm1") << "Virtual function getADCm1 is not implemented!";
   }
 
+  float virtual getTctp(const typename T2::value_type& digi) {
+    throw cms::Exception("DigiInfoTableProducer:tctp") << "Virtual function getTctp is not implemented!";
+  }
+
   void beginRun(edm::Run const& iRun, const edm::EventSetup& iSetup) override {
 
     auto moduleInfo = iSetup.getData(moduleInfoToken_);
     auto siCellInfo = iSetup.getData(siModuleInfoToken_);
 
     ele2geo_=hgcal::mapSiGeoToElectronics(moduleInfo,siCellInfo,false);
+    geo2ele_=hgcal::mapSiGeoToElectronics(moduleInfo,siCellInfo,true);
       
   }
 
@@ -99,6 +108,7 @@ template <typename T1, typename T2>
     std::vector<float> totvals;
     std::vector<float> adcvals;
     std::vector<float> adcm1vals;
+    std::vector<uint16_t> tctpvals;
     std::vector<uint32_t> eleIDvals;
     std::vector<uint32_t> econDIdxvals;
     std::vector<uint32_t> econDeRxvals;
@@ -107,32 +117,39 @@ template <typename T1, typename T2>
 
     for (const auto& obj : *objs) {
       if (cut_(obj)) {
-	for (const auto& objdigi : *objdigis) {
-	  if ( findMatch(obj, objdigi, ele2geo_)) {
-	    toavals.emplace_back(getTOA(objdigi));
-	    totvals.emplace_back(getTOT(objdigi));
-	    adcvals.emplace_back(getADC(objdigi));
-	    adcm1vals.emplace_back(getADCm1(objdigi));
-	    eleIDvals.emplace_back(getElecID(objdigi));
-	    econDIdxvals.emplace_back(getEconDIdx(objdigi));
-	    econDeRxvals.emplace_back(getEconDeRx(objdigi));
-	    halfrocChannelvals.emplace_back(getHalfRocChannel(objdigi));
-	    elecIDisCMvals.emplace_back(getElecIDisCM(objdigi));
-	  }
-	}
+        auto it = geo2ele_.find(obj.detid());
+        if (it != geo2ele_.end()) {
+          auto eleID = it->second;
+          auto it_digi = std::find_if(
+              objdigis->begin(), objdigis->end(), [&eleID](const auto& digi) { return digi.id() == eleID; });
+          if (it_digi != objdigis->end()) {
+            const auto& objdigi = *it_digi;
+            toavals.emplace_back(getTOA(objdigi));
+            totvals.emplace_back(getTOT(objdigi));
+            adcvals.emplace_back(getADC(objdigi));
+            adcm1vals.emplace_back(getADCm1(objdigi));
+            tctpvals.emplace_back(getTctp(objdigi));
+            eleIDvals.emplace_back(getElecID(objdigi));
+            econDIdxvals.emplace_back(getEconDIdx(objdigi));
+            econDeRxvals.emplace_back(getEconDeRx(objdigi));
+            halfrocChannelvals.emplace_back(getHalfRocChannel(objdigi));
+            elecIDisCMvals.emplace_back(getElecIDisCM(objdigi));
+          }
+        }
       }
     }
 
     auto tab = std::make_unique<nanoaod::FlatTable>(toavals.size(), name_, false, true);
-    tab->addColumn<float>("toa", toavals, "digi time of arrival");
-    tab->addColumn<float>("tot", totvals, "digi time of threshould");
-    tab->addColumn<float>("adc", adcvals, "digi adc");
-    tab->addColumn<float>("adcm1", adcm1vals, "digi adc-1");
-    tab->addColumn<uint32_t>("id_eleID", eleIDvals, "electronicID");
-    tab->addColumn<uint32_t>("id_EconDIdx", econDIdxvals, "econDIdxvals");
-    tab->addColumn<uint32_t>("id_EconDeRx", econDeRxvals, "econDeRxvals");
-    tab->addColumn<uint32_t>("id_halfrocChannel", halfrocChannelvals, "halfrocChannelvals");
-    tab->addColumn<uint32_t>("id_elecIDisCMvals", elecIDisCMvals, "elecIDisCMvals");
+    tab->addColumn<float>("digi_toa", toavals, "digi time of arrival");
+    tab->addColumn<float>("digi_tot", totvals, "digi time of threshould");
+    tab->addColumn<float>("digi_adc", adcvals, "digi adc");
+    tab->addColumn<float>("digi_adcm1", adcm1vals, "digi adc-1");
+    tab->addColumn<uint16_t>("digi_tctp", tctpvals, "digi tctp");
+    tab->addColumn<uint32_t>("id_eleID", eleIDvals, "electronic ID raw");
+    tab->addColumn<uint32_t>("id_EconDIdx", econDIdxvals, "EconD Idx");
+    tab->addColumn<uint32_t>("id_EconDeRx", econDeRxvals, "EconD eRx");
+    tab->addColumn<uint32_t>("id_halfrocChannel", halfrocChannelvals, "halfrocChannel");
+    tab->addColumn<uint32_t>("id_elecIDisCM", elecIDisCMvals, "electronic ID isCM");
 
     iEvent.put(std::move(tab));
 
@@ -149,5 +166,6 @@ template <typename T1, typename T2>
   edm::ESGetToken<HGCalCondSerializableSiCellChannelInfo,HGCalCondSerializableSiCellChannelInfoRcd> siModuleInfoToken_;
 
   std::map<uint32_t,uint32_t> ele2geo_;
+  std::map<uint32_t,uint32_t> geo2ele_;
 
 };

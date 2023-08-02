@@ -17,8 +17,9 @@ process.maxEvents = cms.untracked.PSet(input=cms.untracked.int32(options.maxEven
 # Logical mapping
 process.load('Geometry.HGCalMapping.hgCalModuleInfoESSource_cfi')
 process.load('Geometry.HGCalMapping.hgCalSiModuleInfoESSource_cfi')
-from DPGAnalysis.HGCalTools.tb2023_cfi import configTBConditions
+from DPGAnalysis.HGCalTools.tb2023_cfi import configTBConditions,addPerformanceReports
 configTBConditions(process)
+addPerformanceReports(process)
 
 process.hgCalDigisClient = cms.EDProducer(
     'HGCalDigisClient',
@@ -26,11 +27,13 @@ process.hgCalDigisClient = cms.EDProducer(
     FlaggedECONDInfo=cms.InputTag("hgcalDigis","UnpackerFlags"),
     MetaData=cms.InputTag('hgcalEmulatedSlinkRawData', 'hgcalMetaData'),
     ModuleMapping=cms.ESInputTag(''),
+    Prescale=cms.uint32(1000),
+    MinimumNumEvents=cms.uint32(10000),
 )
 process.hgCalDigisClientHarvester = cms.EDProducer(
     'HGCalDigisClientHarvester',
     ModuleMapping=process.hgCalDigisClient.ModuleMapping,
-    HexTemplateFile=cms.string('/eos/cms/store/group/dpg_hgcal/comm_hgcal/ykao/hexagons_20230626.root'),
+    HexTemplateFile=cms.string('/eos/cms/store/group/dpg_hgcal/comm_hgcal/ykao/hexagons_20230801.root'),
     Level0CalibOut=cms.string('level0_calib_params.txt'),
 )
 

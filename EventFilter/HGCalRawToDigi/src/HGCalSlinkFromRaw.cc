@@ -18,9 +18,7 @@ SlinkFromRaw::SlinkFromRaw(const edm::ParameterSet &iConfig) : SlinkEmulatorBase
 }
 
 //
-FEDRawDataCollection SlinkFromRaw::next() {
-
-  FEDRawDataCollection raw_data;
+std::unique_ptr<FEDRawDataCollection> SlinkFromRaw::next() {
 
   //open for the first time
   if( fileReader_.closed() ) {
@@ -53,6 +51,12 @@ FEDRawDataCollection SlinkFromRaw::next() {
     edm::LogInfo("SlinkFromRaw") << "RecordStarting will search for next";
     const hgcal_slinkfromraw::RecordStarting *rStart((hgcal_slinkfromraw::RecordStarting*)record_);
     rStart->print();
+    return next();
+  }
+  if(record_->state()==hgcal_slinkfromraw::FsmState::Continuing) {
+    edm::LogInfo("SlinkFromRaw") << "RecordContinuing";
+    const hgcal_slinkfromraw::RecordContinuing *rCont((hgcal_slinkfromraw::RecordContinuing*)record_);
+    rCont->print();
     return next();
   }
 
@@ -111,8 +115,9 @@ FEDRawDataCollection SlinkFromRaw::next() {
   }
 
   //put in the event (last word is a 0xdeadbeefdeadbeef which can be disregarded)
-  size_t total_event_size = (payloadLength-1)*sizeof(uint64_t)/sizeof(char);
-  auto& fed_data = raw_data.FEDData(1); //data for one FED
+  auto raw_data = std::make_unique<FEDRawDataCollection>();
+  size_t total_event_size = (payloadLength - 1) * sizeof(uint64_t) / sizeof(char);
+  auto& fed_data = raw_data->FEDData(1); //data for one FED
   fed_data.resize(total_event_size);
   auto* ptr = fed_data.data();
   memcpy(ptr, (char*)payload, total_event_size);

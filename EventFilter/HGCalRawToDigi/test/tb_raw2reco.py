@@ -86,8 +86,9 @@ if options.debug:
     process.MessageLogger.cerr.DEBUG = cms.untracked.PSet(
         limit = cms.untracked.int32(-1)
     )
+process.options.wantSummary = cms.untracked.bool(True)
 
-
+process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(options.maxEvents))
 process.RandomNumberGeneratorService = cms.Service("RandomNumberGeneratorService",
     hgcalEmulatedSlinkRawData = cms.PSet(initialSeed = cms.untracked.uint32(42))
 )
@@ -180,32 +181,45 @@ if options.charMode in [0,1]: # manually override YAML files
 if options.gain in [1,2,4]: # manually override YAML files
     process.hgCalConfigESSourceFromYAML.gain = options.gain
 
+# Alpaka ESProducer
+process.hgcalCalibrationParameterESRecord = cms.ESSource('EmptyESSource',
+    recordName = cms.string('HGCalCondSerializableModuleInfoRcd'),
+    iovIsRunNotTime = cms.bool(True),
+    firstValid = cms.vuint32(1)
+)
+
+process.hgcalCalibrationESProducer = cms.ESProducer('HGCalRecHitCalibrationESProducer@alpaka',
+    filename = cms.string(''), # to be set up in configTBConditions
+    ModuleInfo = cms.ESInputTag('')
+)
+
 # CONDITIONS
 # RecHit producer: pedestal txt file for DIGI -> RECO calibration
 # Logical mapping
 process.load('CalibCalorimetry.HGCalPlugins.hgCalPedestalsESSource_cfi') 
 process.load('Geometry.HGCalMapping.hgCalModuleInfoESSource_cfi')
 process.load('Geometry.HGCalMapping.hgCalSiModuleInfoESSource_cfi')
-from DPGAnalysis.HGCalTools.tb2023_cfi import configTBConditions
+from DPGAnalysis.HGCalTools.tb2023_cfi import configTBConditions,addPerformanceReports
 configTBConditions(process,options.conditions)
 
+process.load('HeterogeneousCore.CUDACore.ProcessAcceleratorCUDA_cfi')
 if options.GPU:
-    process.hgcalRecHit = cms.EDProducer(
-        'alpaka_cuda_async::HGCalRecHitProducer',
+    process.hgcalRecHit = cms.EDProducer( 'alpaka_cuda_async::HGCalRecHitProducer',
         digis = cms.InputTag('hgcalDigis', '', 'TEST'),
+        eventSetupSource = cms.ESInputTag('hgcalCalibrationESProducer', ''),
         n_hits_scale = cms.int32(1),
         pedestal_label = cms.ESInputTag(''), # for HGCalPedestalsESSource
         n_blocks = cms.int32(4096),
-        n_threads = cms.int32(1024),
+        n_threads = cms.int32(1024)
     )
 else:
-    process.hgcalRecHit = cms.EDProducer(
-        'alpaka_serial_sync::HGCalRecHitProducer',
+    process.hgcalRecHit = cms.EDProducer( 'alpaka_serial_sync::HGCalRecHitProducer',
         digis = cms.InputTag('hgcalDigis', '', 'TEST'),
+        eventSetupSource = cms.ESInputTag('hgcalCalibrationESProducer', ''),
         n_hits_scale = cms.int32(1),
         pedestal_label = cms.ESInputTag(''), # for HGCalPedestalsESSource
         n_blocks = cms.int32(1024),
-        n_threads = cms.int32(4096),
+        n_threads = cms.int32(4096)
     )
 
 #filter on empty events
@@ -257,10 +271,4 @@ if options.storeRAWOutput:
                                      )
     process.outpath += process.outputRAW
 
-#add timing and mem (too slow) for FWK jobs report
-process.Timing = cms.Service("Timing",
-                             summaryOnly = cms.untracked.bool(True),
-                             useJobReport = cms.untracked.bool(True))
-#process.SimpleMemoryCheck = cms.Service("SimpleMemoryCheck",
-#                                        ignoreTotal = cms.untracked.int32(1),
-#                                        jobReportOutputOnly = cms.untracked.bool(True) )
+addPerformanceReports(process)

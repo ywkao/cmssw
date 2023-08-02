@@ -211,11 +211,14 @@ namespace hgcal {
 
     std::vector<uint64_t> econd_event;
 
-    const auto event = emulator_->next();
+    const auto event = *emulator_->next();
     const auto& econd_params = econd_params_.at(econd_id);
     auto header_bits = generateStatusBits(econd_id);
     std::vector<econd::ERxChannelEnable> enabled_ch_per_erx;
     auto erx_payload = generateERxData(econd_id, event.second, enabled_ch_per_erx);
+
+    //PEDRO : FIX this in pion runs
+    if( erx_payload.size() != 234) return produceECONEvent(econd_id,cb_id);
 
     // ECON-D event content was just created, now prepend packet header
     const uint8_t hamming = 0, rr = 0;
@@ -238,6 +241,7 @@ namespace hgcal {
                                  rr);
     LogDebug("HGCalFrameGenerator").log([&econd_header](auto& log) { printWords(log, "econ-d header", econd_header); });
     auto econd_header_64bit = to64bit(econd_header);
+
     econd_event.insert(econd_event.end(), econd_header_64bit.begin(), econd_header_64bit.end());
     LogDebug("HGCalFrameGenerator") << econd_header.size()
                                     << " word(s) of event packet header prepend. New size of ECON frame: "

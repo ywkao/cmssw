@@ -57,13 +57,16 @@ private:
   const edm::EDGetTokenT<HGCalTestSystemMetaData> metadataToken_;
 
   std::map<MonitorKey_t, MonitorElement*> p_hitcount,p_maxadcvstrigtime,
-    p_adc, p_tot, p_adcm, p_toa, p_maxadc, p_sums;
+    p_adc, p_tot, p_adcm, p_toa, p_maxadc, p_sums, h_adc, h_adcm, h_tot, h_toa;
   MonitorElement *p_econdquality;
   std::map<MonitorKey_t,int> modbins_;
      
   // ------------ member data ------------
   edm::ESGetToken<HGCalCondSerializableModuleInfo, HGCalCondSerializableModuleInfoRcd> moduleInfoToken_;
   std::map<MonitorKey_t,MonitorKey_t> module_keys_;
+  const unsigned prescale_;
+  const unsigned min_num_evts_;
+  unsigned num_processed_ = 0;
 };
 
 //
@@ -72,7 +75,9 @@ HGCalDigisClient::HGCalDigisClient(const edm::ParameterSet& iConfig)
   : digisToken_(consumes<hgcaldigi::HGCalDigiHostCollection>(iConfig.getParameter<edm::InputTag>("Digis"))),
     econdQualityToken_(consumes<HGCalFlaggedECONDInfoCollection>(iConfig.getParameter<edm::InputTag>("FlaggedECONDInfo"))),
     metadataToken_(consumes<HGCalTestSystemMetaData>(iConfig.getParameter<edm::InputTag>("MetaData"))),
-    moduleInfoToken_(esConsumes<HGCalCondSerializableModuleInfo,HGCalCondSerializableModuleInfoRcd,edm::Transition::BeginRun>(iConfig.getParameter<edm::ESInputTag>("ModuleMapping")))
+    moduleInfoToken_(esConsumes<HGCalCondSerializableModuleInfo,HGCalCondSerializableModuleInfoRcd,edm::Transition::BeginRun>(iConfig.getParameter<edm::ESInputTag>("ModuleMapping"))),
+    prescale_(std::max(1u, iConfig.getParameter<unsigned>("Prescale"))),
+    min_num_evts_(iConfig.getParameter<unsigned>("MinimumNumEvents"))
 {}
 
 //
@@ -82,6 +87,10 @@ HGCalDigisClient::~HGCalDigisClient() {
 
 //
 void HGCalDigisClient::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
+  bool toProcess = (num_processed_ < min_num_evts_) || (num_processed_ % prescale_ == 0);
+  ++num_processed_;
+  if (!toProcess)
+    return;
 
   using namespace edm;
   
@@ -109,7 +118,7 @@ void HGCalDigisClient::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   }
 
   //fill the histograms / statistics
-  std::map<MonitorKey_t, double> maxADC;
+  std::map<MonitorKey_t, std::pair<double,double> > maxVarADC;
   for(int32_t i = 0; i < ndigis; ++i) {
 
     auto digi = digis_view[i];
@@ -143,18 +152,34 @@ void HGCalDigisClient::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     if(adc>0 || tot>0) p_hitcount[geomKey]->Fill(globalChannelId);
 
     p_adcm[geomKey]->Fill(globalChannelId, adcm);
+    h_adcm[geomKey]->Fill(adcm);
     p_toa[geomKey]->Fill(globalChannelId, toa);
+    h_toa[geomKey]->Fill(toa);
       
     //TOT
     if(tctp==3) {
       p_tot[geomKey]->Fill(globalChannelId, tot);
+      h_tot[geomKey]->Fill(tot);
     }    
     //ADC
     else {
+      h_adc[geomKey]->Fill(adc);
       p_adc[geomKey]->Fill(globalChannelId, adc);
-      if(maxADC.count(geomKey)==0) maxADC[geomKey]=0.f;
-      maxADC[geomKey]=std::max(maxADC[geomKey],(double)adc);
-       
+    
+      
+      //after some events check which channel has the largest variance
+      //it probably is where the beam is hitting, or the noisiest
+      if(num_processed_>10) {
+	if(maxVarADC.count(geomKey)==0) maxVarADC[geomKey]=std::pair<double,double>(0.f,0.f);
+	double sumsq=p_sums[geomKey]->getBinContent(globalChannelId,3);
+	double sum=p_sums[geomKey]->getBinContent(globalChannelId,2);
+	double n=p_sums[geomKey]->getBinContent(globalChannelId,1);
+	double v=sumsq-pow(sum/n,2);
+	if(v>maxVarADC[geomKey].first) {
+	  maxVarADC[geomKey]=std::pair<double,double>(v,adc);
+	}
+      }  
+     
       //increment sums of this channel
       float cm=avgCM[erxid];
       float tdc=nTDC[erxid];
@@ -172,7 +197,7 @@ void HGCalDigisClient::analyze(const edm::Event& iEvent, const edm::EventSetup& 
                                    double(adc*tdc)};
       for(size_t k=1; k<=tosum.size(); k++)
         p_sums[geomKey]->setBinContent(globalChannelId,k,
-                                       p_sums[geomKey]->getBinContent(globalChannelId+k,k)+tosum[k-1]);
+                                       p_sums[geomKey]->getBinContent(globalChannelId,k)+tosum[k-1]);
     }
 
   }
@@ -181,9 +206,10 @@ void HGCalDigisClient::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   const auto& metadata = iEvent.get(metadataToken_);
   int trigTime = metadata.trigTime_;
   LogDebug("HGCalDigisClient") << "trigTime=" << trigTime;
-  for(auto it : maxADC) {
-    p_maxadcvstrigtime[it.first]->Fill(trigTime, it.second);
-    p_maxadc[it.first]->Fill(it.second);
+  for(auto it : maxVarADC) {
+    double adc=it.second.second;
+    p_maxadcvstrigtime[it.first]->Fill(trigTime,adc);
+    p_maxadc[it.first]->Fill(adc);
   }
 
   //read flagged ECON-D list
@@ -257,6 +283,11 @@ void HGCalDigisClient::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& 
     p_tot[k]    = ibook.bookProfile("p_tot_" + tag,       ";Channel; TOT",     nch, 0, nch, 100, 0, 1024);
     p_adcm[k]   = ibook.bookProfile("p_adcm_"+ tag,       ";Channel; ADC(-1)", nch, 0, nch, 100, 0, 1024);
     p_toa[k]    = ibook.bookProfile("p_toa_" + tag,       ";Channel; TOA",     nch, 0, nch, 100, 0, 1024);
+    h_adc[k] = ibook.book1D("adc_"+tag,             ";ADC; Counts (all channels)",  100, 0, 1024); 
+    h_adcm[k] = ibook.book1D("adcm_"+tag,           ";ADC_{-1}; Counts (all channels)",  100, 0, 1024); 
+    h_tot[k] = ibook.book1D("tot_"+tag,             ";TOT; Counts (all channels)",  100, 0, 4096); 
+    h_toa[k] = ibook.book1D("toa_"+tag,             ";TOA; Counts (all channels)",  100, 0, 1024); 
+
   }
 }
 
@@ -267,6 +298,8 @@ void HGCalDigisClient::fillDescriptions(edm::ConfigurationDescriptions& descript
   desc.add<edm::InputTag>("FlaggedECONDInfo",edm::InputTag("hgcalDigis","UnpackerFlags"));
   desc.add<edm::InputTag>("MetaData",edm::InputTag("hgcalEmulatedSlinkRawData","hgcalMetaData"));
   desc.add<edm::ESInputTag>("ModuleMapping",edm::ESInputTag(""));
+  desc.add<unsigned>("prescale", 1);
+  desc.add<unsigned>("MinimumNumEvents", 10000);
 }
 
 // define this as a plug-in
