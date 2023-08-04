@@ -12,14 +12,14 @@
 
 namespace hgcalrechit {
 
-  // Generate structure of arrays (SoA) layout with RecHit dataformat
   GENERATE_SOA_LAYOUT(HGCalCalibrationParameterSoALayout,
                       SOA_SCALAR(HGCalCalibrationParameterProviderConfig, config),
-                      SOA_COLUMN(float, pedestal),
-                      SOA_COLUMN(float, CM_slope),
-                      SOA_COLUMN(float, CM_offset),
-                      SOA_COLUMN(float, BXm1_slope),
-                      SOA_COLUMN(float, BXm1_offset)
+                      SOA_COLUMN(float, gain),       // ROC-level
+                      SOA_COLUMN(float, pedestal),   // channel-level
+                      SOA_COLUMN(float, CM_slope),   // channel-level
+                      SOA_COLUMN(float, CM_offset),  // channel-level
+                      SOA_COLUMN(float, BXm1_slope), // channel-level
+                      SOA_COLUMN(float, BXm1_offset) // channel-level
   )
   using HGCalCalibParamSoA = HGCalCalibrationParameterSoALayout<>;
   

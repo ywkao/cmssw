@@ -40,6 +40,17 @@ struct HGCalCalibrationParameterProviderConfig {
         rtn = rtn * erxChannelMax + channel;
         return rtn;
     }
+
+    constexpr uint32_t rocDenseMap(uint32_t ElectronicsID) const{
+        uint32_t sLink = ((ElectronicsID >> kFEDIDShift) & kFEDIDMask);
+        uint32_t captureBlock = ((ElectronicsID >> kCaptureBlockShift) & kCaptureBlockMask);
+        uint32_t econd = ((ElectronicsID >> kECONDIdxShift) & kECONDIdxMask);
+        uint32_t eRx = ((ElectronicsID >> kECONDeRxShift) & kECONDeRxMask);
+        uint32_t rtn = sLink * sLinkCaptureBlockMax + captureBlock;
+        rtn = rtn * captureBlockECONDMax + econd;
+        rtn = rtn * econdERXMax + eRx;
+        return rtn;
+    }
 };
 
 #endif

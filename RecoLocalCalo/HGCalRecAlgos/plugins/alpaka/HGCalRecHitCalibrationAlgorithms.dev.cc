@@ -57,6 +57,19 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         uint32_t idx = config_calib_param.denseMap(digis[index].electronicsId());
         float commonModeValue = calib[idx].CM_slope() * digis[index].cm() + calib[idx].CM_offset();
         rechits[index].energy() -= commonModeValue;
+
+        // // test only
+        // uint32_t rocIdx = config_calib_param.rocDenseMap(digis[index].electronicsId());
+        // printf(">>> digis[index].electronicsId = %d, ", digis[index].electronicsId());
+        // printf("idx = %d, ", idx);
+        // printf("rocIdx = %d, ", rocIdx);
+        // printf("gain = %f, ", calib[rocIdx].gain());
+        // printf("pedestal = %f, ", calib[idx].pedestal());
+        // printf("CM_slope = %f, ", calib[idx].CM_slope());
+        // printf("CM_offset = %f, ", calib[idx].CM_offset());
+        // printf("BXm1_slope = %f, ", calib[idx].BXm1_slope());
+        // printf("BXm1_offset = %f, ", calib[idx].BXm1_offset());
+        // printf("\n");
       }
     }
   };

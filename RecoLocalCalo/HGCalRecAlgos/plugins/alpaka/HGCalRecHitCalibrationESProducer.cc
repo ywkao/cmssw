@@ -68,7 +68,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       product.view().config() = ccp;
 
-      // load calib parameters
+      // load channel-level calib parameters
       edm::FileInPath fip(filename_);
       std::ifstream file(fip.fullPath());
       std::string line;
@@ -80,8 +80,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         std::istringstream stream(line);
         stream >> std::hex >> id >> std::dec >> ped >> noise >> cm_slope >> cm_offset >> bxm1_slope >> bxm1_offset;
 
-        //reduce to half-point float and fill the pedestals of this channel
-        uint32_t idx = ccp.denseMap(id); // convert electronicsId to idx from denseMap 
+        // convert electronicsId to index from denseMap
+        uint32_t idx = ccp.denseMap(id);
+        uint32_t rocIdx = ccp.rocDenseMap(id); // it works but we need to adapt it to contents in the yaml file
+
+        LogDebug("HGCalCalibrationESProducer")
+            << "id = " << id << ", "
+            << "idx = " << idx << ", "
+            << "rocIdx = " << rocIdx << ", "
+            << "ped = " << ped << ", "
+            << std::endl;
 
         // Comment: if planning to use MiniFloatConverter::float32to16(), a host function,
         // one needs to think how to perform MiniFloatConverter::float16to32() in kernels running on GPU (HGCalRecHitCalibrationAlgorithms.dev.cc)
@@ -90,7 +98,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         product.view()[idx].CM_offset()   = cm_offset;
         product.view()[idx].BXm1_slope()  = bxm1_slope;
         product.view()[idx].BXm1_offset() = bxm1_offset;
+
       }
+
+      // load roc-level calib parameters
+      //---------- place holder ----------//
+      std::vector dummy_values = {7., 11., 13., 17., 19., 23.};
+      for(int rocIdx=0; rocIdx<6; ++rocIdx) {
+        float gain = dummy_values[rocIdx]; // rocIdx to be determined from electronics Id, maybe?
+        product.view()[rocIdx].gain() = gain;
+      }
+      //---------- end of place holder ----------//
 
       return product;
     } // end of produce()
