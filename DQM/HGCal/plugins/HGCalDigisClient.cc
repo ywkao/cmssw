@@ -56,8 +56,9 @@ private:
   const edm::EDGetTokenT<HGCalFlaggedECONDInfoCollection> econdQualityToken_;
   const edm::EDGetTokenT<HGCalTestSystemMetaData> metadataToken_;
 
-  std::map<MonitorKey_t, MonitorElement*> p_hitcount,p_maxadcvstrigtime,
-    p_adc, p_tot, p_adcm, p_toa, p_maxadc, p_sums, h_adc, h_adcm, h_tot, h_toa;
+  std::map<MonitorKey_t, std::pair<int, double> > geomKey_maxADCpedsub;
+  std::map<MonitorKey_t, MonitorElement*> p_hitcount, p_maxadcvstrigtime, p_adcvstrigtime, p_adcpedsubvstrigtime, p_totvstrigtime, p_toavstrigtime, p_adc, p_tot, p_adcm, p_toa, p_maxadc, p_sums, h_adc, h_adcm, h_tot, h_toa, h_adcpedsub;
+  MonitorElement *h_trigtime;
   MonitorElement *p_econdquality;
   std::map<MonitorKey_t,int> modbins_;
      
@@ -119,6 +120,8 @@ void HGCalDigisClient::analyze(const edm::Event& iEvent, const edm::EventSetup& 
 
   //fill the histograms / statistics
   std::map<MonitorKey_t, std::pair<double,double> > maxVarADC;
+  const auto& metadata = iEvent.get(metadataToken_);
+  int trigTime = metadata.trigTime_;
   for(int32_t i = 0; i < ndigis; ++i) {
 
     auto digi = digis_view[i];
@@ -179,7 +182,36 @@ void HGCalDigisClient::analyze(const edm::Event& iEvent, const edm::EventSetup& 
 	  maxVarADC[geomKey]=std::pair<double,double>(v,adc);
 	}
       }  
-     
+
+      //find the channel with the maximum adc-adcm 
+      if(num_processed_>400 && ch<36) {
+	if(geomKey_maxADCpedsub.count(geomKey)==0) 
+	  geomKey_maxADCpedsub[geomKey]=std::pair<int,double>(-1,-1.);
+	double sumADC  = p_sums[geomKey]->getBinContent(globalChannelId,2);
+	double sumADCm = p_sums[geomKey]->getBinContent(globalChannelId,7);
+	double n=p_sums[geomKey]->getBinContent(globalChannelId,1);
+	double v=(sumADC-sumADCm)/n;
+	if(v>geomKey_maxADCpedsub[geomKey].second) { 
+	  geomKey_maxADCpedsub[geomKey].first=globalChannelId;
+	  geomKey_maxADCpedsub[geomKey].second=v;
+	} 
+      } 
+	
+      //fill histograms for the channel with maximum adc-adcm
+      if(globalChannelId==geomKey_maxADCpedsub[geomKey].first) {
+	double sumADCm = p_sums[geomKey]->getBinContent(globalChannelId,7);
+	double n = p_sums[geomKey]->getBinContent(globalChannelId,1);
+	double pedestal = sumADCm/n;
+	if(tctp==3)
+	  p_totvstrigtime[geomKey]->Fill(trigTime,tot);
+	else {
+	  p_adcvstrigtime[geomKey]->Fill(trigTime,adc-pedestal);
+	  p_adcpedsubvstrigtime[geomKey]->Fill(trigTime,adc);
+	}
+	if(toa>0)
+	  p_toavstrigtime[geomKey]->Fill(trigTime,toa);
+      }
+
       //increment sums of this channel
       float cm=avgCM[erxid];
       float tdc=nTDC[erxid];
@@ -203,14 +235,15 @@ void HGCalDigisClient::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   }
 
   //read trigtime and fill monitoring elements for the leading hit
-  const auto& metadata = iEvent.get(metadataToken_);
-  int trigTime = metadata.trigTime_;
   LogDebug("HGCalDigisClient") << "trigTime=" << trigTime;
   for(auto it : maxVarADC) {
     double adc=it.second.second;
     p_maxadcvstrigtime[it.first]->Fill(trigTime,adc);
     p_maxadc[it.first]->Fill(adc);
   }
+
+  //fill histogram for trigtime distribution 
+  h_trigtime->Fill(trigTime);  
 
   //read flagged ECON-D list
   const auto& flagged_econds = iEvent.getHandle(econdQualityToken_);
@@ -253,9 +286,11 @@ void HGCalDigisClient::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& 
   p_econdquality->setBinLabel(7,"Payload (OF)",2);
   p_econdquality->setBinLabel(8,"Payload (mismatch)",2);
 
+  h_trigtime = ibook.book1D("trigtime", ";trigger phase; Counts",  200, 0, 200); 
+
   for(auto m : moduleInfo.params_) {
     
-    TString tag=Form("%d_%d_%d_%d",m.zside,m.plane,m.u,m.v);
+    TString tag=Form("zside%d_plane%d_u%d_v%d",m.zside,m.plane,m.u,m.v);
     MonitorKey_t k(m.zside,m.plane,m.u,m.v);
     modbins_[k]=modbins_.size();
     TString modlabel(tag);
@@ -263,7 +298,21 @@ void HGCalDigisClient::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& 
 
     int nch(39*6*(1+m.isHD));
     p_hitcount[k] = ibook.book1D("hitcount_"+tag,           ";Channel; #hits",   nch, 0, nch);
-    p_maxadcvstrigtime[k] = ibook.book2D("maxadc_vs_trigtime_" + tag, ";Trigtime;max ADC", 200, 0, 200, 100, 0, 1024);
+    p_maxadcvstrigtime[k] = ibook.book2D("maxadc_vs_trigtime_"+tag, 
+					 ";trigger phase; max ADC of the event",  
+					 200, 0, 200, 100, 0, 1024);   
+    p_adcvstrigtime[k] = ibook.book2D("adc_vs_trigtime_"+tag, 
+				      ";trigger phase; ADC of channel with max <ADC-ADC_{-1}>",  
+				      200, 0, 200, 100,0,1024);   
+    p_adcpedsubvstrigtime[k] = ibook.book2D("adcpedsub_vs_trigtime_"+tag, 
+					    ";trigger phase; ADC-ADC_{-1} of channel with max <ADC-ADC_{-1}>", 
+					    200, 0, 200, 100,0,1024);   
+    p_totvstrigtime[k] = ibook.book2D("tot_vs_trigtime_"+tag, 
+				      ";trigger phase; TOT of channel with max <TOT>",  
+				      200, 0, 200, 100,0,4096);   
+    p_toavstrigtime[k] = ibook.book2D("toa_vs_trigtime_"+tag, 
+				      ";trigger phase; TOA of channel with max <ADC-ADC_{-1}>",  
+				      200, 0, 200, 100,0,1024);   
     p_sums[k]             = ibook.book2D("sums_"+tag, ";Channel;", nch,0,nch, 12,0,12);
     p_sums[k]->setBinLabel(1,"N",2);
     p_sums[k]->setBinLabel(2,"#sum ADC",2);
@@ -283,6 +332,8 @@ void HGCalDigisClient::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& 
     p_tot[k]    = ibook.bookProfile("p_tot_" + tag,       ";Channel; TOT",     nch, 0, nch, 100, 0, 1024);
     p_adcm[k]   = ibook.bookProfile("p_adcm_"+ tag,       ";Channel; ADC(-1)", nch, 0, nch, 100, 0, 1024);
     p_toa[k]    = ibook.bookProfile("p_toa_" + tag,       ";Channel; TOA",     nch, 0, nch, 100, 0, 1024);
+    h_adc[k] = ibook.book1D("adc_"+tag,             ";ADC; Counts (all channels)",  100, 0, 1024); 
+    h_adcpedsub[k] = ibook.book1D("adcpedsub_"+tag, ";ADC-ADC_{-1}; Counts (all channels)",  100, 0, 1024); 
     h_adc[k] = ibook.book1D("adc_"+tag,             ";ADC; Counts (all channels)",  100, 0, 1024); 
     h_adcm[k] = ibook.book1D("adcm_"+tag,           ";ADC_{-1}; Counts (all channels)",  100, 0, 1024); 
     h_tot[k] = ibook.book1D("tot_"+tag,             ";TOT; Counts (all channels)",  100, 0, 4096); 
