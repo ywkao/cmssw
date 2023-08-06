@@ -56,7 +56,8 @@ private:
   const edm::EDGetTokenT<HGCalFlaggedECONDInfoCollection> econdQualityToken_;
   const edm::EDGetTokenT<HGCalTestSystemMetaData> metadataToken_;
 
-  std::map<MonitorKey_t, MonitorElement*> p_hitcount,p_maxadcvstrigtime, p_adcvstrigtime, p_adcpedsubvstrigtime, p_totvstrigtime, p_toavstrigtime, p_adc, p_tot, p_adcm, p_toa, p_maxadc, p_sums, h_adc, h_adcm, h_tot, h_toa, h_adcpedsub;
+  std::map<MonitorKey_t, std::pair<int, double> > geomKey_maxADCpedsub;
+  std::map<MonitorKey_t, MonitorElement*> p_hitcount, p_maxadcvstrigtime, p_adcvstrigtime, p_adcpedsubvstrigtime, p_totvstrigtime, p_toavstrigtime, p_adc, p_tot, p_adcm, p_toa, p_maxadc, p_sums, h_adc, h_adcm, h_tot, h_toa, h_adcpedsub;
   MonitorElement *h_trigtime;
   MonitorElement *p_econdquality;
   std::map<MonitorKey_t,int> modbins_;
@@ -119,6 +120,8 @@ void HGCalDigisClient::analyze(const edm::Event& iEvent, const edm::EventSetup& 
 
   //fill the histograms / statistics
   std::map<MonitorKey_t, std::pair<double,double> > maxVarADC;
+  const auto& metadata = iEvent.get(metadataToken_);
+  int trigTime = metadata.trigTime_;
   for(int32_t i = 0; i < ndigis; ++i) {
 
     auto digi = digis_view[i];
@@ -179,7 +182,36 @@ void HGCalDigisClient::analyze(const edm::Event& iEvent, const edm::EventSetup& 
 	  maxVarADC[geomKey]=std::pair<double,double>(v,adc);
 	}
       }  
-     
+
+      //find the channel with the maximum adc-adcm 
+      if(num_processed_>400 && ch<36) {
+	if(geomKey_maxADCpedsub.count(geomKey)==0) 
+	  geomKey_maxADCpedsub[geomKey]=std::pair<int,double>(-1,-1.);
+	double sumADC  = p_sums[geomKey]->getBinContent(globalChannelId,2);
+	double sumADCm = p_sums[geomKey]->getBinContent(globalChannelId,7);
+	double n=p_sums[geomKey]->getBinContent(globalChannelId,1);
+	double v=(sumADC-sumADCm)/n;
+	if(v>geomKey_maxADCpedsub[geomKey].second) { 
+	  geomKey_maxADCpedsub[geomKey].first=globalChannelId;
+	  geomKey_maxADCpedsub[geomKey].second=v;
+	} 
+      } 
+	
+      //fill histograms for the channel with maximum adc-adcm
+      if(globalChannelId==geomKey_maxADCpedsub[geomKey].first) {
+	double sumADCm = p_sums[geomKey]->getBinContent(globalChannelId,7);
+	double n = p_sums[geomKey]->getBinContent(globalChannelId,1);
+	double pedestal = sumADCm/n;
+	if(tctp==3)
+	  p_totvstrigtime[geomKey]->Fill(trigTime,tot);
+	else {
+	  p_adcvstrigtime[geomKey]->Fill(trigTime,adc-pedestal);
+	  p_adcpedsubvstrigtime[geomKey]->Fill(trigTime,adc);
+	}
+	if(toa>0)
+	  p_toavstrigtime[geomKey]->Fill(trigTime,toa);
+      }
+
       //increment sums of this channel
       float cm=avgCM[erxid];
       float tdc=nTDC[erxid];
@@ -203,8 +235,6 @@ void HGCalDigisClient::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   }
 
   //read trigtime and fill monitoring elements for the leading hit
-  const auto& metadata = iEvent.get(metadataToken_);
-  int trigTime = metadata.trigTime_;
   LogDebug("HGCalDigisClient") << "trigTime=" << trigTime;
   for(auto it : maxVarADC) {
     double adc=it.second.second;
