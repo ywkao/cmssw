@@ -286,7 +286,7 @@ void HGCalDigisClient::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& 
   p_econdquality->setBinLabel(7,"Payload (OF)",2);
   p_econdquality->setBinLabel(8,"Payload (mismatch)",2);
 
-  h_trigtime = ibook.book1D("trigtime", ";trigger phase; Counts",  100, 0, 100); 
+  h_trigtime = ibook.book1D("trigtime", ";trigger phase; Counts",  200, 0, 200); 
 
   for(auto m : moduleInfo.params_) {
     
@@ -300,7 +300,7 @@ void HGCalDigisClient::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& 
     p_hitcount[k] = ibook.book1D("hitcount_"+tag,           ";Channel; #hits",   nch, 0, nch);
     p_maxadcvstrigtime[k] = ibook.book2D("maxadc_vs_trigtime_"+tag, 
 					 ";trigger phase; max ADC of the event",  
-					 100, 0, 100, 100,0,1024);   
+					 200, 0, 200, 100, 0, 1024);   
     p_adcvstrigtime[k] = ibook.book2D("adc_vs_trigtime_"+tag, 
 				      ";trigger phase; ADC of channel with max <ADC-ADC_{-1}>",  
 				      100, 0, 100, 100,0,1024);   

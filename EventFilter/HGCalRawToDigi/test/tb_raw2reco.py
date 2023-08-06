@@ -54,6 +54,10 @@ options.register('inputFiles',
                  'file:/eos/cms/store/group/dpg_hgcal/tb_hgcal/2023/labtest/module822/pedestal_run0.root',
                  VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.string,
                  'input TB file')
+options.register('inputTrigFiles',
+                 '',
+                 VarParsing.VarParsing.multiplicity.list, VarParsing.VarParsing.varType.string,
+                 'input Trigger link file')
 options.register('GPU', False, VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int,
                  'run on GPU')
 options.register('runNumber', 1, VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.int, 'run number')
@@ -71,8 +75,9 @@ if options.debug:
     process.MessageLogger.cerr.DEBUG = cms.untracked.PSet(
         limit = cms.untracked.int32(-1)
     )
+process.options.wantSummary = cms.untracked.bool(True)
 
-
+process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(options.maxEvents))
 process.RandomNumberGeneratorService = cms.Service("RandomNumberGeneratorService",
     hgcalEmulatedSlinkRawData = cms.PSet(initialSeed = cms.untracked.uint32(42))
 )
@@ -97,6 +102,7 @@ if process.hgcalEmulatedSlinkRawData.emulatorType == 'hgcmodule':
     process.hgcalEmulatedSlinkRawData.storeEmulatorInfo = bool(options.storeEmulatorInfo)
 elif process.hgcalEmulatedSlinkRawData.emulatorType == 'slinkfromraw':
     process.hgcalEmulatedSlinkRawData.inputs = cms.untracked.vstring(options.inputFiles)
+    process.hgcalEmulatedSlinkRawData.trig_inputs = cms.untracked.vstring(options.inputTrigFiles)
 
 # steer the number of capture blocks
 if options.randomActiveCaptureBlocks:
@@ -161,6 +167,18 @@ process.load('RecoLocalCalo.HGCalRecAlgos.hgCalRecHitsFromSoAproducer_cfi')
 process.load('CalibCalorimetry.HGCalPlugins.hgCalConfigESSourceFromYAML_cfi') # read yaml config file(s)
 process.hgCalConfigESSourceFromYAML.filename = options.configFile
 
+# Alpaka ESProducer
+process.hgcalCalibrationParameterESRecord = cms.ESSource('EmptyESSource',
+    recordName = cms.string('HGCalCondSerializableModuleInfoRcd'),
+    iovIsRunNotTime = cms.bool(True),
+    firstValid = cms.vuint32(1)
+)
+
+process.hgcalCalibrationESProducer = cms.ESProducer('HGCalRecHitCalibrationESProducer@alpaka',
+    filename = cms.string(''), # to be set up in configTBConditions
+    ModuleInfo = cms.ESInputTag('')
+)
+
 # CONDITIONS
 # RecHit producer: pedestal txt file for DIGI -> RECO calibration
 # Logical mapping
@@ -170,23 +188,22 @@ process.load('Geometry.HGCalMapping.hgCalSiModuleInfoESSource_cfi')
 from DPGAnalysis.HGCalTools.tb2023_cfi import configTBConditions,addPerformanceReports
 configTBConditions(process,options.conditions)
 
+process.load('HeterogeneousCore.CUDACore.ProcessAcceleratorCUDA_cfi')
 if options.GPU:
-    process.hgcalRecHit = cms.EDProducer(
-        'alpaka_cuda_async::HGCalRecHitProducer',
+    process.hgcalRecHit = cms.EDProducer( 'alpaka_cuda_async::HGCalRecHitProducer',
         digis = cms.InputTag('hgcalDigis', '', 'TEST'),
+        eventSetupSource = cms.ESInputTag('hgcalCalibrationESProducer', ''),
         n_hits_scale = cms.int32(1),
-        pedestal_label = cms.string(''), # for HGCalPedestalsESSource
         n_blocks = cms.int32(4096),
-        n_threads = cms.int32(1024),
+        n_threads = cms.int32(1024)
     )
 else:
-    process.hgcalRecHit = cms.EDProducer(
-        'alpaka_serial_sync::HGCalRecHitProducer',
+    process.hgcalRecHit = cms.EDProducer( 'alpaka_serial_sync::HGCalRecHitProducer',
         digis = cms.InputTag('hgcalDigis', '', 'TEST'),
+        eventSetupSource = cms.ESInputTag('hgcalCalibrationESProducer', ''),
         n_hits_scale = cms.int32(1),
-        pedestal_label = cms.string(''), # for HGCalPedestalsESSource
         n_blocks = cms.int32(1024),
-        n_threads = cms.int32(4096),
+        n_threads = cms.int32(4096)
     )
 
 #filter on empty events

@@ -38,7 +38,7 @@ public:
 private:
   void beginRun(edm::Run const&, edm::EventSetup const&) override;
   void produce(edm::Event&, const edm::EventSetup&) override;
-  FEDRawDataCollection produceWithoutSlink(edm::Event& iEvent, const edm::EventSetup& iSetup);
+  std::unique_ptr<FEDRawDataCollection> produceWithoutSlink(edm::Event& iEvent, const edm::EventSetup& iSetup);
   
   const unsigned int fed_id_;
   const bool store_emul_info_;
@@ -97,7 +97,7 @@ void HGCalSlinkEmulator::beginRun(edm::Run const& iRun, edm::EventSetup const& i
 void HGCalSlinkEmulator::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
   //produce raw / meta data
-  FEDRawDataCollection raw_data;
+  std::unique_ptr<FEDRawDataCollection> raw_data;
   HGCalTestSystemMetaData meta_data;
 
   // try{
@@ -119,14 +119,14 @@ void HGCalSlinkEmulator::produce(edm::Event& iEvent, const edm::EventSetup& iSet
 
   meta_data.injgain_ = moduleConfig_.injgain;
   meta_data.injcalib_ = moduleConfig_.injcalib;
-  
-  iEvent.emplace(fedRawToken_, std::move(raw_data));
+
+  iEvent.emplace(fedRawToken_, std::move(*raw_data));
   iEvent.emplace(metadataToken_, std::move(meta_data));
 }
 
 
 //
-FEDRawDataCollection HGCalSlinkEmulator::produceWithoutSlink(edm::Event& iEvent, const edm::EventSetup& iSetup) {
+std::unique_ptr<FEDRawDataCollection> HGCalSlinkEmulator::produceWithoutSlink(edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
   //otherwise generate a new frame
   frame_gen_.setRandomEngine(rng_->getEngine(iEvent.streamID()));
@@ -141,8 +141,8 @@ FEDRawDataCollection HGCalSlinkEmulator::produceWithoutSlink(edm::Event& iEvent,
     total_event_size += FEDHeader::length + FEDTrailer::length;
   }
   // fill the output FED raw data collection
-  FEDRawDataCollection raw_data;
-  auto& fed_data = raw_data.FEDData(fed_id_);
+  auto raw_data = std::make_unique<FEDRawDataCollection>();
+  auto& fed_data = raw_data->FEDData(fed_id_);
   fed_data.resize(total_event_size);
   auto* ptr = fed_data.data();
 
@@ -192,12 +192,15 @@ void HGCalSlinkEmulator::fillDescriptions(edm::ConfigurationDescriptions& descri
           edm::ParameterDescription<std::string>("emulatorType", "trivial", true),
           // trivial emulator
           "trivial" >> edm::EmptyGroupDescription() or
-          //slinkemulator
-          "slinkfromraw" >>  (edm::ParameterDescription<std::string>("treeName", "hgcroc_rawdata/eventdata", false) and
-                              edm::ParameterDescription<std::vector<std::string>>("inputs", {}, false)) or
-          // test beam tree content
-          "hgcmodule" >> (edm::ParameterDescription<std::string>("treeName", "hgcroc_rawdata/eventdata", false) and
-                          edm::ParameterDescription<std::vector<std::string>>("inputs", {}, false)))  ->setComment("emulator mode (trivial, or hgcmodule, or slinkfromraw)");
+              //slinkemulator
+              "slinkfromraw" >>
+                  (edm::ParameterDescription<std::string>("treeName", "hgcroc_rawdata/eventdata", false) and
+                   edm::ParameterDescription<std::vector<std::string>>("inputs", {}, false) and
+                   edm::ParameterDescription<std::vector<std::string>>("trig_inputs", {}, false)) or
+              // test beam tree content
+              "hgcmodule" >> (edm::ParameterDescription<std::string>("treeName", "hgcroc_rawdata/eventdata", false) and
+                              edm::ParameterDescription<std::vector<std::string>>("inputs", {}, false)))
+      ->setComment("emulator mode (trivial, or hgcmodule, or slinkfromraw)");
   desc.add<unsigned int>("fedId", 0)->setComment("FED number delivering the emulated frames");
   desc.add<bool>("fedHeaderTrailer", false)->setComment("also add FED header/trailer info");
   desc.add<bool>("storeEmulatorInfo", false)
