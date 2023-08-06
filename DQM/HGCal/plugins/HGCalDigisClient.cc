@@ -263,7 +263,7 @@ void HGCalDigisClient::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& 
 
     int nch(39*6*(1+m.isHD));
     p_hitcount[k] = ibook.book1D("hitcount_"+tag,           ";Channel; #hits",   nch, 0, nch);
-    p_maxadcvstrigtime[k] = ibook.book2D("maxadc_vs_trigtime_"+tag, ";max ADC; Counts",  100, 0, 100, 100,0,1024);   
+    p_maxadcvstrigtime[k] = ibook.book2D("maxadc_vs_trigtime_" + tag, ";Trigtime;max ADC", 200, 0, 200, 100, 0, 1024);
     p_sums[k]             = ibook.book2D("sums_"+tag, ";Channel;", nch,0,nch, 12,0,12);
     p_sums[k]->setBinLabel(1,"N",2);
     p_sums[k]->setBinLabel(2,"#sum ADC",2);
