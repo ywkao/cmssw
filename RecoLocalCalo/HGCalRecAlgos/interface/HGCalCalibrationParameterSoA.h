@@ -12,17 +12,21 @@
 
 namespace hgcalrechit {
 
-  GENERATE_SOA_LAYOUT(HGCalCalibrationParameterSoALayout,
+  GENERATE_SOA_LAYOUT(HGCalCalibrationParameterSoALayout, // channel-level
                       SOA_SCALAR(HGCalCalibrationParameterProviderConfig, config),
-                      SOA_COLUMN(float, gain),       // ROC-level
-                      SOA_COLUMN(float, pedestal),   // channel-level
-                      SOA_COLUMN(float, CM_slope),   // channel-level
-                      SOA_COLUMN(float, CM_offset),  // channel-level
-                      SOA_COLUMN(float, BXm1_slope), // channel-level
-                      SOA_COLUMN(float, BXm1_offset) // channel-level
+                      SOA_COLUMN(float, pedestal),
+                      SOA_COLUMN(float, CM_slope),
+                      SOA_COLUMN(float, CM_offset),
+                      SOA_COLUMN(float, BXm1_slope),
+                      SOA_COLUMN(float, BXm1_offset)
   )
   using HGCalCalibParamSoA = HGCalCalibrationParameterSoALayout<>;
   
+  GENERATE_SOA_LAYOUT(HGCalConfigParameterSoALayout, // ROC-level
+                      SOA_SCALAR(HGCalCalibrationParameterProviderConfig, config),
+                      SOA_COLUMN(float, gain)
+  )
+  using HGCalConfigParamSoA = HGCalConfigParameterSoALayout<>;
 }  // namespace hgcalrechit
 
 #endif  // RecoLocalCalo_HGCalRecAlgos_interface_HGCalCalibrationParameterSoA_h

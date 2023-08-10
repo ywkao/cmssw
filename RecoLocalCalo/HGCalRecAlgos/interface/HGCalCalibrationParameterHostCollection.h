@@ -8,6 +8,7 @@ namespace hgcalrechit {
 
   // SoA with pedestal, CM_slope, CM_offset, BXm1_kappa in host memory
   using HGCalCalibParamHostCollection = PortableHostCollection<HGCalCalibParamSoA>;
+  using HGCalConfigParamHostCollection = PortableHostCollection<HGCalConfigParamSoA>;
 
 }  // namespace hgcalrechit
 

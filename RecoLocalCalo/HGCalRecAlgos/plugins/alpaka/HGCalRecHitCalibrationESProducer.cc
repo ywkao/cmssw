@@ -66,6 +66,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       uint32_t const size = ccp.EventSLinkMax*ccp.sLinkCaptureBlockMax*ccp.captureBlockECONDMax*ccp.econdERXMax*ccp.erxChannelMax;
       hgcalrechit::HGCalCalibParamHostCollection product(size, cms::alpakatools::host());
 
+      uint32_t const size_roc = ccp.EventSLinkMax*ccp.sLinkCaptureBlockMax*ccp.captureBlockECONDMax*ccp.econdERXMax;
+      hgcalrechit::HGCalConfigParamHostCollection product_config(size_roc, cms::alpakatools::host());
+
       product.view().config() = ccp;
 
       // load channel-level calib parameters
@@ -106,7 +109,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       std::vector dummy_values = {7., 11., 13., 17., 19., 23.};
       for(int rocIdx=0; rocIdx<6; ++rocIdx) {
         float gain = dummy_values[rocIdx]; // rocIdx to be determined from electronics Id, maybe?
-        product.view()[rocIdx].gain() = gain;
+        product_config.view()[rocIdx].gain() = gain;
       }
       //---------- end of place holder ----------//
 
