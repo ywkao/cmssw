@@ -123,18 +123,18 @@ void HGCalDigisClientHarvester::dqmEndLuminosityBlock(DQMStore::IBooker & ibooke
   module_keys_ = moduleInfo.getAsSimplifiedModuleLocatorMap(true);
   for(auto m : moduleInfo.params_) {
 
-    TString tag=Form("%d_%d_%d_%d",m.zside,m.plane,m.u,m.v);
+    TString tag=Form("zside%d_plane%d_u%d_v%d",m.zside,m.plane,m.u,m.v);
     MonitorKey_t k(m.zside,m.plane,m.u,m.v);
     int nch(39*6*(1+m.isHD));
 
     ibooker.setCurrentFolder("HGCAL/Summary");    
-    hex_channelId[k]   = ibooker.book2DPoly("hex_channelId"   + tag, "LD wafer with global channel id (readout sequence); x[cm]; y[cm];ID", -26 , 26 , -28 , 24);
-    hex_hgcrocPin[k]   = ibooker.book2DPoly("hex_hgcrocPin"   + tag, "LD wafer with HGCROC pin/chan; x[cm]; y[cm];ID", -26 , 26 , -28 , 24);
-    hex_sicellPadId[k] = ibooker.book2DPoly("hex_sicellPadId" + tag, "LD wafer with Si cell pad Id; x[cm]; y[cm];ID", -26 , 26 , -28 , 24);
-    hex_pedestal[k]    = ibooker.book2DPoly("hex_adc_avg"     + tag, "; x[cm]; y[cm];Average ADC", -26 , 26 , -28 , 24);
-    hex_noise[k]       = ibooker.book2DPoly("hex_adc_std"     + tag, "; x[cm]; y[cm];ADC standard deviation", -26 , 26 , -28 , 24);
-    hex_cmrho[k]       = ibooker.book2DPoly("hex_cmrho"       + tag, "; x[cm]; y[cm];#rho(CM)", -26 , 26 , -28 , 24);
-    hex_bxm1rho[k]     = ibooker.book2DPoly("hex_bxm1rho"     + tag, "; x[cm]; y[cm];#rho(ADC_{-1})", -26 , 26 , -28 , 24);
+    hex_channelId[k]   = ibooker.book2DPoly("hex_channelId_"   + tag, "LD wafer with global channel id (readout sequence); x[cm]; y[cm];ID", -26 , 26 , -28 , 24);
+    hex_hgcrocPin[k]   = ibooker.book2DPoly("hex_hgcrocPin_"   + tag, "LD wafer with HGCROC pin/chan; x[cm]; y[cm];ID", -26 , 26 , -28 , 24);
+    hex_sicellPadId[k] = ibooker.book2DPoly("hex_sicellPadId_" + tag, "LD wafer with Si cell pad Id; x[cm]; y[cm];ID", -26 , 26 , -28 , 24);
+    hex_pedestal[k]    = ibooker.book2DPoly("hex_adc_avg_"     + tag, "; x[cm]; y[cm];Average ADC", -26 , 26 , -28 , 24);
+    hex_noise[k]       = ibooker.book2DPoly("hex_adc_std_"     + tag, "; x[cm]; y[cm];ADC standard deviation", -26 , 26 , -28 , 24);
+    hex_cmrho[k]       = ibooker.book2DPoly("hex_cmrho_"       + tag, "; x[cm]; y[cm];#rho(CM)", -26 , 26 , -28 , 24);
+    hex_bxm1rho[k]     = ibooker.book2DPoly("hex_bxm1rho_"     + tag, "; x[cm]; y[cm];#rho(ADC_{-1})", -26 , 26 , -28 , 24);
 
     p_coeffs[k] = ibooker.book2D("coeffs_"+tag, ";Channel;", nch,0,nch, 11,0,11);
     p_coeffs[k]->setBinLabel(1,"<ADC>",2);
@@ -187,7 +187,7 @@ void HGCalDigisClientHarvester::dqmEndLuminosityBlock(DQMStore::IBooker & ibooke
   for(auto it : module_keys_) {
     
     MonitorKey_t k(it.second);
-    TString tag=Form("%d_%d_%d_%d",std::get<0>(k),std::get<1>(k),std::get<2>(k),std::get<3>(k));
+    TString tag=Form("zside%d_plane%d_u%d_v%d",std::get<0>(k),std::get<1>(k),std::get<2>(k),std::get<3>(k));
 
     std::string meName("HGCAL/Digis/sums_"+tag);
     const MonitorElement *me = igetter.get(meName);
