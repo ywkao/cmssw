@@ -7,7 +7,7 @@ process = cms.Process("TEST")
 options = VarParsing('standard')
 options.register('mode', 'hgcmodule', VarParsing.multiplicity.singleton, VarParsing.varType.string,
                  "type of emulation")
-options.register('fedId', [0], VarParsing.VarParsing.multiplicity.list, VarParsing.varType.int,
+options.register('fedId', [0], VarParsing.multiplicity.list, VarParsing.varType.int,
                  "emulated FED id")
 options.register('debug', False, VarParsing.multiplicity.singleton, VarParsing.varType.int,
                  "debugging mode")
@@ -40,7 +40,7 @@ options.register('storeOutput', True, VarParsing.multiplicity.singleton, VarPars
 options.register('storeRAWOutput', False, VarParsing.multiplicity.singleton, VarParsing.varType.int,
                  "also store the RAW output into a streamer file")
 options.register('storeEmulatorInfo', False, VarParsing.multiplicity.singleton, VarParsing.varType.int,
-                 "also store the emulator metadata')
+                 "also store the emulator metadata")
 options.register('slinkBOE', 0x2a, VarParsing.multiplicity.singleton, VarParsing.varType.int,
                  "Begin of event marker for S-link")
 options.register('cbHeaderMarker', 0x5f, VarParsing.multiplicity.singleton, VarParsing.varType.int,
@@ -199,10 +199,15 @@ process.hgcalCalibrationESProducer = cms.ESProducer('HGCalRecHitCalibrationESPro
     ModuleInfo = cms.ESInputTag('')
 )
 
+process.hgcalConfigESProducer = cms.ESProducer('HGCalRecHitConfigurationESProducer@alpaka',
+    #filename = cms.string(''), # to be set up in configTBConditions
+    ModuleInfo = cms.ESInputTag('')
+)
+
 # CONDITIONS
 # RecHit producer: pedestal txt file for DIGI -> RECO calibration
 # Logical mapping
-process.load('CalibCalorimetry.HGCalPlugins.hgCalPedestalsESSource_cfi') 
+#process.load('CalibCalorimetry.HGCalPlugins.hgCalPedestalsESSource_cfi') # superseded by HGCalCalibrationESProducer
 process.load('Geometry.HGCalMapping.hgCalModuleInfoESSource_cfi')
 process.load('Geometry.HGCalMapping.hgCalSiModuleInfoESSource_cfi')
 from DPGAnalysis.HGCalTools.tb2023_cfi import configTBConditions,addPerformanceReports
@@ -212,18 +217,18 @@ process.load('HeterogeneousCore.CUDACore.ProcessAcceleratorCUDA_cfi')
 if options.GPU:
     process.hgcalRecHit = cms.EDProducer( 'alpaka_cuda_async::HGCalRecHitProducer',
         digis = cms.InputTag('hgcalDigis', '', 'TEST'),
-        eventSetupSource = cms.ESInputTag('hgcalCalibrationESProducer', ''),
+        eventCalibSource = cms.ESInputTag('hgcalCalibrationESProducer', ''),
+        eventConfigSource = cms.ESInputTag('hgcalConfigParamESProducer', ''),
         n_hits_scale = cms.int32(1),
-        pedestal_label = cms.ESInputTag(''), # for HGCalPedestalsESSource
         n_blocks = cms.int32(4096),
         n_threads = cms.int32(1024)
     )
 else:
     process.hgcalRecHit = cms.EDProducer( 'alpaka_serial_sync::HGCalRecHitProducer',
         digis = cms.InputTag('hgcalDigis', '', 'TEST'),
-        eventSetupSource = cms.ESInputTag('hgcalCalibrationESProducer', ''),
+        eventCalibSource = cms.ESInputTag('hgcalCalibrationESProducer', ''),
+        eventConfigSource = cms.ESInputTag('hgcalConfigParamESProducer', ''),
         n_hits_scale = cms.int32(1),
-        pedestal_label = cms.ESInputTag(''), # for HGCalPedestalsESSource
         n_blocks = cms.int32(1024),
         n_threads = cms.int32(4096)
     )
