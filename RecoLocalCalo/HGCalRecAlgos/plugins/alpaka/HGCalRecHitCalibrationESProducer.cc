@@ -50,7 +50,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       descriptions.addWithDefaultLabel(desc);
     }
 
-    std::optional<hgcalrechit::HGCalCalibParamHostCollection> produce(HGCalCondSerializableModuleInfoRcd const& iRecord) {
+    typedef edm::ESProducts<std::optional<hgcalrechit::HGCalCalibParamHostCollection>, hgcalrechit::HGCalConfigParamHostCollection> ReturnProducts;
+    ReturnProducts produce(HGCalCondSerializableModuleInfoRcd const& iRecord) {
       auto const& moduleInfo = iRecord.get(moduleInfoToken_);
 
       // load config
@@ -65,9 +66,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       uint32_t const size = ccp.EventSLinkMax*ccp.sLinkCaptureBlockMax*ccp.captureBlockECONDMax*ccp.econdERXMax*ccp.erxChannelMax;
       hgcalrechit::HGCalCalibParamHostCollection product(size, cms::alpakatools::host());
+      // auto product = std::make_unique<hgcalrechit::HGCalCalibParamHostCollection>(size, cms::alpakatools::host());
 
       uint32_t const size_roc = ccp.EventSLinkMax*ccp.sLinkCaptureBlockMax*ccp.captureBlockECONDMax*ccp.econdERXMax;
-      hgcalrechit::HGCalConfigParamHostCollection product_config(size_roc, cms::alpakatools::host());
+      hgcalrechit::HGCalConfigParamHostCollection product_rocParam(size_roc, cms::alpakatools::host());
 
       product.view().config() = ccp;
 
@@ -106,14 +108,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       // load roc-level calib parameters
       //---------- place holder ----------//
+      product_rocParam.view().config() = ccp;
       std::vector dummy_values = {7., 11., 13., 17., 19., 23.};
       for(int rocIdx=0; rocIdx<6; ++rocIdx) {
         float gain = dummy_values[rocIdx]; // rocIdx to be determined from electronics Id, maybe?
-        product_config.view()[rocIdx].gain() = gain;
+        product_rocParam.view()[rocIdx].gain() = gain;
       }
       //---------- end of place holder ----------//
 
-      return product;
+      return edm::es::products(product, product_rocParam);
     } // end of produce()
 
   private:
