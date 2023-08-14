@@ -50,7 +50,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       descriptions.addWithDefaultLabel(desc);
     }
 
-    typedef edm::ESProducts<std::optional<hgcalrechit::HGCalCalibParamHostCollection>, hgcalrechit::HGCalConfigParamHostCollection> ReturnProducts;
+    typedef edm::ESProducts<std::optional<hgcalrechit::HGCalCalibParamHostCollection>, std::optional<hgcalrechit::HGCalConfigParamHostCollection>> ReturnProducts;
     ReturnProducts produce(HGCalCondSerializableModuleInfoRcd const& iRecord) {
       auto const& moduleInfo = iRecord.get(moduleInfoToken_);
 
