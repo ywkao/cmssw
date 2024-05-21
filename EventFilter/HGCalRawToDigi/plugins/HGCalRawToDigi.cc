@@ -11,6 +11,7 @@
 #include "DataFormats/FEDRawData/interface/FEDRawDataCollection.h"
 #include "DataFormats/HGCalDigi/interface/HGCalElectronicsId.h"
 #include "DataFormats/HGCalDigi/interface/HGCalDigiHost.h"
+#include "DataFormats/HGCalDigi/interface/HGCalECONDInfoHost.h"
 
 #include "CondFormats/DataRecord/interface/HGCalElectronicsMappingRcd.h"
 #include "CondFormats/HGCalObjects/interface/HGCalMappingModuleIndexer.h"
@@ -95,12 +96,10 @@ void HGCalRawToDigi::beginRun(edm::Run const& iRun, edm::EventSetup const& iSetu
 
 void HGCalRawToDigi::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
   hgcaldigi::HGCalDigiHost digis(cellIndexer_.maxDenseIndex(), cms::alpakatools::host());
+  hgcaldigi::HGCalECONDInfoHost econdInfo(moduleIndexer_.getMaxModuleSize(), cms::alpakatools::host());
   // std::cout << "Created DIGIs SOA with " << digis.view().metadata().size() << " entries" << std::endl;
 
   // TODO @hqucms
-  // CM and error flags output
-  hgcaldigi::HGCalDigiHost common_modes(cellIndexer_.maxDenseIndex(), cms::alpakatools::host());
-  std::vector<HGCalFlaggedECONDInfo> errors;
 
   // retrieve the FED raw data
   const auto& raw_data = iEvent.get(fedRawToken_);
@@ -109,7 +108,7 @@ void HGCalRawToDigi::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
     const auto& fed_data = raw_data.FEDData(fedId);
     if (fed_data.size() == 0)
       continue;
-    unpacker_.parseFEDData(fedId, fed_data, digis, common_modes, errors);
+    unpacker_.parseFEDData(fedId, fed_data, moduleIndexer_, digis, econdInfo, /*headerOnlyMode*/ false);
   }
 
   // TODO @hqucms
@@ -181,18 +180,6 @@ void HGCalRawToDigi::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) 
   //         << "Too many flagged ECON-Ds: " << flagged_econds.size() << " > " << flaggedECONDMax_ << ".";
   //   }
   // }
-
-  // TODO @hqucms
-  // fill dummy outputs
-  for (unsigned int i = 0; i < cellIndexer_.maxDenseIndex(); i++) {
-    digis.view()[i].tctp() = 0;
-    digis.view()[i].adcm1() = 0;
-    digis.view()[i].adc() = 0;
-    digis.view()[i].tot() = 0;
-    digis.view()[i].toa() = 0;
-    digis.view()[i].cm() = 0;
-    digis.view()[i].flags() = 0;
-  }
 
   // put information to the event
   iEvent.emplace(digisToken_, std::move(digis));
