@@ -1,4 +1,5 @@
 #include "RecoLocalCalo/HGCalRecProducers/plugins/HGCalCLUEAlgo.h"
+#include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 
 // Geometry
 #include "DataFormats/HcalDetId/interface/HcalSubdetector.h"
@@ -36,6 +37,7 @@ void HGCalCLUEAlgoT<T, STRATEGY>::populate(const HGCRecHitCollection& hits) {
   for (unsigned int i = 0; i < hits.size(); ++i) {
     const HGCRecHit& hgrh = hits[i];
     DetId detid = hgrh.detid();
+    auto cellType = rhtools_.getCellType(detid);
     unsigned int layerOnSide = (rhtools_.getLayerWithOffset(detid) - 1);
 
     // set sigmaNoise default value 1 to use kappa value directly in case of
@@ -61,6 +63,7 @@ void HGCalCLUEAlgoT<T, STRATEGY>::populate(const HGCRecHitCollection& hits) {
     const GlobalPoint position(rhtools_.getPosition(detid));
     int offset = ((rhtools_.zside(detid) + 1) >> 1) * maxlayer_;
     int layer = layerOnSide + offset;
+    cells_[layer].cellType.emplace_back(cellType);
     // setting the layer position only once per layer
     if (cells_[layer].layerDim3 == std::numeric_limits<float>::infinity())
       cells_[layer].layerDim3 = position.z();
@@ -86,6 +89,7 @@ void HGCalCLUEAlgoT<T, STRATEGY>::prepareDataStructures(unsigned int l) {
   cells_[l].delta.resize(cellsSize, 9999999);
   cells_[l].nearestHigher.resize(cellsSize, -1);
   cells_[l].clusterIndex.resize(cellsSize, -1);
+  cells_[l].cellType.resize(cellsSize, -1);
   cells_[l].followers.resize(cellsSize);
   cells_[l].isSeed.resize(cellsSize, false);
 }
@@ -104,33 +108,31 @@ void HGCalCLUEAlgoT<T, STRATEGY>::makeClusters() {
       lt.clear();
       lt.fill(cells_[i].dim1, cells_[i].dim2);
 
-      float delta;
+      float delta_c;
+
       if constexpr (std::is_same_v<STRATEGY, HGCalSiliconStrategy>) {
         // maximum search distance (critical distance) for local density calculation
-        float delta_c;
-        if (i % maxlayer_ < lastLayerEE_)
-          delta_c = vecDeltas_[0];
-        else if (i % maxlayer_ < (firstLayerBH_ - 1))
-          delta_c = vecDeltas_[1];
-        else
-          delta_c = vecDeltas_[2];
-        delta = delta_c;
+        if (i % maxlayer_ < lastLayerEE_){
+          delta_c = vecDeltasC_[0];
+        }
+        else if (i % maxlayer_ < (firstLayerBH_ - 1)){
+          delta_c = vecDeltasC_[1];
+        }
+        else{
+          delta_c = vecDeltasC_[2];
+        }
       } else {
-        float delta_r = vecDeltas_[3];
-        delta = delta_r;
+        delta_c = vecDeltasC_[3];
       }
+
       LogDebug("HGCalCLUEAlgo") << "maxlayer: " << maxlayer_ << " lastLayerEE: " << lastLayerEE_
                                 << " firstLayerBH: " << firstLayerBH_ << "\n";
 
-      calculateLocalDensity(lt, i, delta);
-      calculateDistanceToHigher(lt, i, delta);
-      numberOfClustersPerLayer_[i] = findAndAssignClusters(i, delta);
+      calculateLocalDensity(lt, i, delta_c);
+      calculateDistanceToHigher(lt, i, vecDeltasO_);
+      numberOfClustersPerLayer_[i] = findAndAssignClusters(i, delta_c, vecDeltasO_);
     });
   });
-#if DEBUG_CLUSTERS_ALPAKA
-  hgcalUtils::DumpLegacySoA dumperLegacySoA;
-  dumperLegacySoA.dumpInfos(cells_, moduleType_);
-#endif
 }
 
 template <typename T, typename STRATEGY>
@@ -219,8 +221,7 @@ std::vector<reco::BasicCluster> HGCalCLUEAlgoT<T, STRATEGY>::getClusters(bool) {
         x *= inv_tot_weight;
         y *= inv_tot_weight;
       } else {
-        x = cellsOnLayer.dim1[maxEnergyCellIndex];
-        y = cellsOnLayer.dim2[maxEnergyCellIndex];
+        x = y = 0.f;
       }
       math::XYZPoint position = math::XYZPoint(x, y, z);
 
@@ -335,7 +336,7 @@ void HGCalCLUEAlgoT<T, STRATEGY>::calculateLocalDensity(const T& lt,
   }
 }
 template <typename T, typename STRATEGY>
-void HGCalCLUEAlgoT<T, STRATEGY>::calculateLocalDensity(const T& lt, const unsigned int layerId, float delta) {
+void HGCalCLUEAlgoT<T, STRATEGY>::calculateLocalDensity(const T& lt, const unsigned int layerId, const float delta) {
   if constexpr (std::is_same_v<STRATEGY, HGCalSiliconStrategy>) {
     calculateLocalDensity(lt, layerId, delta, HGCalSiliconStrategy());
   } else {
@@ -344,21 +345,22 @@ void HGCalCLUEAlgoT<T, STRATEGY>::calculateLocalDensity(const T& lt, const unsig
 }
 
 template <typename T, typename STRATEGY>
-void HGCalCLUEAlgoT<T, STRATEGY>::calculateDistanceToHigher(const T& lt, const unsigned int layerId, float delta) {
+void HGCalCLUEAlgoT<T, STRATEGY>::calculateDistanceToHigher(const T& lt, const unsigned int layerId, const std::vector<double>& deltas_o) {
   auto& cellsOnLayer = cells_[layerId];
   unsigned int numberOfCells = cellsOnLayer.detid.size();
 
   for (unsigned int i = 0; i < numberOfCells; i++) {
     // initialize delta and nearest higher for i
+    auto const cellType = cellsOnLayer.cellType[i];
+    auto const delta = deltas_o[cellType];
+
     float maxDelta = std::numeric_limits<float>::max();
     float i_delta = maxDelta;
     int i_nearestHigher = -1;
-    float rho_max = 0.f;
-    auto range = outlierDeltaFactor_ * delta;
-    std::array<int, 4> search_box = lt.searchBox(cellsOnLayer.dim1[i] - range,
-                                                 cellsOnLayer.dim1[i] + range,
-                                                 cellsOnLayer.dim2[i] - range,
-                                                 cellsOnLayer.dim2[i] + range);
+    std::array<int, 4> search_box = lt.searchBox(cellsOnLayer.dim1[i] - delta,
+                                                 cellsOnLayer.dim1[i] + delta,
+                                                 cellsOnLayer.dim2[i] - delta,
+                                                 cellsOnLayer.dim2[i] + delta);
     // loop over all bins in the search box
     for (int dim1Bin = search_box[0]; dim1Bin < search_box[1] + 1; ++dim1Bin) {
       for (int dim2Bin = search_box[2]; dim2Bin < search_box[3] + 1; ++dim2Bin) {
@@ -372,18 +374,14 @@ void HGCalCLUEAlgoT<T, STRATEGY>::calculateDistanceToHigher(const T& lt, const u
         // loop over all hits in this bin
         for (unsigned int j = 0; j < binSize; j++) {
           unsigned int otherId = lt[binId][j];
-          float dist = distance2(lt, i, otherId, layerId);
+          float dist = distance(lt, i, otherId, layerId);
           bool foundHigher =
               (cellsOnLayer.rho[otherId] > cellsOnLayer.rho[i]) ||
               (cellsOnLayer.rho[otherId] == cellsOnLayer.rho[i] && cellsOnLayer.detid[otherId] > cellsOnLayer.detid[i]);
-          if (!foundHigher) {
-            continue;
-          }
-          if ((dist < i_delta) || ((dist == i_delta) && (cellsOnLayer.rho[otherId] > rho_max)) ||
-              ((dist == i_delta) && (cellsOnLayer.rho[otherId] == rho_max) &&
-               (cellsOnLayer.detid[otherId] > cellsOnLayer.detid[i]))) {
-            rho_max = cellsOnLayer.rho[otherId];
+          if (foundHigher && dist <= i_delta) {
+            // update i_delta
             i_delta = dist;
+            // update i_nearestHigher
             i_nearestHigher = otherId;
           }
         }
@@ -391,7 +389,7 @@ void HGCalCLUEAlgoT<T, STRATEGY>::calculateDistanceToHigher(const T& lt, const u
     }
     bool foundNearestHigherInSearchBox = (i_delta != maxDelta);
     if (foundNearestHigherInSearchBox) {
-      cellsOnLayer.delta[i] = std::sqrt(i_delta);
+      cellsOnLayer.delta[i] = i_delta;
       cellsOnLayer.nearestHigher[i] = i_nearestHigher;
     } else {
       // otherwise delta is guaranteed to be larger outlierDeltaFactor_*delta_c
@@ -409,7 +407,7 @@ void HGCalCLUEAlgoT<T, STRATEGY>::calculateDistanceToHigher(const T& lt, const u
 }
 
 template <typename T, typename STRATEGY>
-int HGCalCLUEAlgoT<T, STRATEGY>::findAndAssignClusters(const unsigned int layerId, float delta) {
+int HGCalCLUEAlgoT<T, STRATEGY>::findAndAssignClusters(const unsigned int layerId, const float delta_c, const std::vector<double>& deltas_o) {
   // this is called once per layer and endcap...
   // so when filling the cluster temporary vector of Hexels we resize each time
   // by the number  of clusters found. This is always equal to the number of
@@ -417,14 +415,17 @@ int HGCalCLUEAlgoT<T, STRATEGY>::findAndAssignClusters(const unsigned int layerI
   unsigned int nClustersOnLayer = 0;
   auto& cellsOnLayer = cells_[layerId];
   unsigned int numberOfCells = cellsOnLayer.detid.size();
+  
   std::vector<int> localStack;
   // find cluster seeds and outlier
   for (unsigned int i = 0; i < numberOfCells; i++) {
+    auto const cellType = cellsOnLayer.cellType[i];
+    auto const delta_o = deltas_o[cellType];
     float rho_c = kappa_ * cellsOnLayer.sigmaNoise[i];
     // initialize clusterIndex
     cellsOnLayer.clusterIndex[i] = -1;
-    bool isSeed = (cellsOnLayer.delta[i] > delta) && (cellsOnLayer.rho[i] >= rho_c);
-    bool isOutlier = (cellsOnLayer.delta[i] > outlierDeltaFactor_ * delta) && (cellsOnLayer.rho[i] < rho_c);
+    bool isSeed = (cellsOnLayer.delta[i] > delta_c) && (cellsOnLayer.rho[i] >= rho_c);
+    bool isOutlier = (cellsOnLayer.delta[i] > delta_o) && (cellsOnLayer.rho[i] < rho_c);
     if (isSeed) {
       cellsOnLayer.clusterIndex[i] = nClustersOnLayer;
       cellsOnLayer.isSeed[i] = true;
