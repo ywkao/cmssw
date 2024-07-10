@@ -330,7 +330,11 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
                               }),
                result.end());
   if (doPidCut_) {
-    energyRegressionAndID(input.layerClusters, input.tfSession, result);
+    //energyRegressionAndID(input.layerClusters, input.tfSession, result);
+
+    std::cout<<" ============================ this step is working =============================="<<std::endl;
+
+    energyRegressionAndID(input.layerClusters, input.tfSession, input.onnxSession ,result);
     result.erase(std::remove_if(std::begin(result),
                                 std::end(result),
                                 [&](auto const &v) {
@@ -373,6 +377,7 @@ void PatternRecognitionbyCLUE3D<TILES>::makeTracksters(
 template <typename TILES>
 void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<reco::CaloCluster> &layerClusters,
                                                               const tensorflow::Session *eidSession,
+							      const cms::Ort::ONNXRuntime *onnxSession,
                                                               std::vector<Trackster> &tracksters) {
   // Energy regression and particle identification strategy:
   //
@@ -435,7 +440,22 @@ void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<
   if (!eidOutputNameId_.empty()) {
     outputNames.push_back(eidOutputNameId_);
   }
+  //new
+  //std::vector<int64_t> inputShape = {batchSize, eidNLayers_, eidNClusters_, eidNFeatures_};
+  //std::vector<std::vector<int64_t>> input_shapes = {inputShape};
+  //std::vector<std::vector<float>> inputData(batchSize * eidNLayers_ * eidNClusters_, std::vector<float>(eidNFeatures_));
+  //std::vector<std::string> inputNames = {eidInputName_};
+  //std::vector<std::string> outputNames_onnx;
+  //if (!eidOutputNameEnergy_.empty()) {
+  //  outputNames_onnx.push_back(eidOutputNameEnergy_);
+  // }
+  //if (!eidOutputNameId_.empty()) {
+  //  outputNames_onnx.push_back(eidOutputNameId_);
+  //}
+  //new
+  
 
+  
   // fill input tensor (5)
   for (int i = 0; i < batchSize; i++) {
     const Trackster &trackster = tracksters[tracksterIndices[i]];
@@ -462,7 +482,9 @@ void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<
       if (j < eidNLayers_ && seenClusters[j] < eidNClusters_) {
         // get the pointer to the first feature value for the current batch, layer and cluster
         float *features = &input.tensor<float, 4>()(i, j, seenClusters[j], 0);
-
+        //int index1 = (i * eidNLayers_ + j) * eidNClusters_ + seenClusters[j];
+        //int index2 = 0;	
+        //float *features = &inputData[index1][index2];
         // fill features
         *(features++) = float(cluster.energy() / float(trackster.vertex_multiplicity(k)));
         *(features++) = float(std::abs(cluster.eta()));
@@ -486,6 +508,9 @@ void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<
 
   // run the inference (7)
   tensorflow::run(eidSession, inputList, outputNames, &outputs);
+  //std::vector<float> outputTensors;
+  //outputTensors = onnxSession->run(inputNames, inputData, input_shapes)[0];
+  //std::cout<< "Network output shape is " << outputTensors.size() << std::endl;
 
   // store regressed energy per trackster (8)
   if (!eidOutputNameEnergy_.empty()) {

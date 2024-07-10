@@ -20,6 +20,7 @@ namespace ticl {
 
     void energyRegressionAndID(const std::vector<reco::CaloCluster>& layerClusters,
                                const tensorflow::Session*,
+                               const cms::Ort::ONNXRuntime*,
                                std::vector<Trackster>& result);
 
     static void fillPSetDescription(edm::ParameterSetDescription& iDesc);

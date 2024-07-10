@@ -22,6 +22,7 @@ namespace ticl {
 
     void energyRegressionAndID(const std::vector<reco::CaloCluster>& layerClusters,
                                const tensorflow::Session*,
+                               const cms::Ort::ONNXRuntime*,
                                std::vector<Trackster>& result);
     void emptyTrackstersFromSeedsTRK(std::vector<Trackster>& tracksters,
                                      std::unordered_map<int, std::vector<int>>& seedToTracksterAssociation,
@@ -65,6 +66,8 @@ namespace ticl {
 
     hgcal::RecHitTools rhtools_;
     tensorflow::Session* eidSession_;
+    cms::Ort::ONNXRuntime* onnSession_;
+
     const std::vector<double> siblings_maxRSquared_;
 
     static const int eidNFeatures_ = 3;

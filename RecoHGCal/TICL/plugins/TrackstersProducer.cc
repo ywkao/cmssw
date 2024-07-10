@@ -26,8 +26,10 @@
 #include "PhysicsTools/TensorFlow/interface/TfGraphRecord.h"
 #include "PhysicsTools/TensorFlow/interface/TensorFlow.h"
 #include "PhysicsTools/TensorFlow/interface/TfGraphDefWrapper.h"
+#include "PhysicsTools/ONNXRuntime/interface/ONNXRuntime.h"
 
 using namespace ticl;
+using namespace cms::Ort;
 
 class TrackstersProducer : public edm::stream::EDProducer<> {
 public:
@@ -50,6 +52,10 @@ private:
   std::unique_ptr<PatternRecognitionAlgoBaseT<TICLLayerTiles>> myAlgo_;
   std::unique_ptr<PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>> myAlgoHFNose_;
 
+  const std::string onnxModelPath_;
+  //const edm::ESGetToken<Ort::Session, ONNXRuntime> OnnxToken_;
+  const cms::Ort::ONNXRuntime* onnxSession_;
+
   const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
   const edm::EDGetTokenT<std::vector<float>> filtered_layerclusters_mask_token_;
   const edm::EDGetTokenT<std::vector<float>> original_layerclusters_mask_token_;
@@ -68,6 +74,12 @@ TrackstersProducer::TrackstersProducer(const edm::ParameterSet& ps)
       tfDnnLabel_(ps.getParameter<std::string>("tfDnnLabel")),
       tfDnnToken_(esConsumes(edm::ESInputTag("", tfDnnLabel_))),
       tfSession_(nullptr),
+
+      onnxModelPath_(ps.getParameter<edm::FileInPath>("onnxModelPath").fullPath()),
+      //OnnxLabel_(ps.getParameter<std::string>("OnnxLabel")),
+      //OnnxToken_(esConsumes(edm::ESInputTag("", OnnxLabel_))),
+      onnxSession_(nullptr),
+
       clusters_token_(consumes<std::vector<reco::CaloCluster>>(ps.getParameter<edm::InputTag>("layer_clusters"))),
       filtered_layerclusters_mask_token_(consumes<std::vector<float>>(ps.getParameter<edm::InputTag>("filtered_mask"))),
       original_layerclusters_mask_token_(consumes<std::vector<float>>(ps.getParameter<edm::InputTag>("original_mask"))),
@@ -118,8 +130,12 @@ void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descri
   desc.add<std::string>("patternRecognitionBy", "CA");
   desc.add<std::string>("itername", "unknown");
   desc.add<std::string>("tfDnnLabel", "tracksterSelectionTf");
+  //desc.add<std::string>("OnnxLabel", "tracksterSelectionTf");
 
-  // CA Plugin
+  desc.add<edm::FileInPath>("onnxModelPath", edm::FileInPath("RecoHGCal/TICL/data/tf_models/energy_id_v0.onnx"))
+        ->setComment("Path ONNX model");
+
+ // CA Plugin
   edm::ParameterSetDescription pluginDesc;
   pluginDesc.addNode(edm::PluginDescription<PatternRecognitionFactory>("type", "CA", true));
   desc.add<edm::ParameterSetDescription>("pluginPatternRecognitionByCA", pluginDesc);
@@ -152,9 +168,16 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
   const auto& layerClustersTimes = evt.get(clustersTime_token_);
   const auto& seeding_regions = evt.get(seeding_regions_token_);
 
-  tfSession_ = es.getData(tfDnnToken_).getSession();
+  tfSession_   = es.getData(tfDnnToken_).getSession();
+  //onnxSession_ = es.getData(OnnxToken_).Session();
+  static std::unique_ptr<cms::Ort::ONNXRuntime> onnxRuntimeInstance = std::make_unique<cms::Ort::ONNXRuntime>(onnxModelPath_.c_str());
+  onnxSession_ = onnxRuntimeInstance.get();
+  
+  //onnxSession_ = std::make_unique<cms::Ort::ONNXRuntime>(onnxModelPath_.c_str());
+  
+  //cms::Ort::ONNXRuntime const *onnxRuntime
 
-  std::unordered_map<int, std::vector<int>> seedToTrackstersAssociation;
+   std::unordered_map<int, std::vector<int>> seedToTrackstersAssociation;
   // if it's regional iteration and there are seeding regions
   if (!seeding_regions.empty() and seeding_regions[0].index != -1) {
     auto numberOfSeedingRegions = seeding_regions.size();
@@ -172,14 +195,17 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
                                                                                          layerClustersTimes,
                                                                                          layer_clusters_hfnose_tiles,
                                                                                          seeding_regions,
-                                                                                         tfSession_);
+                                                                                         tfSession_,
+											 onnxSession_);
 
     myAlgoHFNose_->makeTracksters(inputHFNose, *result, seedToTrackstersAssociation);
 
   } else {
     const auto& layer_clusters_tiles = evt.get(layer_clusters_tiles_token_);
+    std::cout<<" ============================ this step is working =============================="<<std::endl;
+
     const typename PatternRecognitionAlgoBaseT<TICLLayerTiles>::Inputs input(
-        evt, es, layerClusters, inputClusterMask, layerClustersTimes, layer_clusters_tiles, seeding_regions, tfSession_);
+    evt, es, layerClusters, inputClusterMask, layerClustersTimes, layer_clusters_tiles, seeding_regions, tfSession_, onnxSession_);
 
     myAlgo_->makeTracksters(input, *result, seedToTrackstersAssociation);
   }

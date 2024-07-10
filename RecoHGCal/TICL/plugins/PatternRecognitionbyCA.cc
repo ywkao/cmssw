@@ -14,6 +14,7 @@
 #include "FWCore/Framework/interface/EventSetup.h"
 
 using namespace ticl;
+using namespace cms::Ort;
 
 template <typename TILES>
 PatternRecognitionbyCA<TILES>::PatternRecognitionbyCA(const edm::ParameterSet &conf, edm::ConsumesCollector iC)
@@ -187,7 +188,7 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
                               computeLocalTime_);
 
   // run energy regression and ID
-  energyRegressionAndID(input.layerClusters, input.tfSession, tmpTracksters);
+  energyRegressionAndID(input.layerClusters, input.tfSession, input.onnxSession ,tmpTracksters);
   // Filter results based on PID criteria or EM/Total energy ratio.
   // We want to **keep** tracksters whose cumulative
   // probability summed up over the selected categories
@@ -249,7 +250,7 @@ void PatternRecognitionbyCA<TILES>::makeTracksters(
                               computeLocalTime_);
 
   // run energy regression and ID
-  energyRegressionAndID(input.layerClusters, input.tfSession, result);
+  energyRegressionAndID(input.layerClusters, input.tfSession, input.onnxSession, result);
 
   // now adding dummy tracksters from seeds not connected to any shower in the result collection
   // these are marked as charged hadrons with probability 1.
@@ -348,6 +349,7 @@ void PatternRecognitionbyCA<TILES>::emptyTrackstersFromSeedsTRK(
 template <typename TILES>
 void PatternRecognitionbyCA<TILES>::energyRegressionAndID(const std::vector<reco::CaloCluster> &layerClusters,
                                                           const tensorflow::Session *eidSession,
+							  const cms::Ort::ONNXRuntime *onnxSession,
                                                           std::vector<Trackster> &tracksters) {
   // Energy regression and particle identification strategy:
   //
@@ -411,6 +413,21 @@ void PatternRecognitionbyCA<TILES>::energyRegressionAndID(const std::vector<reco
     outputNames.push_back(eidOutputNameId_);
   }
 
+  //new
+  std::vector<int64_t> inputShape = {batchSize, eidNLayers_, eidNClusters_, eidNFeatures_};
+  std::vector<std::vector<int64_t>> input_shapes = {inputShape};
+  std::vector<std::vector<float>> inputData(batchSize * eidNLayers_ * eidNClusters_, std::vector<float>(eidNFeatures_));
+  std::vector<std::string> inputNames = {eidInputName_};
+  std::vector<std::string> outputNames_onnx;
+  if (!eidOutputNameEnergy_.empty()) {
+    outputNames_onnx.push_back(eidOutputNameEnergy_);
+  }
+  if (!eidOutputNameId_.empty()) {
+    outputNames_onnx.push_back(eidOutputNameId_);
+  }
+  //new
+  
+  
   // fill input tensor (5)
   for (int i = 0; i < batchSize; i++) {
     const Trackster &trackster = tracksters[tracksterIndices[i]];
@@ -428,7 +445,6 @@ void PatternRecognitionbyCA<TILES>::energyRegressionAndID(const std::vector<reco
 
     // keep track of the number of seen clusters per layer
     std::vector<int> seenClusters(eidNLayers_);
-
     // loop through clusters by descending energy
     for (const int &k : clusterIndices) {
       // get features per layer and cluster and store the values directly in the input tensor
@@ -436,13 +452,15 @@ void PatternRecognitionbyCA<TILES>::energyRegressionAndID(const std::vector<reco
       int j = rhtools_.getLayerWithOffset(cluster.hitsAndFractions()[0].first) - 1;
       if (j < eidNLayers_ && seenClusters[j] < eidNClusters_) {
         // get the pointer to the first feature value for the current batch, layer and cluster
-        float *features = &input.tensor<float, 4>()(i, j, seenClusters[j], 0);
-
+        //float *features = &input.tensor<float, 4>()(i, j, seenClusters[j], 0);
+	int index1 = (i * eidNLayers_ + j) * eidNClusters_ + seenClusters[j];
+	int index2 = 0; 
+	float *features = &inputData[index1][index2];
+        //float *features = &input.tensor<float, 4>()(i, j, seenClusters[j], 0);
         // fill features
         *(features++) = float(cluster.energy() / float(trackster.vertex_multiplicity(k)));
         *(features++) = float(std::abs(cluster.eta()));
         *(features) = float(cluster.phi());
-
         // increment seen clusters
         seenClusters[j]++;
       }
@@ -459,9 +477,15 @@ void PatternRecognitionbyCA<TILES>::energyRegressionAndID(const std::vector<reco
     }
   }
 
+
   // run the inference (7)
   tensorflow::run(eidSession, inputList, outputNames, &outputs);
+  //auto outputTensors = onnxSession.Run(Ort::RunOptions{nullptr}, inputNames.data(), inputTensors.data(), inputTensors.size(), outputNames.data(), outputNames.size());
 
+  std::vector<float> outputTensors;
+  outputTensors = onnxSession->run(inputNames, inputData, input_shapes)[0];
+  std::cout<< "Network output shape is " << outputTensors.size() << std::endl;
+       
   // store regressed energy per trackster (8)
   if (!eidOutputNameEnergy_.empty()) {
     // get the pointer to the energy tensor, dimension is batch x 1
