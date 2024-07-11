@@ -432,6 +432,31 @@ void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<
   tensorflow::Tensor input(tensorflow::DT_FLOAT, shape);
   tensorflow::NamedTensorList inputList = {{eidInputName_, input}};
 
+  //--------------------------------------------------
+  // Get input node names and types (from chatGPT)
+  //--------------------------------------------------
+  // size_t num_input_nodes = onnxSession->GetInputCount();
+  // std::vector<const char*> input_node_names(num_input_nodes);
+  // std::vector<std::vector<int64_t>> input_node_dims(num_input_nodes);
+
+  // Ort::AllocatorWithDefaultOptions allocator;
+
+  // for (size_t i = 0; i < num_input_nodes; i++) {
+  //     char* input_name = onnxSession->GetInputName(i, allocator);
+  //     input_node_names[i] = input_name;
+
+  //     std::cout << "[DEBUG-gpt] input_name = " << input_name << std::endl;
+
+  //     Ort::TypeInfo type_info = onnxSession->GetInputTypeInfo(i);
+  //     auto tensor_info = type_info.GetTensorTypeAndShapeInfo();
+  //     input_node_dims[i] = tensor_info.GetShape();
+  // }
+
+  //--------------------------------------------------
+
+  std::cout << "[DEBUG] inputList.size() = " << inputList.size() << std::endl;
+  std::cout << "[DEBUG] eidInputName_ = " << eidInputName_ << std::endl;
+
   std::vector<tensorflow::Tensor> outputs;
   std::vector<std::string> outputNames;
   if (!eidOutputNameEnergy_.empty()) {
@@ -441,20 +466,33 @@ void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<
     outputNames.push_back(eidOutputNameId_);
   }
   //new
-  //std::vector<int64_t> inputShape = {batchSize, eidNLayers_, eidNClusters_, eidNFeatures_};
-  //std::vector<std::vector<int64_t>> input_shapes = {inputShape};
-  //std::vector<std::vector<float>> inputData(batchSize * eidNLayers_ * eidNClusters_, std::vector<float>(eidNFeatures_));
-  //std::vector<std::string> inputNames = {eidInputName_};
-  //std::vector<std::string> outputNames_onnx;
-  //if (!eidOutputNameEnergy_.empty()) {
-  //  outputNames_onnx.push_back(eidOutputNameEnergy_);
-  // }
-  //if (!eidOutputNameId_.empty()) {
-  //  outputNames_onnx.push_back(eidOutputNameId_);
-  //}
-  //new
   
+  // 1x50x10x3
+  std::cout << "[DEBUG] batchSize = " << batchSize << std::endl;
+  std::cout << "[DEBUG] eidNLayers_ = " << eidNLayers_ << std::endl;
+  std::cout << "[DEBUG] eidNClusters_ = " << eidNClusters_ << std::endl;
+  std::cout << "[DEBUG] eidNFeatures_ = " << eidNFeatures_ << std::endl;
 
+  std::vector<int64_t> inputShape = {batchSize, eidNLayers_, eidNClusters_, eidNFeatures_};
+  std::vector<std::vector<int64_t>> input_shapes = {inputShape};
+  // std::vector<float> data_content(batchSize * eidNLayers_ * eidNClusters_, std::vector<float>(eidNFeatures_));
+  // std::vector<std::vector<float>> inputData = {data_content};
+  // std::vector<std::vector<float>> inputData(batchSize * eidNLayers_ * eidNClusters_, std::vector<float>(eidNFeatures_));
+  std::vector<std::vector<float>> inputData; // = {std::vector<float>(eidNFeatures_)};
+
+  inputData.clear();
+  inputData.emplace_back(batchSize*eidNLayers_*eidNClusters_*eidNFeatures_, 0);
+
+  std::vector<std::string> inputNames = {"input:0"}; // {eidInputName_};
+  std::vector<std::string> outNames = {"output/regressed_energy:0", "output/id_probabilities:0"}; // {eidInputName_};
+  std::vector<std::string> outputNames_onnx;
+  if (!eidOutputNameEnergy_.empty()) {
+    outputNames_onnx.push_back(eidOutputNameEnergy_);
+   }
+  if (!eidOutputNameId_.empty()) {
+    outputNames_onnx.push_back(eidOutputNameId_);
+  }
+  //new
   
   // fill input tensor (5)
   for (int i = 0; i < batchSize; i++) {
@@ -481,10 +519,10 @@ void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<
       int j = rhtools_.getLayerWithOffset(cluster.hitsAndFractions()[0].first) - 1;
       if (j < eidNLayers_ && seenClusters[j] < eidNClusters_) {
         // get the pointer to the first feature value for the current batch, layer and cluster
-        float *features = &input.tensor<float, 4>()(i, j, seenClusters[j], 0);
-        //int index1 = (i * eidNLayers_ + j) * eidNClusters_ + seenClusters[j];
-        //int index2 = 0;	
-        //float *features = &inputData[index1][index2];
+        // float *features = &input.tensor<float, 4>()(i, j, seenClusters[j], 0);
+        int index1 = 0;	
+        int index2 = (i * eidNLayers_ + j) * eidNClusters_ + seenClusters[j];
+        float *features = &inputData[index1][index2];
         // fill features
         *(features++) = float(cluster.energy() / float(trackster.vertex_multiplicity(k)));
         *(features++) = float(std::abs(cluster.eta()));
@@ -506,19 +544,30 @@ void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<
     }
   }
 
+  std::cout<< "[DEBUG] inputNames = " << inputNames.size() << std::endl;
+  std::cout<< "[DEBUG] inputData = " << inputData.size() << std::endl;
+
   // run the inference (7)
-  tensorflow::run(eidSession, inputList, outputNames, &outputs);
-  //std::vector<float> outputTensors;
-  //outputTensors = onnxSession->run(inputNames, inputData, input_shapes)[0];
-  //std::cout<< "Network output shape is " << outputTensors.size() << std::endl;
+  std::vector<std::vector<float> > outputTensors;
+  outputTensors = onnxSession->run(inputNames, inputData, input_shapes, outNames, batchSize);
+  std::cout<< "size of outputTensors = " << outputTensors.size() << std::endl;
+
+  // sanity check of the outputTensors contents
+  for(unsigned int k=0; k<outputTensors.size(); ++k) {
+      std::cout<< "size of outputTensors[k] = " << outputTensors[k].size() << std::endl;
+      for (const int &i : tracksterIndices) {
+        float element = outputTensors[k][i];
+        std::cout << "k = " << k << ", " << "i = " << i << " [INFO] element = " << element << std::endl;
+      }
+  }
 
   // store regressed energy per trackster (8)
   if (!eidOutputNameEnergy_.empty()) {
     // get the pointer to the energy tensor, dimension is batch x 1
-    float *energy = outputs[0].flat<float>().data();
-
     for (const int &i : tracksterIndices) {
-      tracksters[i].setRegressedEnergy(*(energy++));
+      float energy = outputTensors[0][i];
+      tracksters[i].setRegressedEnergy(energy);
+      std::cout << "[INFO] energy = " << energy << std::endl;
     }
   }
 
@@ -526,11 +575,23 @@ void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<
   if (!eidOutputNameId_.empty()) {
     // get the pointer to the id probability tensor, dimension is batch x id_probabilities.size()
     int probsIdx = eidOutputNameEnergy_.empty() ? 0 : 1;
-    float *probs = outputs[probsIdx].flat<float>().data();
+    std::vector<float> vec = outputTensors[probsIdx];
+    float *probs = vec.data();
+
+    // sanity check of the onnx output
+    std::cout << "[DEBUG] probs = ";
+    for(unsigned int j = 0; j<vec.size(); ++j) std::cout << vec[j] << " ";
+    std::cout << std::endl;
 
     for (const int &i : tracksterIndices) {
       tracksters[i].setProbabilities(probs);
       probs += tracksters[i].id_probabilities().size();
+
+      // sanity check: well consistent with the onnx output.
+      const std::array<float, 8> arr = tracksters[i].id_probabilities();
+      std::cout << "[DEBUG] probs from container = ";
+      for (const float& element : arr) { std::cout << element << " "; }
+      std::cout << std::endl;
     }
   }
 }
