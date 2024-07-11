@@ -432,28 +432,6 @@ void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<
   tensorflow::Tensor input(tensorflow::DT_FLOAT, shape);
   tensorflow::NamedTensorList inputList = {{eidInputName_, input}};
 
-  //--------------------------------------------------
-  // Get input node names and types (from chatGPT)
-  //--------------------------------------------------
-  // size_t num_input_nodes = onnxSession->GetInputCount();
-  // std::vector<const char*> input_node_names(num_input_nodes);
-  // std::vector<std::vector<int64_t>> input_node_dims(num_input_nodes);
-
-  // Ort::AllocatorWithDefaultOptions allocator;
-
-  // for (size_t i = 0; i < num_input_nodes; i++) {
-  //     char* input_name = onnxSession->GetInputName(i, allocator);
-  //     input_node_names[i] = input_name;
-
-  //     std::cout << "[DEBUG-gpt] input_name = " << input_name << std::endl;
-
-  //     Ort::TypeInfo type_info = onnxSession->GetInputTypeInfo(i);
-  //     auto tensor_info = type_info.GetTensorTypeAndShapeInfo();
-  //     input_node_dims[i] = tensor_info.GetShape();
-  // }
-
-  //--------------------------------------------------
-
   std::cout << "[DEBUG] inputList.size() = " << inputList.size() << std::endl;
   std::cout << "[DEBUG] eidInputName_ = " << eidInputName_ << std::endl;
 
@@ -465,7 +443,6 @@ void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<
   if (!eidOutputNameId_.empty()) {
     outputNames.push_back(eidOutputNameId_);
   }
-  //new
   
   // 1x50x10x3
   std::cout << "[DEBUG] batchSize = " << batchSize << std::endl;
@@ -475,9 +452,6 @@ void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<
 
   std::vector<int64_t> inputShape = {batchSize, eidNLayers_, eidNClusters_, eidNFeatures_};
   std::vector<std::vector<int64_t>> input_shapes = {inputShape};
-  // std::vector<float> data_content(batchSize * eidNLayers_ * eidNClusters_, std::vector<float>(eidNFeatures_));
-  // std::vector<std::vector<float>> inputData = {data_content};
-  // std::vector<std::vector<float>> inputData(batchSize * eidNLayers_ * eidNClusters_, std::vector<float>(eidNFeatures_));
   std::vector<std::vector<float>> inputData; // = {std::vector<float>(eidNFeatures_)};
 
   inputData.clear();
@@ -492,11 +466,25 @@ void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<
   if (!eidOutputNameId_.empty()) {
     outputNames_onnx.push_back(eidOutputNameId_);
   }
-  //new
   
   // fill input tensor (5)
   for (int i = 0; i < batchSize; i++) {
     const Trackster &trackster = tracksters[tracksterIndices[i]];
+
+    //----------------------------------------------------------------------------------------------------
+    // check energy deposit in different HGCAL conpartments
+    //----------------------------------------------------------------------------------------------------
+    // CE_E_120 = 0, CE_E_200 = 1, CE_E_300 = 2, CE_H_120_F = 3, CE_H_200_F = 4, CE_H_300_F = 5, CE_H_120_C = 6, CE_H_200_C = 7, CE_H_300_C = 8, CE_H_SCINT = 9, EnumSize = 10 };
+    std::vector<float> energyPerCellType(10, 0.); // 10 cell types
+    auto const &layerClusterIndices = trackster.vertices();
+    for(auto const idx : layerClusterIndices) {
+        auto const &lc = layerClusters[idx];
+        energyPerCellType.at(rhtools_.getCellType(lc.seed())) += lc.energy();
+    }
+    std::cout << "[DEBUG] energyPerCellType = ";
+    for(unsigned int j = 0; j<energyPerCellType.size(); ++j) std::cout << energyPerCellType[j] << " ";
+    std::cout << std::endl;
+    //----------------------------------------------------------------------------------------------------
 
     // per layer, we only consider the first eidNClusters_ clusters in terms of energy, so in order
     // to avoid creating large / nested structures to do the sorting for an unknown number of total
@@ -533,19 +521,16 @@ void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<
       }
     }
 
-    // zero-fill features of empty clusters in each layer (6)
-    for (int j = 0; j < eidNLayers_; j++) {
-      for (int k = seenClusters[j]; k < eidNClusters_; k++) {
-        float *features = &input.tensor<float, 4>()(i, j, k, 0);
-        for (int l = 0; l < eidNFeatures_; l++) {
-          *(features++) = 0.f;
-        }
-      }
-    }
+    // // zero-fill features of empty clusters in each layer (6)
+    // for (int j = 0; j < eidNLayers_; j++) {
+    //   for (int k = seenClusters[j]; k < eidNClusters_; k++) {
+    //     float *features = &input.tensor<float, 4>()(i, j, k, 0);
+    //     for (int l = 0; l < eidNFeatures_; l++) {
+    //       *(features++) = 0.f;
+    //     }
+    //   }
+    // }
   }
-
-  // std::cout<< "[DEBUG] inputNames = " << inputNames.size() << std::endl;
-  // std::cout<< "[DEBUG] inputData = " << inputData.size() << std::endl;
 
   // run the inference (7)
   std::vector<std::vector<float> > outputTensors;
