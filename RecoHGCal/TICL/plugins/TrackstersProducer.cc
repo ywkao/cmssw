@@ -158,6 +158,11 @@ void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descri
   pluginDescClue3D.addNode(edm::PluginDescription<PatternRecognitionFactory>("type", "CLUE3D", true));
   desc.add<edm::ParameterSetDescription>("pluginPatternRecognitionByCLUE3D", pluginDescClue3D);
 
+  // CLUE3D Plugin using onnx file
+  edm::ParameterSetDescription pluginDescClue3Donnx;
+  pluginDescClue3Donnx.addNode(edm::PluginDescription<PatternRecognitionFactory>("type", "CLUE3Donnx", true));
+  desc.add<edm::ParameterSetDescription>("pluginPatternRecognitionByCLUE3Donnx", pluginDescClue3Donnx);
+
   // FastJet Plugin
   edm::ParameterSetDescription pluginDescFastJet;
   pluginDescFastJet.addNode(edm::PluginDescription<PatternRecognitionFactory>("type", "FastJet", true));
