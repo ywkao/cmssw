@@ -31,6 +31,7 @@
 using namespace ticl;
 using namespace cms::Ort;
 
+
 class TrackstersProducer : public edm::stream::EDProducer<> {
 public:
   explicit TrackstersProducer(const edm::ParameterSet&);
@@ -49,6 +50,7 @@ private:
   std::unique_ptr<PatternRecognitionAlgoBaseT<TICLLayerTiles>> myAlgo_;
   std::unique_ptr<PatternRecognitionAlgoBaseT<TICLLayerTilesHFNose>> myAlgoHFNose_;
   std::unique_ptr<TracksterInferenceAlgoBase> inferenceAlgo_;
+
   const edm::EDGetTokenT<std::vector<reco::CaloCluster>> clusters_token_;
   const edm::EDGetTokenT<std::vector<float>> filtered_layerclusters_mask_token_;
   const edm::EDGetTokenT<std::vector<float>> original_layerclusters_mask_token_;
@@ -107,7 +109,6 @@ TrackstersProducer::TrackstersProducer(const edm::ParameterSet& ps)
 }
 
 void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
-  // hgcalMultiClusters
   edm::ParameterSetDescription desc;
   desc.add<std::string>("detector", "HGCAL");
   desc.add<edm::InputTag>("layer_clusters", edm::InputTag("hgcalMergeLayerClusters"));
@@ -125,7 +126,7 @@ void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descri
   edm::ParameterSetDescription pluginDesc;
   pluginDesc.addNode(edm::PluginDescription<PatternRecognitionFactory>("type", "CA", true));
   desc.add<edm::ParameterSetDescription>("pluginPatternRecognitionByCA", pluginDesc);
-  //
+
   // CLUE3D Plugin
   edm::ParameterSetDescription pluginDescClue3D;
   pluginDescClue3D.addNode(edm::PluginDescription<PatternRecognitionFactory>("type", "CLUE3D", true));
@@ -201,6 +202,11 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
     inferenceAlgo_->runInference(*initialResult);
     myAlgo_->filter(*result, *initialResult, input, seedToTrackstersAssociation);
   }
+
+  // Run inference algorithm
+  inferenceAlgo_->inputData(*result);
+  inferenceAlgo_->runInference(*result);
+
   // Now update the global mask and put it into the event
   output_mask->reserve(original_layerclusters_mask.size());
   // Copy over the previous state
@@ -211,7 +217,7 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
     trackster.setIteration(iterIndex_);
     // Mask the used elements, accordingly
     for (auto const v : trackster.vertices()) {
-      // TODO(rovere): for the moment we mask the layer cluster completely. In
+      // TODO: for the moment we mask the layer cluster completely. In
       // the future, properly compute the fraction of usage.
       (*output_mask)[v] = 0.;
     }
