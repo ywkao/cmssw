@@ -52,11 +52,11 @@ namespace ticl {
              const TILES& tL,
              const std::vector<TICLSeedingRegion>& rG,
              const tensorflow::Session* tS,
-	     const cms::Ort::ONNXRuntime* onx,
-	     const cms::Ort::ONNXRuntime* onxpid,
-             const cms::Ort::ONNXRuntime* onxenergy)
-	: ev(eV), es(eS), layerClusters(lC), mask(mS), layerClustersTime(lT), tiles(tL), regions(rG), tfSession(tS), onnxSession(onx), onnxPIDSession(onxpid),onnxEnergySession(onxenergy) {}
-    };
+	         const cms::Ort::ONNXRuntime* onx) // ,
+	         // const cms::Ort::ONNXRuntime* onxpid,
+             // const cms::Ort::ONNXRuntime* onxenergy)
+	    : ev(eV), es(eS), layerClusters(lC), mask(mS), layerClustersTime(lT), tiles(tL), regions(rG), tfSession(tS), onnxSession(onx) {} // , onnxPIDSession(onxpid),onnxEnergySession(onxenergy) {}
+        };
 
     virtual void makeTracksters(const Inputs& input,
                                 std::vector<Trackster>& result,

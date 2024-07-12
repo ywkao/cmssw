@@ -481,9 +481,9 @@ void PatternRecognitionbyCLUE3D<TILES>::energyRegressionAndID(const std::vector<
         auto const &lc = layerClusters[idx];
         energyPerCellType.at(rhtools_.getCellType(lc.seed())) += lc.energy();
     }
-    std::cout << "[DEBUG] energyPerCellType = ";
-    for(unsigned int j = 0; j<energyPerCellType.size(); ++j) std::cout << energyPerCellType[j] << " ";
-    std::cout << std::endl;
+    // std::cout << "[DEBUG] energyPerCellType = ";
+    // for(unsigned int j = 0; j<energyPerCellType.size(); ++j) std::cout << energyPerCellType[j] << " ";
+    // std::cout << std::endl;
     //----------------------------------------------------------------------------------------------------
 
     // per layer, we only consider the first eidNClusters_ clusters in terms of energy, so in order
