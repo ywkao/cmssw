@@ -12,13 +12,11 @@ namespace ticl {
 
   void TracksterInferenceByANN::inputData(const std::vector<Trackster>& tracksters) {
     // Prepare data for inference
+    std::cout << "[INFO] TracksterInferenceByANN::inputData()" << std::endl;
   }
 
   void TracksterInferenceByANN::runInference(std::vector<Trackster>& tracksters) {
     // Run inference using ANN
+    std::cout << "[INFO] TracksterInferenceByANN::runInference()" << std::endl;
   }
 }
-
-// Define this as a plug-in
-#include "FWCore/Framework/interface/MakerMacros.h"
-DEFINE_EDM_PLUGIN(TracksterInferenceAlgoFactory, ticl::TracksterInferenceByANN, "TracksterInferenceByANN");

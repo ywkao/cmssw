@@ -127,7 +127,7 @@ void TrackstersProducer::fillDescriptions(edm::ConfigurationDescriptions& descri
   desc.add<std::string>("patternRecognitionBy", "CA");
   desc.add<std::string>("itername", "unknown");
   desc.add<std::string>("tfDnnLabel", "tracksterSelectionTf");
-  desc.add<std::string>("inferenceAlgo", "TracksterInferenceByDNN");
+  desc.add<std::string>("inferenceAlgo", "TracksterInferenceByANN");
 
   // CA Plugin
   edm::ParameterSetDescription pluginDesc;

@@ -20,6 +20,3 @@ namespace ticl {
     // Run inference using TensorFlow
   }
 }
-
-// Define this as a plug-in
-DEFINE_EDM_PLUGIN(TracksterInferenceAlgoFactory, ticl::TracksterInferenceByDNN, "TracksterInferenceByDNN");
