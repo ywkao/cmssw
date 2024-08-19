@@ -1,6 +1,9 @@
 #ifndef RecoHGCal_TICL_TracksterInferenceByANN_H__
 #define RecoHGCal_TICL_TracksterInferenceByANN_H__
 
+#include <numeric>
+#include <vector>
+
 #include "RecoHGCal/TICL/interface/TracksterInferenceAlgoBase.h"
 #include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 
@@ -14,7 +17,7 @@ namespace ticl {
                        float elim_cee=5., float elim_ceh=5., size_t min_nhits=3, float cglob_min=0., float cglob_max=2.);
 
   private:
-    tensorflow::Session* session_;
+    const cms::Ort::ONNXRuntime* onnxSession;
     hgcal::RecHitTools rhtools_;
 
     // patch rhtool
