@@ -6,6 +6,7 @@
 
 #include <vector>
 #include "DataFormats/HGCalReco/interface/Trackster.h"
+#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/Framework/interface/Event.h"
