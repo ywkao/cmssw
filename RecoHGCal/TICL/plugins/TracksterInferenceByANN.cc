@@ -21,8 +21,6 @@ namespace ticl {
       for (const unsigned int &vertex : tracksters[i].vertices()) {
         sumClusterEnergy += static_cast<float>(layerClusters[vertex].energy());
         if (sumClusterEnergy >= eidMinClusterEnergy_) {
-          tracksters[i].setRegressedEnergy(0.f);
-          tracksters[i].zeroProbabilities();
           tracksterIndices.push_back(i);
           break; // there might be many clusters, so try to stop early
         }
