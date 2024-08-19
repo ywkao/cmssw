@@ -6,6 +6,7 @@
 
 #include <vector>
 #include "DataFormats/HGCalReco/interface/Trackster.h"
+#include "DataFormats/CaloRecHit/interface/CaloCluster.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/Framework/interface/Event.h"
@@ -17,7 +18,7 @@ namespace ticl {
     explicit TracksterInferenceAlgoBase(const edm::ParameterSet& conf) : algo_verbosity_(conf.getParameter<int>("algo_verbosity")) {}
     virtual ~TracksterInferenceAlgoBase() {}
 
-    virtual void inputData(const std::vector<Trackster>& tracksters) = 0;
+    virtual void inputData(const std::vector<Trackster>& tracksters, const std::vector<reco::CaloCluster>& layerClusters) = 0;
     virtual void runInference(std::vector<Trackster>& tracksters) = 0;
     static void fillPSetDescription(edm::ParameterSetDescription& desc) { desc.add<int>("algo_verbosity", 0); };
   protected:

@@ -12,7 +12,7 @@ namespace ticl {
     session_ = tensorflow::createSession(tensorflow::loadGraphDef(modelPath));
   }
 
-  void TracksterInferenceByDNN::inputData(const std::vector<Trackster>& tracksters) {
+  void TracksterInferenceByDNN::inputData(const std::vector<Trackster>& tracksters, const std::vector<reco::CaloCluster>& layerClusters) {
     // Prepare data for inference
   }
 

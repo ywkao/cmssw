@@ -10,7 +10,7 @@ namespace ticl {
     // Load ANN model
   }
 
-  void TracksterInferenceByANN::inputData(const std::vector<Trackster>& tracksters) {
+  void TracksterInferenceByANN::inputData(const std::vector<Trackster>& tracksters, const std::vector<reco::CaloCluster>& layerClusters) {
     // Prepare data for inference
     std::cout << "[INFO] TracksterInferenceByANN::inputData()" << std::endl;
   }
