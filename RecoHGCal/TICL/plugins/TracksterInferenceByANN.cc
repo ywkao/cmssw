@@ -5,8 +5,8 @@
 
 namespace ticl {
 
-  TracksterInferenceByANN::TracksterInferenceByANN(const edm::ParameterSet& conf)
-    : TracksterInferenceAlgoBase(conf) {
+  TracksterInferenceByANN::TracksterInferenceByANN(const edm::ParameterSet& conf, edm::ConsumesCollector&& cc)
+	: TracksterInferenceAlgoBase(conf, std::move(cc)) {
     // Load ANN model
   }
 
@@ -43,7 +43,6 @@ namespace ticl {
       auto const &layerClusterIndices = trackster.vertices();
       for(auto const idx : layerClusterIndices) {
           auto const &lc = layerClusters[idx];
-          /*
           auto key = lc.seed();
           auto layer = rhtools_.getLayerWithOffset(key);
           bool isSci = rhtools_.isScintillator(key);
@@ -71,7 +70,6 @@ namespace ticl {
           energyPerCellType.at(cellType) += lc.energy();
           v_mip_energy.push_back(nmips);
           v_is_ceh.push_back(!isEE);
-          */
           average_eta += lc.eta();
           average_phi += lc.phi();
       }

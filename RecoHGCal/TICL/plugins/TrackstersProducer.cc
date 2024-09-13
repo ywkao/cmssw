@@ -96,8 +96,8 @@ TrackstersProducer::TrackstersProducer(const edm::ParameterSet& ps)
   // Initialize inference algorithm using the factory
   std::string inferencePlugin = ps.getParameter<std::string>("inferenceAlgo");
   edm::ParameterSet inferencePSet = ps.getParameter<edm::ParameterSet>("pluginInferenceAlgo" + inferencePlugin);
-  inferenceAlgo_ = std::unique_ptr<TracksterInferenceAlgoBase>(
-      TracksterInferenceAlgoFactory::get()->create(inferencePlugin, inferencePSet));
+  inferenceAlgo_ = std::unique_ptr<ticl::TracksterInferenceAlgoBase>(
+      TracksterInferenceAlgoFactory::get()->create(inferencePlugin, inferencePSet, consumesCollector()));
 
   if (itername_ == "TrkEM")
     iterIndex_ = ticl::Trackster::TRKEM;
@@ -204,6 +204,7 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
   }
 
   // Run inference algorithm
+  inferenceAlgo_->updateGeometry(es);
   inferenceAlgo_->inputData(*result, layerClusters);
   inferenceAlgo_->runInference(*result);
 

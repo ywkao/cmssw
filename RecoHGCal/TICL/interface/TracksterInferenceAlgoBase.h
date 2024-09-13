@@ -11,18 +11,34 @@
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
+#include "FWCore/Framework/interface/ConsumesCollector.h"
+
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
+#include "Geometry/Records/interface/CaloGeometryRecord.h"
+#include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
 
 namespace ticl {
   class TracksterInferenceAlgoBase {
   public:
-    explicit TracksterInferenceAlgoBase(const edm::ParameterSet& conf) : algo_verbosity_(conf.getParameter<int>("algo_verbosity")) {}
+    explicit TracksterInferenceAlgoBase(const edm::ParameterSet& conf, edm::ConsumesCollector&& cc)
+      : algo_verbosity_(conf.getParameter<int>("algo_verbosity"))
+    {
+      caloGeomToken_ = cc.esConsumes<CaloGeometry, CaloGeometryRecord>();
+    }
     virtual ~TracksterInferenceAlgoBase() {}
 
     virtual void inputData(const std::vector<Trackster>& tracksters, const std::vector<reco::CaloCluster>& layerClusters) = 0;
     virtual void runInference(std::vector<Trackster>& tracksters) = 0;
     static void fillPSetDescription(edm::ParameterSetDescription& desc) { desc.add<int>("algo_verbosity", 0); };
+    virtual void updateGeometry(const edm::EventSetup& es) {
+      const CaloGeometry& geom = es.getData(caloGeomToken_);
+      rhtools_.setGeometry(geom);
+    }
+
   protected:
     int algo_verbosity_;
+    hgcal::RecHitTools rhtools_;
+	edm::ESGetToken<CaloGeometry, CaloGeometryRecord> caloGeomToken_;
   };
 }  // namespace ticl
 

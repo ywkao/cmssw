@@ -6,8 +6,9 @@
 
 #include "FWCore/PluginManager/interface/PluginFactory.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Framework/interface/ConsumesCollector.h"
 #include "RecoHGCal/TICL/interface/TracksterInferenceAlgoBase.h"
 
-typedef edmplugin::PluginFactory<ticl::TracksterInferenceAlgoBase*(const edm::ParameterSet&)> TracksterInferenceAlgoFactory;
+typedef edmplugin::PluginFactory<ticl::TracksterInferenceAlgoBase*(const edm::ParameterSet&, edm::ConsumesCollector&&)> TracksterInferenceAlgoFactory;
 
 #endif

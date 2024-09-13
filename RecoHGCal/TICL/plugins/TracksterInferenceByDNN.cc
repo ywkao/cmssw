@@ -5,8 +5,8 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 
 namespace ticl {
-  TracksterInferenceByDNN::TracksterInferenceByDNN(const edm::ParameterSet& conf)
-    : TracksterInferenceAlgoBase(conf) {
+    TracksterInferenceByDNN::TracksterInferenceByDNN(const edm::ParameterSet& conf, edm::ConsumesCollector&& cc)
+	: TracksterInferenceAlgoBase(conf, std::move(cc)) {
     // Load TensorFlow model
     std::string modelPath = conf.getParameter<std::string>("modelPath");
     session_ = tensorflow::createSession(tensorflow::loadGraphDef(modelPath));
