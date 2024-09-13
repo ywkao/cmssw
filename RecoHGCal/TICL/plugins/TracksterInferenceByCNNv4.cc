@@ -11,8 +11,8 @@ namespace ticl {
   using namespace cms::Ort;  // Use ONNXRuntime namespace
 
   // Constructor for TracksterInferenceByCNNv4
-  TracksterInferenceByCNNv4::TracksterInferenceByCNNv4(const edm::ParameterSet& conf)
-      : TracksterInferenceAlgoBase(conf),
+  TracksterInferenceByCNNv4::TracksterInferenceByCNNv4(const edm::ParameterSet& conf, edm::ConsumesCollector&& cc)
+	  : TracksterInferenceAlgoBase(conf, std::move(cc)),
         modelPath_(conf.getParameter<edm::FileInPath>("onnxModelPath").fullPath()),  // Path to the PID model CLU3D
         inputNames_(conf.getParameter<std::vector<std::string>>("inputNames")),      // Define input names for inference
         outputNames_(conf.getParameter<std::vector<std::string>>("outputNames")),   // Define output names for inference

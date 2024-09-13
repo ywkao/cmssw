@@ -5,12 +5,13 @@
 #include <vector>
 
 #include "RecoHGCal/TICL/interface/TracksterInferenceAlgoBase.h"
-#include "RecoLocalCalo/HGCalRecAlgos/interface/RecHitTools.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "PhysicsTools/ONNXRuntime/interface/ONNXRuntime.h"
 
 namespace ticl {
   class TracksterInferenceByANN : public TracksterInferenceAlgoBase {
   public:
-    explicit TracksterInferenceByANN(const edm::ParameterSet& conf);
+    explicit TracksterInferenceByANN(const edm::ParameterSet& conf, edm::ConsumesCollector&& cc);
     void inputData(const std::vector<reco::CaloCluster>& layerClusters, std::vector<Trackster>& tracksters) override;
     void runInference(std::vector<Trackster>& tracksters) override;
     float computeCglob(const std::vector<float> &hit_en, const std::vector<bool> &is_ceh,
@@ -18,7 +19,6 @@ namespace ticl {
 
   private:
     const cms::Ort::ONNXRuntime* onnxSession;
-    hgcal::RecHitTools rhtools_;
 
     // patch rhtool
     const int CE_H_SCINT_F = 9;

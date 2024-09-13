@@ -111,7 +111,7 @@ TracksterLinksProducer::TracksterLinksProducer(const edm::ParameterSet &ps, cons
   std::string inferencePlugin = ps.getParameter<std::string>("inferenceAlgo");
   edm::ParameterSet inferencePSet = ps.getParameter<edm::ParameterSet>("pluginInferenceAlgo" + inferencePlugin);
   inferenceAlgo_ = std::unique_ptr<TracksterInferenceAlgoBase>(
-      TracksterInferenceAlgoFactory::get()->create(inferencePlugin, inferencePSet));
+      TracksterInferenceAlgoFactory::get()->create(inferencePlugin, inferencePSet, consumesCollector()));
 
   // New trackster collection after linking
   produces<std::vector<Trackster>>();
