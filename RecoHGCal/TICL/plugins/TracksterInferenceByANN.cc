@@ -43,6 +43,7 @@ namespace ticl {
       auto const &layerClusterIndices = trackster.vertices();
       for(auto const idx : layerClusterIndices) {
           auto const &lc = layerClusters[idx];
+          /*
           auto key = lc.seed();
           auto layer = rhtools_.getLayerWithOffset(key);
           bool isSci = rhtools_.isScintillator(key);
@@ -68,10 +69,11 @@ namespace ticl {
           auto cellType = rhtools_.getCellType(key);
           cellType = (cellType==hgcal::CE_H_SCINT) ? ((layer<37) ? CE_H_SCINT_F : CE_H_SCINT_C) : cellType; // 26 + 10 + 11
           energyPerCellType.at(cellType) += lc.energy();
-          average_eta += lc.eta();
-          average_phi += lc.phi();
           v_mip_energy.push_back(nmips);
           v_is_ceh.push_back(!isEE);
+          */
+          average_eta += lc.eta();
+          average_phi += lc.phi();
       }
 
       float num_lc = (float) layerClusterIndices.size();
