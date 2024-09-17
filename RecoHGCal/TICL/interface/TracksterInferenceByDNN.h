@@ -9,7 +9,7 @@ namespace ticl {
   class TracksterInferenceByDNN : public TracksterInferenceAlgoBase {
   public:
     explicit TracksterInferenceByDNN(const edm::ParameterSet& conf, edm::ConsumesCollector&& cc);
-    void inputData(const std::vector<Trackster>& tracksters, const std::vector<reco::CaloCluster>& layerClusters) override;
+    void inputData(const std::vector<reco::CaloCluster>& layerClusters, std::vector<Trackster>& tracksters) override;
     void runInference(std::vector<Trackster>& tracksters) override;
 
   private:

@@ -12,7 +12,7 @@ namespace ticl {
   class TracksterInferenceByANN : public TracksterInferenceAlgoBase {
   public:
     explicit TracksterInferenceByANN(const edm::ParameterSet& conf, edm::ConsumesCollector&& cc);
-    void inputData(const std::vector<Trackster>& tracksters, const std::vector<reco::CaloCluster>& layerClusters) override;
+    void inputData(const std::vector<reco::CaloCluster>& layerClusters, std::vector<Trackster>& tracksters) override;
     void runInference(std::vector<Trackster>& tracksters) override;
     static void fillPSetDescription(edm::ParameterSetDescription& iDesc);
 
@@ -21,14 +21,17 @@ namespace ticl {
     float computeCglob(const std::vector<float> &hit_en, const std::vector<bool> &is_ceh,
                        float elim_cee=5., float elim_ceh=5., size_t min_nhits=3, float cglob_min=0., float cglob_max=2.);
 
-    const cms::Ort::ONNXRuntime* onnxSession;
+    const cms::Ort::ONNXRuntime* onnxSession_;
     const std::string modelPath_;
     const double eidMinClusterEnergy_;
     // std::vector<float> thickness_weights_;
     // std::vector<float> weights_;
 
     // input data
-    int batchSize;
+    const unsigned int MAX_ENTRIES = 50; // allowed max number of tracksters for padding input data
+    const unsigned int n_features = 16;
+
+    unsigned int batchSize;
     std::vector<int> tracksterIndices;
     std::vector<std::vector<int64_t>> input_shapes;
     std::vector<std::vector<float>> input_Data;
