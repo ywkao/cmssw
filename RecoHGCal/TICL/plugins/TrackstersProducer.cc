@@ -205,7 +205,7 @@ void TrackstersProducer::produce(edm::Event& evt, const edm::EventSetup& es) {
 
   // Run inference algorithm
   inferenceAlgo_->updateGeometry(es);
-  inferenceAlgo_->inputData(*result, layerClusters);
+  inferenceAlgo_->inputData(layerClusters, *result);
   inferenceAlgo_->runInference(*result);
 
   // Now update the global mask and put it into the event

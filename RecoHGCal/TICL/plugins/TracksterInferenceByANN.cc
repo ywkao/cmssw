@@ -16,7 +16,7 @@ namespace ticl {
 
     // Load ANN model
     static std::unique_ptr<cms::Ort::ONNXRuntime> onnxRuntimeInstance = std::make_unique<cms::Ort::ONNXRuntime>(modelPath_.c_str());
-    onnxSession = onnxRuntimeInstance.get();
+    onnxSession_ = onnxRuntimeInstance.get();
   }
 
   void TracksterInferenceByANN::inputData(const std::vector<reco::CaloCluster>& layerClusters,
@@ -25,29 +25,35 @@ namespace ticl {
     std::cout << "[INFO] TracksterInferenceByANN::inputData()" << std::endl;
 
     // calculate the cluster energy sum & decide whether to run inference for the trackster or not
-    std::vector<int> tracksterIndices;
+    tracksterIndices.clear(); // Clear previous indices
     for (int i = 0; i < static_cast<int>(tracksters.size()); i++) {
       float sumClusterEnergy = 0.;
-      for (const unsigned int &vertex : tracksters[i].vertices()) {
+      for (const unsigned int& vertex : tracksters[i].vertices()) {
         sumClusterEnergy += static_cast<float>(layerClusters[vertex].energy());
         if (sumClusterEnergy >= eidMinClusterEnergy_) {
-          tracksterIndices.push_back(i);
-          break; // early stop upon satisfying the criterion
+          tracksters[i].setRegressedEnergy(0.f); // Set regressed energy to 0
+          tracksters[i].zeroProbabilities(); // Zero out probabilities
+          tracksterIndices.push_back(i); // Add index to the list
+          break;
         }
       }
     }
 
-    // set constants
-    const unsigned int n_features = 16;
+    // prepare input shapes and data for inference
+    batchSize = static_cast<int>(tracksterIndices.size());
+    if (batchSize == 0) return; // Exit if no tracksters
+
+    // set constants & reset containers
     const unsigned int lastCEE(rhtools_.lastLayerEE());
 
-    // reset container
+    std::vector<int64_t> inputShape = {MAX_ENTRIES, n_features};
+    input_shapes = {inputShape};
+
     input_Data.clear();
-    input_Data.emplace_back(n_features * tracksterIndices.size(), 0);
+    input_Data.emplace_back(n_features * MAX_ENTRIES, 0); // padding for a fixed input size
 
     // loop over tracksters
-    int batchSize = static_cast<int>(tracksterIndices.size());
-    for (int i = 0; i < batchSize; i++) {
+    for (size_t i = 0; i < batchSize; i++) {
       const Trackster &trackster = tracksters[tracksterIndices[i]];
 
       // initialize variables
@@ -106,65 +112,54 @@ namespace ticl {
           input_Data[0][index+5+j] = energyPerCellType[j];
       }
     } // end of looping tracksters
-
-  }
+  } // end of inputData
 
   void TracksterInferenceByANN::runInference(std::vector<Trackster>& tracksters) {
     // Run inference using ANN
     std::cout << "[INFO] TracksterInferenceByANN::runInference()" << std::endl;
+    if (batchSize == 0) return; // Exit if no batch
 
-    // Print the output
-    std::cout << "Input dimensions: " << input_Data.size() << " x "
-              << (input_Data.empty() ? 0 : input_Data[0].size()) << std::endl;
+    // Define input and output names for inference
+    std::vector<std::string> inputNames = {"x"};
+    std::vector<std::string> outNames  = {"491", "492"};
 
+    // Run prediction
+    std::vector<std::vector<float> > outputTensors;
+    outputTensors = onnxSession_->run(inputNames, input_Data, input_shapes, outNames, MAX_ENTRIES); // batchSize
+
+    // Derive regressed energy
+    for (size_t i = 0; i < batchSize; i++) {
+      Trackster &trackster = tracksters[tracksterIndices[i]];
+      float ratio = outputTensors[0][i];
+      float sigma = outputTensors[1][i];
+      unsigned int index = i*n_features;
+      float raw_total_energy = input_Data[0][index];
+      float regressed_energy = ratio * raw_total_energy; 
+      trackster.setRegressedEnergy(regressed_energy);
+      std::cout << std::fixed << std::setprecision(2)
+                << "[result] regressed_energy = " << regressed_energy
+                << ", raw_total_energy = " << raw_total_energy
+                << ", ratio = " << ratio
+                << ", sigma = " << sigma
+                << std::endl;
+    }
+
+    // Print the input
+    std::cout << "[check] Input dimensions: " << input_Data.size() << " x " << (input_Data.empty() ? 0 : input_Data[0].size()) << std::endl;
     for (size_t i = 0; i < input_Data.size(); ++i) {
-        std::cout << "Input " << i << ": ";
-        for (size_t j = 0; j < input_Data[i].size(); ++j) {
-            std::cout << std::fixed << std::setprecision(6) << input_Data[i][j] << " ";
-        }
+        std::cout << "[check] Input " << i << ": ";
+        for (size_t j = 0; j < batchSize*n_features; ++j) { std::cout << std::fixed << std::setprecision(2) << input_Data[i][j] << " "; }
         std::cout << std::endl;
     }
-
-    /*
-    //--------------------------------------------------
-    // dummy
-    //--------------------------------------------------
-    // Generate random input features
-    std::vector<float> input_tensor_values(10);  // 10 input features
-    for (auto& val : input_tensor_values) {
-        val = 1.; //dummy
-    }
-
-    // layers = [256,128,64,32]
-
-    // // Print input tensor values
-    // std::cout << "Input tensor values:" << std::endl;
-    // for (size_t i = 0; i < input_tensor_values.size(); ++i) {
-    //     std::cout << "  [" << i << "]: " << input_tensor_values[i] << std::endl;
-    // }
-
-    // Define input and output names
-    std::vector<std::string> input_names = {"input"};
-    std::vector<std::vector<float>> input_tensor = {input_tensor_values};
-    // std::vector<std::vector<int64_t>> input_shapes = {{static_cast<int64_t>(input_tensor.size())}};
-    // std::vector<std::string> output_names = {"output"};
-    // int64_t batch_size = 1;
-    // std::vector<std::vector<float>> output = onnxSession->run(input_names, input_tensor, input_shapes, output_names, batch_size);
-    std::vector<std::vector<float>> output = onnxSession->run(input_names, input_tensor);
 
     // Print the output
-    std::cout << "Output dimensions: " << output.size() << " x "
-              << (output.empty() ? 0 : output[0].size()) << std::endl;
-
-    for (size_t i = 0; i < output.size(); ++i) {
-        std::cout << "Output " << i << ": ";
-        for (size_t j = 0; j < output[i].size(); ++j) {
-            std::cout << std::fixed << std::setprecision(6) << output[i][j] << " ";
-        }
+    std::cout << "[check] Output dimensions: " << outputTensors.size() << " x " << (outputTensors.empty() ? 0 : outputTensors[0].size()) << std::endl;
+    for (size_t i = 0; i < outputTensors.size(); ++i) {
+        std::cout << "[check] Output " << i << ": ";
+        for (size_t j = 0; j < batchSize; ++j) { std::cout << std::fixed << std::setprecision(2) << outputTensors[i][j] << " "; }
         std::cout << std::endl;
     }
-    */
-  }
+  } // end of runInference
 
   float TracksterInferenceByANN::computeNmips(float energy, float weight, bool isSci, bool isEE, int thick) {
     // conver energy back to nmips
@@ -211,7 +206,7 @@ namespace ticl {
   // Method to fill parameter set description for configuration
   void TracksterInferenceByANN::fillPSetDescription(edm::ParameterSetDescription& iDesc) {
     iDesc.add<int>("algo_verbosity", 0);
-    iDesc.add<edm::FileInPath>("onnxModelPath", edm::FileInPath("RecoHGCal/TICL/data/simple_net.onnx"))
+    iDesc.add<edm::FileInPath>("onnxModelPath", edm::FileInPath("RecoHGCal/TICL/data/model.onnx")) // semiparametric_model_lc_ca_r02_2024Apr29.onnx
       ->setComment("Path to PyTorch ANN model in ONNX format");
     iDesc.add<double>("eid_min_cluster_energy", 1.0);
   }
