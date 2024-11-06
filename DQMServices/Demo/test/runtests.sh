@@ -137,20 +137,13 @@ echo $(dqmiolistmes.py edmtome.root -r 1 | wc -l)
 echo '[ 72 = $(dqmiolistmes.py edmtome.root -r 1 -l 1 | wc -l) ]'
 echo $(dqmiolistmes.py edmtome.root -r 1 -l 1 | wc -l)
 # again, no legacy module (run) output here due to JOB scope for legacy modules
-echo '[ "0: 1, 0.0: 1, 1: 10, 100: 30, 200: 10, 5: 15, 5.0: 5" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 --summary)" ]'
-echo "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 --summary)"
-echo '[ "1: 26, 1.0: 6, 20: 40" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 1 --summary)" ]'
-echo "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 1 --summary)"
-echo '[ "1: 20, 2: 6, 2.0: 6, 20: 40" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 2 --summary)" ]'
-echo "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 2 --summary)"
-echo '[ "1: 20, 20: 40, 3: 6, 3.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 3 --summary)" ]'
-echo "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 3 --summary)"
-echo '[ "1: 20, 20: 40, 4: 6, 4.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 4 --summary)" ]'
-echo "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 4 --summary)"
-echo '[ "1: 20, 20: 40, 5: 6, 5.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 5 --summary)" ]'
-echo "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 5 --summary)"
-echo '[ "" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 6 --summary)" ]'
-echo "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 6 --summary)"
+[ "0: 7, 0.0: 1, 1: 10, 100: 30, 200: 10, 5: 15, 5.0: 5" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 --summary)" ]
+[ "0: 6, 1: 26, 1.0: 6, 20: 40" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 1 --summary)" ]
+[ "0: 6, 1: 20, 2: 6, 2.0: 6, 20: 40" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 2 --summary)" ]
+[ "0: 6, 1: 20, 20: 40, 3: 6, 3.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 3 --summary)" ]
+[ "0: 6, 1: 20, 20: 40, 4: 6, 4.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 4 --summary)" ]
+[ "0: 6, 1: 20, 20: 40, 5: 6, 5.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 5 --summary)" ]
+[ "" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 6 --summary)" ]
 
 cmsRun ${SCRAM_TEST_PATH}/run_analyzers_cfg.py outfile=part1_metoedm.root metoedmoutput=True numberEventsInRun=300 numberEventsInLuminosityBlock=100 nEvents=50               # 1st half of 1st lumi
 cmsRun ${SCRAM_TEST_PATH}/run_analyzers_cfg.py outfile=part2_metoedm.root metoedmoutput=True numberEventsInRun=300 numberEventsInLuminosityBlock=100 nEvents=50 firstEvent=50 # 2nd half of 1st lumi
@@ -168,13 +161,7 @@ cmsRun ${SCRAM_TEST_PATH}/run_analyzers_cfg.py outfile=empty.root howmany=0 lega
 cmsRun ${SCRAM_TEST_PATH}/run_analyzers_cfg.py outfile=empty.root howmany=0 protobufoutput=True
 # nLumisections might be a bit buggy (off by one) in EDM, but is fine here.
 cmsRun ${SCRAM_TEST_PATH}/run_analyzers_cfg.py outfile=noevents.root processingMode='RunsAndLumis' nLumisections=20
-echo '[ 78 = $(dqmiolistmes.py noevents.root -r 1 | wc -l) ]'
-echo $(dqmiolistmes.py noevents.root -r 1 | wc -l)
-echo '[ 78 = $(dqmiolistmes.py noevents.root -r 1 -l 1 | wc -l) ]'
-echo $(dqmiolistmes.py noevents.root -r 1 -l 1 | wc -l)
-echo '[ 78 = $(dqmiolistmes.py noevents.root -r 2 | wc -l) ]'
-echo $(dqmiolistmes.py noevents.root -r 2 | wc -l)
-echo '[ 78 = $(dqmiolistmes.py noevents.root -r 2 -l 2 | wc -l) ]'
-echo $(dqmiolistmes.py noevents.root -r 2 -l 2 | wc -l)
-
-
+[ 84 = $(dqmiolistmes.py noevents.root -r 1 | wc -l) ]
+[ 84 = $(dqmiolistmes.py noevents.root -r 1 -l 1 | wc -l) ]
+[ 84 = $(dqmiolistmes.py noevents.root -r 2 | wc -l) ]
+[ 84 = $(dqmiolistmes.py noevents.root -r 2 -l 2 | wc -l) ]
