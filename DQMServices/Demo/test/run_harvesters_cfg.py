@@ -21,6 +21,7 @@ process.load("DQMServices.Demo.testharvester_cfi")
 process.load("DQMServices.Demo.testlegacyharvester_cfi")
 
 print(args.inputFiles)
+#print("reScope = ", reScope)
 
 if args.protobufinput:
   infile = args.inputFiles[0]
@@ -89,5 +90,6 @@ else:
   process.e = cms.EndPath(process.out)
 
 # useful for debugging
-#process.DQMStore.trackME = cms.untracked.string("testlegacyfillrun")
-#process.Tracer = cms.Service("Tracer")
+print("[INFO] enable debuging by trackME:")
+process.DQMStore.trackME = cms.untracked.string("testlegacyfillrun")
+process.Tracer = cms.Service("Tracer")
