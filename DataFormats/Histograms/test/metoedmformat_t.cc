@@ -207,6 +207,7 @@ namespace {
       //std::cout <<"Dummy Add "<<m_i<<" "<<iOther->m_i<<std::endl;
     }
 
+    void Add(const Dummy* iOther, float weight=1.) { m_i += iOther->m_i; }
     bool operator!=(const Dummy& iOther) const { return m_i != iOther.m_i; }
 
     int GetNbinsX() const { return 1; }
