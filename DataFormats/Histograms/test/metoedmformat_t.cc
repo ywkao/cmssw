@@ -213,6 +213,11 @@ namespace {
     int GetNbinsY() const { return 1; }
     int GetNbinsZ() const { return 1; }
 
+    int GetNcells() const { return 9; }
+    float GetBinContent(int bin) const { return -1.; }
+    void SetBinContent(int bin, float value) const { return; }
+    const TClass* IsA() const { return 0; }
+
     const TAxis* GetXaxis() const { return &dummy; }
     const TAxis* GetYaxis() const { return &dummy; }
     const TAxis* GetZaxis() const { return &dummy; }
