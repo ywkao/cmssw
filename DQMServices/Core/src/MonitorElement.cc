@@ -691,12 +691,32 @@ namespace dqm::impl {
   }
 
   /*** setter methods (wrapper around ROOT methods) ****/
-  //
-  /// set polygon bin (TH2Poly)
+
+  // Add a polygonal bin to a TH2Poly histogram through TGraph
   void MonitorElement::addBin(TGraph *graph) {
     auto access = this->accessMut();
     if (kind() == Kind::TH2Poly) {
       static_cast<TH2Poly *>(accessRootObject(access, __PRETTY_FUNCTION__, 2))->AddBin(graph);
+    } else {
+      incompatible(__PRETTY_FUNCTION__);
+    }
+  }
+
+  // Add a polygonal bin to a TH2Poly histogram through arrays
+  void MonitorElement::addBin(int n, const double* x, const double* y) {
+    auto access = this->accessMut();
+    if (kind() == Kind::TH2Poly) {
+      static_cast<TH2Poly *>(accessRootObject(access, __PRETTY_FUNCTION__, 2))->AddBin(n, x, y);
+    } else {
+      incompatible(__PRETTY_FUNCTION__);
+    }
+  }
+
+  // Add a rectangular bin to a TH2Poly histogram
+  void MonitorElement::addBin(double x1, double y1, double x2, double y2) {
+    auto access = this->accessMut();
+    if (kind() == Kind::TH2Poly) {
+      static_cast<TH2Poly *>(accessRootObject(access, __PRETTY_FUNCTION__, 2))->AddBin(x1, y1, x2, y2);
     } else {
       incompatible(__PRETTY_FUNCTION__);
     }

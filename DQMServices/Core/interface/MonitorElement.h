@@ -401,6 +401,8 @@ namespace dqm::impl {
 
     // non-const -- thread safety and semantical issues
     virtual void addBin(TGraph *graph);
+    virtual void addBin(int n, const double* x, const double* y);
+    virtual void addBin(double x1, double y1, double x2, double y2);
     virtual void setBinContent(int binx, double content);
     virtual void setBinContent(int binx, int biny, double content);
     virtual void setBinContent(int binx, int biny, int binz, double content);

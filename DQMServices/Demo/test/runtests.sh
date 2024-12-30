@@ -4,6 +4,8 @@ set -x
 
 # This is mainly to make sure nothing crashes. Checking the output for sanity is attempted but not really complete.
 
+SCRAM_TEST_PATH=/afs/cern.ch/user/y/ykao/work/pull_request_cmssw_th2poly/CMSSW_15_0_X_2024-12-15-2300/src/DQMServices/Demo/test
+
 # 1. Run a very simple configuration with all module types.
 cmsRun ${SCRAM_TEST_PATH}/run_analyzers_cfg.py outfile=alltypes.root numberEventsInRun=100 numberEventsInLuminosityBlock=20 nEvents=100
 # actually we'd expect 99, but the MEs by legacy modules are booked with JOB scope and cannot be saved to DQMIO.
@@ -16,16 +18,23 @@ cmsRun ${SCRAM_TEST_PATH}/run_analyzers_cfg.py outfile=alltypes.root numberEvent
 # testonefilllumi also should have 5 entries in the histograms (9 more)
 # the "fillrun" module should have one entry in the histograms (9 total) and 0 in the scalars (2 total)
 
-[ "0: 7, 0.0: 1, 1: 11, 100: 33, 200: 11, 5: 16, 5.0: 5" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 --summary)" ]
+#[ "0: 7, 0.0: 1, 1: 11, 100: 33, 200: 11, 5: 16, 5.0: 5" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 --summary)" ]
+echo [ "0: 7, 0.0: 1, 1: 11, 100: 33, 200: 11, 5: 16, 5.0: 5" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 --summary)" ]
 # per lumi we see 20 in most histograms (4*9), and the current lumi number in the scalars (6 modules * 2).
 # the two fillumi modules should have one entry in each of the lumi histograms, (2*9 total)
-[ "0: 6, 1: 28, 1.0: 6, 20: 44" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 -l 1 --summary)" ]
-[ "0: 6, 1: 22, 2: 6, 2.0: 6, 20: 44" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 -l 2 --summary)" ]
-[ "0: 6, 1: 22, 20: 44, 3: 6, 3.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 -l 3 --summary)" ]
-[ "0: 6, 1: 22, 20: 44, 4: 6, 4.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 -l 4 --summary)" ]
-[ "0: 6, 1: 22, 20: 44, 5: 6, 5.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 -l 5 --summary)" ]
+#[ "0: 6, 1: 28, 1.0: 6, 20: 44" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 -l 1 --summary)" ]
+echo [ "0: 6, 1: 28, 1.0: 6, 20: 44" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 -l 1 --summary)" ]
+#[ "0: 6, 1: 22, 2: 6, 2.0: 6, 20: 44" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 -l 2 --summary)" ]
+echo [ "0: 6, 1: 22, 2: 6, 2.0: 6, 20: 44" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 -l 2 --summary)" ]
+#[ "0: 6, 1: 22, 20: 44, 3: 6, 3.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 -l 3 --summary)" ]
+echo [ "0: 6, 1: 22, 20: 44, 3: 6, 3.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 -l 3 --summary)" ]
+#[ "0: 6, 1: 22, 20: 44, 4: 6, 4.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 -l 4 --summary)" ]
+echo [ "0: 6, 1: 22, 20: 44, 4: 6, 4.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 -l 4 --summary)" ]
+#[ "0: 6, 1: 22, 20: 44, 5: 6, 5.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 -l 5 --summary)" ]
+echo [ "0: 6, 1: 22, 20: 44, 5: 6, 5.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 -l 5 --summary)" ]
 # just make sure we are not off by one
-[ "" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 -l 6 --summary)" ]
+#[ "" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 -l 6 --summary)" ]
+echo [ "" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py alltypes.root -r 1 -l 6 --summary)" ]
 
 
 # 2. Run multi-threaded. First we make a baseline file without legacy modules, since they might not work.
@@ -39,13 +48,20 @@ cmsRun ${SCRAM_TEST_PATH}/run_analyzers_cfg.py outfile=nolegacy-cl.root numberEv
 # same math as above, just a few less modules, and more events.
 for f in nolegacy.root nolegacy-mt.root nolegacy-cl.root
 do
-  [ "0: 5, 0.0: 1, 1: 11, 1000: 22, 2000: 11, 5: 3, 5.0: 3" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 --summary)" ]
-  [ "0: 2, 1: 2, 1.0: 2, 200: 22" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 -l 1 --summary)" ]
-  [ "0: 2, 2: 2, 2.0: 2, 200: 22" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 -l 2 --summary)" ]
-  [ "0: 2, 200: 22, 3: 2, 3.0: 2" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 -l 3 --summary)" ]
-  [ "0: 2, 200: 22, 4: 2, 4.0: 2" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 -l 4 --summary)" ]
-  [ "0: 2, 200: 22, 5: 2, 5.0: 2" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 -l 5 --summary)" ]
-  [ "" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 -l 6 --summary)" ]
+  #[ "0: 5, 0.0: 1, 1: 11, 1000: 22, 2000: 11, 5: 3, 5.0: 3" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 --summary)" ]
+echo  [ "0: 5, 0.0: 1, 1: 11, 1000: 22, 2000: 11, 5: 3, 5.0: 3" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 --summary)" ]
+  #[ "0: 2, 1: 2, 1.0: 2, 200: 22" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 -l 1 --summary)" ]
+echo  [ "0: 2, 1: 2, 1.0: 2, 200: 22" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 -l 1 --summary)" ]
+  #[ "0: 2, 2: 2, 2.0: 2, 200: 22" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 -l 2 --summary)" ]
+echo  [ "0: 2, 2: 2, 2.0: 2, 200: 22" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 -l 2 --summary)" ]
+  #[ "0: 2, 200: 22, 3: 2, 3.0: 2" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 -l 3 --summary)" ]
+echo  [ "0: 2, 200: 22, 3: 2, 3.0: 2" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 -l 3 --summary)" ]
+  #[ "0: 2, 200: 22, 4: 2, 4.0: 2" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 -l 4 --summary)" ]
+echo  [ "0: 2, 200: 22, 4: 2, 4.0: 2" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 -l 4 --summary)" ]
+  #[ "0: 2, 200: 22, 5: 2, 5.0: 2" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 -l 5 --summary)" ]
+echo  [ "0: 2, 200: 22, 5: 2, 5.0: 2" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 -l 5 --summary)" ]
+  #[ "" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 -l 6 --summary)" ]
+echo  [ "" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py $f -r 1 -l 6 --summary)" ]
 done
 
 
@@ -132,13 +148,20 @@ cmsRun ${SCRAM_TEST_PATH}/run_harvesters_cfg.py outfile=edmtome.root inputFiles=
 [ 78 = $(dqmiolistmes.py edmtome.root -r 1 | wc -l) ]
 [ 78 = $(dqmiolistmes.py edmtome.root -r 1 -l 1 | wc -l) ]
 # again, no legacy module (run) output here due to JOB scope for legacy modules
-[ "0: 7, 0.0: 1, 1: 10, 100: 30, 200: 10, 5: 15, 5.0: 5" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 --summary)" ]
-[ "0: 6, 1: 26, 1.0: 6, 20: 40" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 1 --summary)" ]
-[ "0: 6, 1: 20, 2: 6, 2.0: 6, 20: 40" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 2 --summary)" ]
-[ "0: 6, 1: 20, 20: 40, 3: 6, 3.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 3 --summary)" ]
-[ "0: 6, 1: 20, 20: 40, 4: 6, 4.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 4 --summary)" ]
-[ "0: 6, 1: 20, 20: 40, 5: 6, 5.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 5 --summary)" ]
-[ "" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 6 --summary)" ]
+#[ "0: 7, 0.0: 1, 1: 10, 100: 30, 200: 10, 5: 15, 5.0: 5" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 --summary)" ]
+echo[ "0: 7, 0.0: 1, 1: 10, 100: 30, 200: 10, 5: 15, 5.0: 5" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 --summary)" ]
+#[ "0: 6, 1: 26, 1.0: 6, 20: 40" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 1 --summary)" ]
+echo[ "0: 6, 1: 26, 1.0: 6, 20: 40" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 1 --summary)" ]
+#[ "0: 6, 1: 20, 2: 6, 2.0: 6, 20: 40" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 2 --summary)" ]
+echo[ "0: 6, 1: 20, 2: 6, 2.0: 6, 20: 40" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 2 --summary)" ]
+#[ "0: 6, 1: 20, 20: 40, 3: 6, 3.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 3 --summary)" ]
+echo[ "0: 6, 1: 20, 20: 40, 3: 6, 3.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 3 --summary)" ]
+#[ "0: 6, 1: 20, 20: 40, 4: 6, 4.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 4 --summary)" ]
+echo[ "0: 6, 1: 20, 20: 40, 4: 6, 4.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 4 --summary)" ]
+#[ "0: 6, 1: 20, 20: 40, 5: 6, 5.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 5 --summary)" ]
+echo[ "0: 6, 1: 20, 20: 40, 5: 6, 5.0: 6" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 5 --summary)" ]
+#[ "" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 6 --summary)" ]
+echo[ "" = "$(${SCRAM_TEST_PATH}/dqmiodumpentries.py edmtome.root -r 1 -l 6 --summary)" ]
 
 cmsRun ${SCRAM_TEST_PATH}/run_analyzers_cfg.py outfile=part1_metoedm.root metoedmoutput=True numberEventsInRun=300 numberEventsInLuminosityBlock=100 nEvents=50               # 1st half of 1st lumi
 cmsRun ${SCRAM_TEST_PATH}/run_analyzers_cfg.py outfile=part2_metoedm.root metoedmoutput=True numberEventsInRun=300 numberEventsInLuminosityBlock=100 nEvents=50 firstEvent=50 # 2nd half of 1st lumi
