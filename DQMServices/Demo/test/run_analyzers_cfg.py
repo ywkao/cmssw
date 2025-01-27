@@ -4,6 +4,11 @@ process = cms.Process("TEST")
 process.DQMStore = cms.Service("DQMStore")
 process.MessageLogger = cms.Service("MessageLogger")
 
+# add to the python config file to produce the resources.json
+process.load("HLTrigger.Timer.FastTimerService_cfi")
+process.FastTimerService.jsonFileName = "resources.json"
+process.FastTimerService.writeJSONSummary = cms.untracked.bool(True)
+
 process.load("DQMServices.Demo.test_cfi")
 process.load("DQMServices.Demo.testone_cfi")
 process.load("DQMServices.Demo.testonefillrun_cfi")
