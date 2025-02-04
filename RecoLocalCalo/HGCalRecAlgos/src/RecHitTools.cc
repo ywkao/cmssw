@@ -430,6 +430,14 @@ bool RecHitTools::isHalfCell(const DetId& id) const {
   return ishalf;
 }
 
+int RecHitTools::getWaferType(const DetId& id) const {
+  HGCalDetId hid(id);
+  auto geom = getSubdetectorGeometry(hid);
+  auto ddd = get_ddd(geom, hid);
+  const int waferType = ddd->waferTypeT(hid.waferType());
+  return waferType;
+}
+
 int RecHitTools::getCellType(const DetId& id) const {
   auto layer_number = getLayerWithOffset(id);
   auto thickness = getSiThickIndex(id);
