@@ -1146,7 +1146,7 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
       // Finding the trackster that was used to create the CaloCluster, using the DetId of a hit (we assume there is no sharing of rechits between tracksters)
 
       // Seed trackster of the supercluster : Using the DetId of the seed rechit of the seed CaloCluster
-      // recoSuperCluster_seedTs.push_back(hitToTracksterMap.at(recoSc.seed()->seed()));
+      recoSuperCluster_seedTs.push_back(hitToTracksterMap.at(recoSc.seed()->seed()));
       recoSuperCluster_constituentTs.emplace_back();
       for (edm::Ptr<reco::CaloCluster> const& caloClusterPtr : recoSc.clusters()) {
         // Using the DetId of the seed rechit of the CaloCluster
@@ -1420,7 +1420,7 @@ void TICLDumper::fillDescriptions(edm::ConfigurationDescriptions& descriptions) 
   desc.add<bool>("saveSimTICLCandidate", true);
   desc.add<bool>("saveTracks", true);
   desc.add<bool>("saveSuperclustering", true);
-  desc.add<bool>("saveRecoSuperclusters", true)
+  desc.add<bool>("saveRecoSuperclusters", false)
       ->setComment("Save superclustering Egamma collections (as reco::SuperCluster)");
   descriptions.add("ticlDumper", desc);
 }
