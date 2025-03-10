@@ -890,6 +890,7 @@ namespace dqm::impl {
 
   /// set x-, y- or z-axis title (axis=1, 2, 3 respectively)
   void MonitorElement::setAxisTitle(const std::string &title, int axis /* = 1 */) {
+    // printf("[DEBUG] setAxisTitle::axis = %d\n", axis);
     auto access = this->accessMut();
     getAxis(access, __PRETTY_FUNCTION__, axis)->SetTitle(title.c_str());
   }
@@ -913,7 +914,34 @@ namespace dqm::impl {
   }
 
   TAxis *MonitorElement::getAxis(AccessMut const &access, const char *func, int axis) const {
-    TH1 *h = accessRootObject(access, func, axis - 1);
+    // printf("[DEBUG] ME name: %s, axis = %d, call from %s\n", data_.objname.c_str(), axis, func);
+    // Sanitize axis value to protect against invalid inputs
+    if (axis < 1 || axis > 3) {
+      edm::LogWarning("MonitorElement") << "Invalid axis number " << axis
+          << " for monitor element '" << data_.objname
+          << "'. Using X-axis (1) instead.";
+      axis = 1; // Default to X-axis for invalid values
+    }
+
+    // Get appropriate dimension based on histogram type
+    int dim = 1; // Default for TH1 types
+    if (kind() == Kind::TH2F || kind() == Kind::TH2S ||
+        kind() == Kind::TH2D || kind() == Kind::TH2I ||
+        kind() == Kind::TH2Poly || kind() == Kind::TPROFILE2D) {
+      dim = 2;
+    } else if (kind() == Kind::TH3F) {
+      dim = 3;
+    }
+
+    // Check if requested axis exceeds histogram dimensions
+    if (axis > dim) {
+      throw cms::Exception("MonitorElementError")
+          << "No such axis " << axis << " in monitor element '"
+          << data_.objname << "' of dimension " << dim;
+    }
+
+    // Get the root object with appropriate dimension
+    TH1 *h = accessRootObject(access, func, dim);
     TAxis *a = nullptr;
     if (axis == 1)
       a = h->GetXaxis();
@@ -932,7 +960,33 @@ namespace dqm::impl {
   }
 
   TAxis const *MonitorElement::getAxis(Access const &access, const char *func, int axis) const {
-    TH1 const *h = accessRootObject(access, func, axis - 1);
+    // Sanitize axis value to protect against invalid inputs
+    if (axis < 1 || axis > 3) {
+      edm::LogWarning("MonitorElement") << "Invalid axis number " << axis
+          << " for monitor element '" << data_.objname
+          << "'. Using X-axis (1) instead.";
+      axis = 1; // Default to X-axis for invalid values
+    }
+
+    // Get appropriate dimension based on histogram type
+    int dim = 1; // Default for TH1 types
+    if (kind() == Kind::TH2F || kind() == Kind::TH2S ||
+        kind() == Kind::TH2D || kind() == Kind::TH2I ||
+        kind() == Kind::TH2Poly || kind() == Kind::TPROFILE2D) {
+      dim = 2;
+    } else if (kind() == Kind::TH3F) {
+      dim = 3;
+    }
+
+    // Check if requested axis exceeds histogram dimensions
+    if (axis > dim) {
+      throw cms::Exception("MonitorElementError")
+          << "No such axis " << axis << " in monitor element '"
+          << data_.objname << "' of dimension " << dim;
+    }
+
+    // Get the root object with appropriate dimension
+    TH1 const *h = accessRootObject(access, func, dim);
     TAxis const *a = nullptr;
     if (axis == 1)
       a = h->GetXaxis();
