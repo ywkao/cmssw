@@ -71,7 +71,14 @@ void ThroughputService::preGlobalBeginRun(edm::GlobalContext const& gc) {
     edm::LogWarning("ThroughputService") << "The DQMStore is not avalable, the DQM plots will not be generated";
   }
 
+  if (edm::Service<DQMStore>().isAvailable()) {
+    printf("[INFO-throughput] The DQMStore is available\n");
+  } else {
+    printf("[WARN-throughput] The DQMStore is not avalable, the DQM plots will not be generated\n");
+  }
+
   if (m_enable_dqm) {
+    printf("[INFO-throughput] Use DQM elements\n");
     std::string y_axis_title = fmt::sprintf("events / %g s", m_time_resolution);
     unsigned int bins = std::round(m_time_range / m_time_resolution);
     double range = bins * m_time_resolution;
@@ -98,6 +105,7 @@ void ThroughputService::preGlobalBeginRun(edm::GlobalContext const& gc) {
     // book MonitorElement's for this run
     edm::Service<DQMStore>()->meBookerGetter(bookTransactionCallback);
   } else {
+    printf("[WARN-throughput] Disable DQM elements\n");
     m_sourced_events = nullptr;
     m_retired_events = nullptr;
   }
