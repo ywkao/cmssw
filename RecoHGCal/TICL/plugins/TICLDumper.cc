@@ -1118,20 +1118,20 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
   if (saveRecoSuperclusters_) {
     reco::SuperClusterCollection const& recoSuperClusters = event.get(recoSuperClusters_token);
     // reco::CaloClusterCollection const& recoCaloClusters = event.get(recoSuperClusters_caloClusters_token);
-    std::vector<ticl::Trackster> const& recoSuperClusters_sourceTracksters =
-        event.get(recoSuperClusters_sourceTracksters_token);
+    // std::vector<ticl::Trackster> const& recoSuperClusters_sourceTracksters =
+    //     event.get(recoSuperClusters_sourceTracksters_token);
 
-    // Map for fast lookup of hit to trackster index in recoSuperClusters_sourceTracksters
-    std::unordered_map<DetId, unsigned> hitToTracksterMap;
+    // // Map for fast lookup of hit to trackster index in recoSuperClusters_sourceTracksters
+    // std::unordered_map<DetId, unsigned> hitToTracksterMap;
 
-    for (unsigned ts_id = 0; ts_id < recoSuperClusters_sourceTracksters.size(); ts_id++) {
-      for (unsigned int lc_index : recoSuperClusters_sourceTracksters[ts_id].vertices()) {
-        for (auto [detId, fraction] : clusters[lc_index].hitsAndFractions()) {
-          bool insertionSucceeded = hitToTracksterMap.emplace(detId, ts_id).second;
-          assert(insertionSucceeded && "TICLDumper found tracksters sharing rechits");
-        }
-      }
-    }
+    // for (unsigned ts_id = 0; ts_id < recoSuperClusters_sourceTracksters.size(); ts_id++) {
+    //   for (unsigned int lc_index : recoSuperClusters_sourceTracksters[ts_id].vertices()) {
+    //     for (auto [detId, fraction] : clusters[lc_index].hitsAndFractions()) {
+    //       bool insertionSucceeded = hitToTracksterMap.emplace(detId, ts_id).second;
+    //       assert(insertionSucceeded && "TICLDumper found tracksters sharing rechits");
+    //     }
+    //   }
+    // }
 
     for (auto const& recoSc : recoSuperClusters) {
       recoSuperCluster_rawEnergy.push_back(recoSc.rawEnergy());
@@ -1145,13 +1145,13 @@ void TICLDumper::analyze(const edm::Event& event, const edm::EventSetup& setup) 
 
       // Finding the trackster that was used to create the CaloCluster, using the DetId of a hit (we assume there is no sharing of rechits between tracksters)
 
-      // Seed trackster of the supercluster : Using the DetId of the seed rechit of the seed CaloCluster
-      recoSuperCluster_seedTs.push_back(hitToTracksterMap.at(recoSc.seed()->seed()));
-      recoSuperCluster_constituentTs.emplace_back();
-      for (edm::Ptr<reco::CaloCluster> const& caloClusterPtr : recoSc.clusters()) {
-        // Using the DetId of the seed rechit of the CaloCluster
-        recoSuperCluster_constituentTs.back().push_back(hitToTracksterMap.at(caloClusterPtr->seed()));
-      }
+      // // Seed trackster of the supercluster : Using the DetId of the seed rechit of the seed CaloCluster
+      // recoSuperCluster_seedTs.push_back(hitToTracksterMap.at(recoSc.seed()->seed()));
+      // recoSuperCluster_constituentTs.emplace_back();
+      // for (edm::Ptr<reco::CaloCluster> const& caloClusterPtr : recoSc.clusters()) {
+      //   // Using the DetId of the seed rechit of the CaloCluster
+      //   recoSuperCluster_constituentTs.back().push_back(hitToTracksterMap.at(caloClusterPtr->seed()));
+      // }
     }
   }
 
@@ -1420,7 +1420,7 @@ void TICLDumper::fillDescriptions(edm::ConfigurationDescriptions& descriptions) 
   desc.add<bool>("saveSimTICLCandidate", true);
   desc.add<bool>("saveTracks", true);
   desc.add<bool>("saveSuperclustering", true);
-  desc.add<bool>("saveRecoSuperclusters", false)
+  desc.add<bool>("saveRecoSuperclusters", true)
       ->setComment("Save superclustering Egamma collections (as reco::SuperCluster)");
   descriptions.add("ticlDumper", desc);
 }
