@@ -55,8 +55,8 @@ void HGCalRawToDigiTrigger::produce(edm::Event& iEvent, const edm::EventSetup& i
   //const auto& cellIndexer = iSetup.getData(cellIndexToken_);
   const auto& config = iSetup.getData(configToken_);
   
-  hgcaldigi::HGCalDigiTriggerHost digisTrigger(moduleIndexer.maxDataSize(), cms::alpakatools::host());
-  hgcaldigi::HGCalECONTPacketInfoHost econtPacketInfo(moduleIndexer.maxModulesIndex(), cms::alpakatools::host());
+  hgcaldigi::HGCalDigiTriggerHost digisTrigger(cms::alpakatools::host(), moduleIndexer.maxDataSize());
+  hgcaldigi::HGCalECONTPacketInfoHost econtPacketInfo(cms::alpakatools::host(), moduleIndexer.maxModulesIndex());
   const auto& fedBuffer = iEvent.get(fedRawTriggerToken_);
 
   for (int32_t i = 0; i < digisTrigger.view().metadata().size(); i++) {
