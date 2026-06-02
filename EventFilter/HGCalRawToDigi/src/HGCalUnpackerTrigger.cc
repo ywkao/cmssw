@@ -36,30 +36,14 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
     sprintf(word64,"0x%016lx",tword);
     sprintf(word32m,"0x%08x",tword32m);
     sprintf(word32l,"0x%08x",tword32l);
-    LogDebug("[HGCalUnpackerTrigger]")  << "HGCalUnpackerTrigger::parseFEDData::tword " << num << " " << word64  << " (" << word32m << ", " << word32l << ")" << std::endl;
+
+    LogDebug("[HGCalUnpackerTrigger]")  << "HGCalUnpackerTrigger::parseFEDData::tword " << num << " " << word64  << " (" << word32m << ", " << word32l << ")";
     ++ptr;
   }
   
   unsigned n64(std::distance(header, trailer));  
   const Hgcal10gLinkReceiver::TpgSubpacketHeader *tsh(reinterpret_cast<const Hgcal10gLinkReceiver::TpgSubpacketHeader*>(header+2)); 
   const Hgcal10gLinkReceiver::TpgSubpacketHeader *tshEnd(reinterpret_cast<const Hgcal10gLinkReceiver::TpgSubpacketHeader*>(header+n64-2-2));
-
-  // Check the header of the first subpacket
-  auto headerMarker = fedConfig.tdaqs[0].tdaqBlockHeaderMarker;
-  if(!tsh->validPattern(headerMarker)) {
-    uint32_t ECONTdenseIdx = moduleIndexer.getIndexForModule(fedId, uint16_t(0));
-    econtPacketInfo.view()[ECONTdenseIdx].exception() = 1;
-    econtPacketInfo.view()[ECONTdenseIdx].location() = 0;
-    econtPacketInfo.view()[ECONTdenseIdx].payloadLength() = 0;
-
-    edm::LogWarning("[HGCalTriggerUnpacker]") << "First subpacket :: Expected a header 0x" << std::hex << headerMarker
-                                           << ", got 0x" << std::hex
-                                           << tsh->pattern()
-                                           << " from word = 0x" << std::hex << tsh->data() << ".";
-      
-    return false;
-  }
-  tsh=tsh->nextSubpacketHeader();
 
   uint32_t econTOffset = 0; ///THIS DEPENDS ON module
   uint32_t TdaqIdx = 0; 
