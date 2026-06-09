@@ -55,12 +55,8 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
     bool isPair = false; // test pair
     uint32_t isValidTdaq;
     int32_t t_neconts;
-    t_neconts =    tdaqConfig.econts.size();
     isValidTdaq = tdaqConfig.econts.size();
     
-    //std::cout << "tdaq idx: "   << TdaqIdx 
-    //          << ", tdaqsize: " << isValidTdaq 
-    //          << "neconts " << t_neconts << std::endl;
      
     //tsh->print();	  
     if (isValidTdaq != 0){
