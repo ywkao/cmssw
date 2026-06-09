@@ -50,15 +50,17 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 
   bool done(false); // bool to skip all the tdaqs > tdaqsize
   while(tsh<=tshEnd && !done) {
-
     HGCalTDAQConfig tdaqConfig = fedConfig.tdaqs[TdaqIdx];
 
     bool isPair = false; // test pair
     uint32_t isValidTdaq;
+    int32_t t_neconts;
+    t_neconts =    tdaqConfig.econts.size();
     isValidTdaq = tdaqConfig.econts.size();
-
+    
     //std::cout << "tdaq idx: "   << TdaqIdx 
-    //          << ", tdaqsize: " << isValidTdaq << std::endl;
+    //          << ", tdaqsize: " << isValidTdaq 
+    //          << "neconts " << t_neconts << std::endl;
      
     //tsh->print();	  
     if (isValidTdaq != 0){
@@ -183,7 +185,6 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 	    const auto& econt_conf = tdaqConfig.econts[iecon];
 	    const int neTx = econt_conf.eportTxNumen;
 	    //std::cout << "iecont " << iecon << std::endl;
-	    //std::cout << "nprevTxs " << nprevTxs << std::endl;
 	    //std::cout << "neTx " << neTx << std::endl;
 	    std::unique_ptr<uint32_t[]> el(new uint32_t[neTx]);
 	    TPGFEConfiguration::ConfigEconT cfgecont;
@@ -325,3 +326,4 @@ bool HGCalUnpackerTrigger::parseFEDData(unsigned fedId,
 bool HGCalUnpackerTrigger::parseTDAQBlock(){
   return true;
 }
+
