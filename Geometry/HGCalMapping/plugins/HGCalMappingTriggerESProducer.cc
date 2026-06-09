@@ -132,6 +132,12 @@ void HGCalMappingTriggerESProducer::prepareModuleMapperIndexer() {
     int fedid = modulesMap_.getIntAttr("trig_fedid", row);
     int econtidx = modulesMap_.getIntAttr("econtidx", row);
     modIndexer_.processNewModule(fedid, econtidx, typecodeidx, nTrLinks, nwords, typecode);
+    
+    if (matched_sipm) {
+      modIndexer_.processNewModule(fedid, econtidx+1, typecodeidx, nTrLinks, nwords, typecode);
+
+    std::cout << "[Geometry] sipm "<< std::endl;
+    }
   }
 
   modIndexer_.finalize();
