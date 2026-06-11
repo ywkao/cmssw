@@ -98,6 +98,28 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           module.muxid() = muxid;
           module.trigdetid() = trigdetid;
           module.cassette() = cassette;
+
+          // SiPM tile boards occupy two ECON-T slots; fill the second one with the same geometry
+          if (isSiPM) {
+            int idx2 = modIndexer.getIndexForModule(fedid, static_cast<uint16_t>(econtidx + 1));
+            int typeidx2 = modIndexer.getTypeForModule(fedid, static_cast<uint16_t>(econtidx + 1));
+            auto module2 = moduleParams.view()[idx2];
+            module2.valid() = true;
+            module2.zside() = (zside > 0);
+            module2.isSiPM() = isSiPM;
+            module2.plane() = plane;
+            module2.i1() = i1;
+            module2.i2() = i2;
+            module2.irot() = irot;
+            module2.celltype() = celltype;
+            module2.typeidx() = typeidx2;
+            module2.fedid() = fedid;
+            module2.slinkidx() = pmap.getIntAttr("slinkidx", row);
+            module2.econtidx() = econtidx + 1;
+            module2.muxid() = muxid;
+            module2.trigdetid() = trigdetid;
+            module2.cassette() = cassette;
+          }
         }
 
         return moduleParams;
