@@ -29,25 +29,26 @@ public:
     
     std::vector<TPGFEDataformat::TcRawData> &vTc(vTcrdp.setTcData());
     
-    bool doPrint(false);
 
-    if(doPrint) {      
-      for(unsigned i(0);i<2;i++) {
-	std::cout << "Elink " << i << " = 0x"
-		  << std::hex << std::setw(8) << std::setfill('0') << v[i]
-		  << std::dec << std::endl;
-      }
+
+ #ifdef EDM_ML_DEBUG 
+    for(unsigned i(0);i<2;i++) {
+      LogDebug("[HGCalUnpackerTrigger]") << "Elink " << i << " = 0x"
+      << std::hex << std::setw(8) << std::setfill('0') << v[i]
+      << std::dec << std::endl;
     }
+#endif
+
     
     //if(v.size()==0) return;
     //if(v.size()>=4) return; // FIXME
 
     // ECONT header
     unsigned bx(v[0]>>ECONT_FRAME::HEADER_POS);
-    if (doPrint){
-      std::cout << std::hex << " 32bit word: " << v[0]
-                << std::dec << " ECONT header: " << bx << std::endl;
-    }
+
+    LogDebug("[HGCalUnpackerTrigger]") << std::hex << " 32bit word: " << v[0]
+              << std::dec << " ECONT header: " << bx << std::endl;
+    
     bool bitMap(false);
     if(type==TPGFEDataformat::BestC) bitMap=(nTc>7);
     
@@ -78,11 +79,11 @@ public:
 	if(type==TPGFEDataformat::BestC) {
 	  lastBit-=6;
     uint8_t tcAddr = ((d>>lastBit) & ECONT_FRAME::BC_LO_TCADDR_MASK);
-	  // std::cout<< std::hex
-	  // 	   <<", d-word : 0x" << std::setfill('0') << std::setw(8) << (d>>lastBit)
-	  // 	   <<", masked-d-word : 0x" << std::setfill('0') << std::setw(8) << uint16_t(tcAddr)
-	  // 	   << std::dec << std::setfill(' ')
-	  // 	   <<std::endl;
+	  LogDebug("[HGCalUnpackerTrigger]")<< std::hex
+	  	   <<", d-word : 0x" << std::setfill('0') << std::setw(8) << (d>>lastBit)
+	  	   <<", masked-d-word : 0x" << std::setfill('0') << std::setw(8) << uint16_t(tcAddr)
+	  	   << std::dec << std::setfill(' ')
+	  	   <<std::endl;
 
     if ( tcAddr > ECONT_FRAME::BC_MAX_TCADDR) {
       throw cms::Exception("Stage1IORecoverable")
@@ -120,12 +121,14 @@ public:
 	lastBit-=1;
 	if(((d>>lastBit)&0x1)!=0) {
     unsigned tcAdd = ECONT_FRAME::BC_MAX_TCADDR - tc; // bit map: LSB is the TC 0, MSB is TC 47
-    //std::cout << "index is of bit map is " << tc << " hence tc address is " << tcAdd << std::endl;
+    LogDebug("[HGCalUnpackerTrigger]") << "index is of bit map is " << tc << " hence tc address is " << tcAdd << std::endl;
 	  vTc.push_back(TPGFEDataformat::TcRawData(type, tcAdd , 0)); 
-	  if(doPrint) vTc.back().print();
+#ifdef EDM_ML_DEBUG
+	  vTc.back().print();
+#endif
 	}
       }
-      if(doPrint) std::cout << "vTc.size() = " << vTc.size() << ", nTc = " << nTc << std::endl;
+      LogDebug("[HGCalUnpackerTrigger]") << "vTc.size() = " << vTc.size() << ", nTc = " << nTc << std::endl;
             if (vTc.size() != nTc) {
       throw cms::Exception("Stage1IORecoverable")
       << "convertElinksToTcRawData: vTc.size() != nTc\n"
@@ -165,12 +168,13 @@ public:
     }
     
     //if(bx==0xf && doPrint) {
-    if(doPrint) {
-      std::cout << "TcRawData words = " << vTc.size() << std::endl;
-      for(unsigned i(0);i<vTc.size();i++) {
-	vTc[i].print();
-      }      
-    }
+#ifdef EDM_ML_DEBUG
+    LogDebug("[HGCalUnpackerTrigger]") << "TcRawData words = " << vTc.size() << std::endl;
+    for(unsigned i(0);i<vTc.size();i++) {
+      vTc[i].print();
+    }      
+#endif
+
     
   }
   
