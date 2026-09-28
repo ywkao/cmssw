@@ -66,8 +66,7 @@ namespace hgcal {
       }
 
       bool forTestBeam2025 = serial.find("TB2025") != std::string::npos;
-      return forTestBeam2025 ? "T" + density + "_L" + layer + "_" + serial
-                             : "T" + density + "_L" + layer;
+      return forTestBeam2025 ? "T" + density + "_L" + layer + "_" + serial : "T" + density + "_L" + layer;
     }
 
     TFile* HGCalDQMGeometry::moduleTemplateFile(std::string const& typecode, bool isSiPM) const {
@@ -176,10 +175,8 @@ namespace hgcal {
       if (!(tree->GetEntries() > 0))
         edm::LogError("HGCalDQMGeometry") << "TTree empty in " << moduleDir;
       tree->GetEntry(0);
-      box = BoundingBox(static_cast<float>(xmin),
-                        static_cast<float>(xmax),
-                        static_cast<float>(ymin),
-                        static_cast<float>(ymax));
+      box = BoundingBox(
+          static_cast<float>(xmin), static_cast<float>(xmax), static_cast<float>(ymin), static_cast<float>(ymax));
       gDirectory->cd("/");
       // tree is file-owned; do not delete.
       return box;
@@ -239,10 +236,11 @@ namespace hgcal {
     // ------------------------------------------------------------------------
     void HGCalDQMGeometry::build(
         edm::EventSetup const& iSetup,
-        edm::ESGetToken<HGCalMappingModuleIndexer,        HGCalElectronicsMappingRcd> const& moduleIdxTkn,
+        edm::ESGetToken<HGCalMappingModuleIndexer, HGCalElectronicsMappingRcd> const& moduleIdxTkn,
         edm::ESGetToken<HGCalMappingModuleIndexerTrigger, HGCalElectronicsMappingRcd> const& moduleIdxTriggerTkn,
-        edm::ESGetToken<hgcal::HGCalMappingModuleParamHost,        HGCalElectronicsMappingRcd> const& moduleInfoTkn,
-        edm::ESGetToken<hgcal::HGCalMappingModuleTriggerParamHost, HGCalElectronicsMappingRcd> const& moduleInfoTriggerTkn,
+        edm::ESGetToken<hgcal::HGCalMappingModuleParamHost, HGCalElectronicsMappingRcd> const& moduleInfoTkn,
+        edm::ESGetToken<hgcal::HGCalMappingModuleTriggerParamHost, HGCalElectronicsMappingRcd> const&
+            moduleInfoTriggerTkn,
         edm::ESGetToken<HGCalConfiguration, HGCalModuleConfigurationRcd> const& moduleConfigTkn) {
       timerStart();
       auto const& moduleIndexer = iSetup.getData(moduleIdxTkn);
@@ -421,9 +419,7 @@ namespace hgcal {
       timings_.calculateCorners = timerSave();
     }
 
-    void HGCalDQMGeometry::timerStart() {
-      startTime_ = std::chrono::high_resolution_clock::now();
-    }
+    void HGCalDQMGeometry::timerStart() { startTime_ = std::chrono::high_resolution_clock::now(); }
     long long HGCalDQMGeometry::timerSave() {
       auto now = std::chrono::high_resolution_clock::now();
       return std::chrono::duration_cast<std::chrono::microseconds>(now - startTime_).count();

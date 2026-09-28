@@ -5,52 +5,55 @@
 
 #include "DQM/HGCAL/interface/HGCalDQMWorkerBase.h"
 
-namespace edm { class LuminosityBlock; }
+namespace edm {
+  class LuminosityBlock;
+}
 
-namespace hgcal { namespace dqm {
+namespace hgcal {
+  namespace dqm {
 
-  using MonitorElement = ::dqm::impl::MonitorElement;
+    using MonitorElement = ::dqm::impl::MonitorElement;
 
-  class ErrorSummarizer;
-  class EcontErrorSummarizer;
+    class ErrorSummarizer;
+    class EcontErrorSummarizer;
 
-  // Per-LS quality trend plots using SetRangeUser approach.
-  // Books histograms once with kMaxLS bins and zooms the x-axis
-  // to the filled range after each fill.
-  class HGCalLSWorker : public HGCalDQMWorkerBase {
-  public:
-    HGCalLSWorker(std::string folderRoot,
-                  ErrorSummarizer&      errorSummarizer,
-                  EcontErrorSummarizer& econtErrorSummarizer,
-                  bool                  skipTriggerDQM);
-    ~HGCalLSWorker() override = default;
+    // Per-LS quality trend plots using SetRangeUser approach.
+    // Books histograms once with kMaxLS bins and zooms the x-axis
+    // to the filled range after each fill.
+    class HGCalLSWorker : public HGCalDQMWorkerBase {
+    public:
+      HGCalLSWorker(std::string folderRoot,
+                    ErrorSummarizer& errorSummarizer,
+                    EcontErrorSummarizer& econtErrorSummarizer,
+                    bool skipTriggerDQM);
+      ~HGCalLSWorker() override = default;
 
-    void book(DQMStore::IBooker&, HGCalDQMGeometry const&) override;
+      void book(DQMStore::IBooker&, HGCalDQMGeometry const&) override;
 
-    void endLumi(DQMStore::IBooker&, DQMStore::IGetter&, HGCalDQMGeometry&,
-                 edm::LuminosityBlock const&) override;
+      void endLumi(DQMStore::IBooker&, DQMStore::IGetter&, HGCalDQMGeometry&, edm::LuminosityBlock const&) override;
 
-  private:
-    std::string folderRoot_;
-    ErrorSummarizer&      error_summarizer_;
-    EcontErrorSummarizer& econt_error_summarizer_;
-    bool                  skipTriggerDQM_;
+    private:
+      std::string folderRoot_;
+      ErrorSummarizer& error_summarizer_;
+      EcontErrorSummarizer& econt_error_summarizer_;
+      bool skipTriggerDQM_;
 
-    static constexpr int kMaxLS = 2000;
+      static constexpr int kMaxLS = 2000;
 
-    // ECON-D per-LS MEs
-    MonitorElement* me_econd_quality_LS_     = nullptr;
-    MonitorElement* me_econd_finequality_LS_ = nullptr;
-    MonitorElement* me_econd_layer_LS_       = nullptr;
-    MonitorElement* me_econd_quality_layer_  = nullptr;
+      // ECON-D per-LS MEs
+      MonitorElement* me_econd_quality_LS_ = nullptr;
+      MonitorElement* me_econd_finequality_LS_ = nullptr;
+      MonitorElement* me_econd_layer_LS_ = nullptr;
+      MonitorElement* me_econd_quality_layer_ = nullptr;
 
-    // ECON-T per-LS MEs (booked only if !skipTriggerDQM_)
-    MonitorElement* me_econt_quality_LS_     = nullptr;
-    MonitorElement* me_econt_finequality_LS_ = nullptr;
-    MonitorElement* me_econt_layer_LS_       = nullptr;
-    MonitorElement* me_econt_quality_layer_  = nullptr;
-  };
+      // ECON-T per-LS MEs (booked only if !skipTriggerDQM_)
+      MonitorElement* me_econt_quality_LS_ = nullptr;
+      MonitorElement* me_econt_finequality_LS_ = nullptr;
+      MonitorElement* me_econt_layer_LS_ = nullptr;
+      MonitorElement* me_econt_quality_layer_ = nullptr;
+    };
 
-}}
+  }  // namespace dqm
+}  // namespace hgcal
 
 #endif

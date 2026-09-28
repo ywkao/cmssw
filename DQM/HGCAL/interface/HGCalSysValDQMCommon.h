@@ -15,7 +15,17 @@ namespace hgcal {
   namespace dqm {
 
     // @short an enum for the final quantities displayed on hexplots
-    enum SummaryIndices_t { CMAVG=0, PEDESTAL, NOISE, DELTAPEDESTAL, TOAAVG, TOTAVG, NMIPSAVG, NMIPSSTD, LASTSUMMARYINDEX };
+    enum SummaryIndices_t {
+      CMAVG = 0,
+      PEDESTAL,
+      NOISE,
+      DELTAPEDESTAL,
+      TOAAVG,
+      TOTAVG,
+      NMIPSAVG,
+      NMIPSSTD,
+      LASTSUMMARYINDEX
+    };
 
     // @short label for SummaryIndices_t enum (ROOT format)
     std::string getLabelForSummaryIndex(SummaryIndices_t idx);
@@ -25,54 +35,55 @@ namespace hgcal {
 
     // Define an enum for ECON-D error types
     enum class EcondErrorType {
-        // ECOND flags
-        HT_GOOD = 0, HT_FAIL, HT_AMB,
-        EBO_GOOD, EBO_FAIL, EBO_AMB,
-        UNMATCHED, TRUNC, UNEXPECTED, SUB_PACKET_ERROR,
-        MARKER, PAYLOAD_OF, PAYLOAD_MISMATCH,
+      // ECOND flags
+      HT_GOOD = 0,
+      HT_FAIL,
+      HT_AMB,
+      EBO_GOOD,
+      EBO_FAIL,
+      EBO_AMB,
+      UNMATCHED,
+      TRUNC,
+      UNEXPECTED,
+      SUB_PACKET_ERROR,
+      MARKER,
+      PAYLOAD_OF,
+      PAYLOAD_MISMATCH,
 
-        // CB flags
-        CB_NOT_NORMAL, CB_PAYLOAD, CRC_ERROR,
-        EVID_MISMATCH, FSM_TIMEOUT, BCID_ORBITID,
-        MB_OVERFLOW, INACTIVE, CRC_TRAILER_ERROR,
+      // CB flags
+      CB_NOT_NORMAL,
+      CB_PAYLOAD,
+      CRC_ERROR,
+      EVID_MISMATCH,
+      FSM_TIMEOUT,
+      BCID_ORBITID,
+      MB_OVERFLOW,
+      INACTIVE,
+      CRC_TRAILER_ERROR,
 
-        NUM_ERROR_TYPES
+      NUM_ERROR_TYPES
     };
 
     // Define an enum for quality categories
     enum class ErrorCategory {
-        CB_ISSUES = 0,          // Capture block associated problems
-        ECOND_PAYLOAD = 1,      // Endcap concentrator data packet problems
-        HEADER_TRAILER = 2,     // Basic data packet format problems
-        NUM_CATEGORIES = 3
+      CB_ISSUES = 0,       // Capture block associated problems
+      ECOND_PAYLOAD = 1,   // Endcap concentrator data packet problems
+      HEADER_TRAILER = 2,  // Basic data packet format problems
+      NUM_CATEGORIES = 3
     };
 
     // Define process mode for ErrorSummarizer::processAndFill() method
-    enum class ProcessMode {
-        STAT_TO_STAT = 0,
-        STAT_TO_GRADE = 1,
-        GRADE_TO_GRADE = 2,
-        STAT_TO_GRADE_X = 3 
-      };
+    enum class ProcessMode { STAT_TO_STAT = 0, STAT_TO_GRADE = 1, GRADE_TO_GRADE = 2, STAT_TO_GRADE_X = 3 };
 
-    enum class EconTErrorType {
-        NTC_NOT_MATCHING = 0,
-        SUBPACKET_ERROR = 1,
-        TDAQIDX_OUT_RANGE = 2,
-        NUM_ERROR_TYPES = 3
-    };
+    enum class EconTErrorType { NTC_NOT_MATCHING = 0, SUBPACKET_ERROR = 1, TDAQIDX_OUT_RANGE = 2, NUM_ERROR_TYPES = 3 };
 
-    enum class EconTErrorCategory {
-        UNPACKING_ERRORS = 0,
-        HEADER_TRAILER = 1,
-        NUM_CATEGORIES = 2
-    };
+    enum class EconTErrorCategory { UNPACKING_ERRORS = 0, HEADER_TRAILER = 1, NUM_CATEGORIES = 2 };
 
     // ECON-D / T quality flags & Helper functions to convert between enum and string
     extern std::vector<std::string> econdWithCBflags;
     extern std::vector<std::string> qualityCategoryNames, econtQualityCategoryNames;
     extern std::map<EcondErrorType, ErrorCategory> errorTypeToCategory;
-    
+
     /**
        @short converts an error type to a human-readable string
      */
@@ -86,8 +97,10 @@ namespace hgcal {
     /**
        @short decodes the flags and returns the list of bins to be filled
     */
-    extern std::vector<int> getErrorBinsForECONDCBFlags(unsigned int cbflag, unsigned int cbflags, unsigned int exception);
-    
+    extern std::vector<int> getErrorBinsForECONDCBFlags(unsigned int cbflag,
+                                                        unsigned int cbflags,
+                                                        unsigned int exception);
+
     extern std::vector<std::string> econdTFlags;
     extern std::map<EconTErrorType, EconTErrorCategory> econdTErrorTypeToCategory;
     extern std::string econdTErrorTypeToString(EconTErrorType type);
@@ -95,29 +108,32 @@ namespace hgcal {
 
     // Summarize error from a provided monitor element for ECON-T
     class EcontErrorSummarizer {
-      public:
-        EcontErrorSummarizer();
-        EcontErrorSummarizer(const json& config_data);
-        ~EcontErrorSummarizer() = default;
+    public:
+      EcontErrorSummarizer();
+      EcontErrorSummarizer(const json& config_data);
+      ~EcontErrorSummarizer() = default;
 
-        // accumulate stats from source and fill the total stat into a specified bin of target monitor element
-        void processAndFill(const MonitorElement* source_me, MonitorElement* target_me, const int target_bin_id, const ProcessMode mode = ProcessMode::STAT_TO_STAT);
+      // accumulate stats from source and fill the total stat into a specified bin of target monitor element
+      void processAndFill(const MonitorElement* source_me,
+                          MonitorElement* target_me,
+                          const int target_bin_id,
+                          const ProcessMode mode = ProcessMode::STAT_TO_STAT);
 
-        // calculate quality grade (1=best, 5=worst) based on error count for given flag
-        int calculateGrade(int error_type_index, int num_errors);
+      // calculate quality grade (1=best, 5=worst) based on error count for given flag
+      int calculateGrade(int error_type_index, int num_errors);
 
-        // getters for sanity checks
-        std::string getErrorLabel(int error_type_index) const;
-        size_t getMatrixSize() const;
-        void printConfigurationSummary() const;
-        bool validateHistogramLabels(const MonitorElement* me) const;
+      // getters for sanity checks
+      std::string getErrorLabel(int error_type_index) const;
+      size_t getMatrixSize() const;
+      void printConfigurationSummary() const;
+      bool validateHistogramLabels(const MonitorElement* me) const;
 
-      private:
-        json config_data_;
+    private:
+      json config_data_;
 
-        void loadMatrixConfiguration();
-        std::vector<std::vector<int>> error_thresholds_matrix_;
-        std::vector<std::string> error_type_labels_;
+      void loadMatrixConfiguration();
+      std::vector<std::vector<int>> error_thresholds_matrix_;
+      std::vector<std::string> error_type_labels_;
     };
 
     using CategoryID = uint32_t;
@@ -136,72 +152,73 @@ namespace hgcal {
       std::string getCategoryErrorSummary(CategoryID category) const;
       std::vector<CategoryID> getAllCategories() const;
     };
-    
+
     struct BoundingBox {
-        float xmin, xmax, ymin, ymax;
+      float xmin, xmax, ymin, ymax;
 
-        BoundingBox()
-            : xmin(std::numeric_limits<float>::max())
-            , xmax(std::numeric_limits<float>::lowest())
-            , ymin(std::numeric_limits<float>::max())
-            , ymax(std::numeric_limits<float>::lowest())
-        {}
+      BoundingBox()
+          : xmin(std::numeric_limits<float>::max()),
+            xmax(std::numeric_limits<float>::lowest()),
+            ymin(std::numeric_limits<float>::max()),
+            ymax(std::numeric_limits<float>::lowest()) {}
 
-        BoundingBox(float xmin_, float xmax_, float ymin_, float ymax_)
-            : xmin(xmin_), xmax(xmax_), ymin(ymin_), ymax(ymax_)
-        {}
+      BoundingBox(float xmin_, float xmax_, float ymin_, float ymax_)
+          : xmin(xmin_), xmax(xmax_), ymin(ymin_), ymax(ymax_) {}
 
-        bool isValid() const {
-            return xmin <= xmax && ymin <= ymax;
-        }
+      bool isValid() const { return xmin <= xmax && ymin <= ymax; }
     };
 
     // Summarize error from a provided monitor element
     class ErrorSummarizer {
-      public:
-        ErrorSummarizer();
-        ErrorSummarizer(const json& config_data);
-        ~ErrorSummarizer() = default;
+    public:
+      ErrorSummarizer();
+      ErrorSummarizer(const json& config_data);
+      ~ErrorSummarizer() = default;
 
-        // accumulate stats from srouce and fill the total stat into a specified bin of target monitor element
-        void processAndFill(const MonitorElement* source_me, MonitorElement* target_me, const int target_bin_id, const ProcessMode mode = ProcessMode::STAT_TO_STAT);
+      // accumulate stats from srouce and fill the total stat into a specified bin of target monitor element
+      void processAndFill(const MonitorElement* source_me,
+                          MonitorElement* target_me,
+                          const int target_bin_id,
+                          const ProcessMode mode = ProcessMode::STAT_TO_STAT);
 
-        // calls processAndFills three times for the three different versus LS plots.
-        void processAndFillLS(MonitorElement *source_quality_layer, 
-            int binNumber, MonitorElement *target_quality_LS, MonitorElement *target_finequality_LS,
-            MonitorElement *target_layer_LS);
+      // calls processAndFills three times for the three different versus LS plots.
+      void processAndFillLS(MonitorElement* source_quality_layer,
+                            int binNumber,
+                            MonitorElement* target_quality_LS,
+                            MonitorElement* target_finequality_LS,
+                            MonitorElement* target_layer_LS);
 
-        // calculate quality grade (1=best, 5=worst) based on error count for given flag
-        int calculateGrade(int error_type_index, int num_errors);
+      // calculate quality grade (1=best, 5=worst) based on error count for given flag
+      int calculateGrade(int error_type_index, int num_errors);
 
-        // analyze the numbers of stuck/noisy/normal channels of a module
-        std::map<std::string, int> count_zero_std_bins(const TProfile* profile, int nMax);
-        static std::map<std::string, int> analyzeChannelQuality(MonitorElement* me, double threshold);
-        std::map<std::string, int> analyzeChannelQuality(MonitorElement* me, const std::string& threshold_key);
-        std::vector<double> sumAxis(MonitorElement* me, int axis);
+      // analyze the numbers of stuck/noisy/normal channels of a module
+      std::map<std::string, int> count_zero_std_bins(const TProfile* profile, int nMax);
+      static std::map<std::string, int> analyzeChannelQuality(MonitorElement* me, double threshold);
+      std::map<std::string, int> analyzeChannelQuality(MonitorElement* me, const std::string& threshold_key);
+      std::vector<double> sumAxis(MonitorElement* me, int axis);
 
-        // getters for sanity checks
-        float getThreshold(const std::string& threshold_name) const;
-        std::string getErrorLabel(int error_type_index) const;
-        size_t getMatrixSize() const;
-        void printConfigurationSummary() const;
-        bool validateHistogramLabels(const MonitorElement* me) const;
+      // getters for sanity checks
+      float getThreshold(const std::string& threshold_name) const;
+      std::string getErrorLabel(int error_type_index) const;
+      size_t getMatrixSize() const;
+      void printConfigurationSummary() const;
+      bool validateHistogramLabels(const MonitorElement* me) const;
 
-        // preduce report for higher level TH2F, i.e. modules per cassette -> cassettes per layer -> layers per endcap
-        Report analysisWithCategories(MonitorElement* me, const std::function<CategoryID(int)>& categorizer);
-        static Report aggregateReports(const std::vector<Report>& reports);
-        void fillHistogramFromCategoryReport(MonitorElement* me, const Report& report, CategoryID category);
+      // preduce report for higher level TH2F, i.e. modules per cassette -> cassettes per layer -> layers per endcap
+      Report analysisWithCategories(MonitorElement* me, const std::function<CategoryID(int)>& categorizer);
+      static Report aggregateReports(const std::vector<Report>& reports);
+      void fillHistogramFromCategoryReport(MonitorElement* me, const Report& report, CategoryID category);
 
-      private:
-        json config_data_;
+    private:
+      json config_data_;
 
-        void loadMatrixConfiguration();
-        std::vector<std::vector<int>> error_thresholds_matrix_;
-        std::vector<std::string> error_type_labels_;
+      void loadMatrixConfiguration();
+      std::vector<std::vector<int>> error_thresholds_matrix_;
+      std::vector<std::string> error_type_labels_;
     };
 
-  } // namespace dqm
+  }  // namespace dqm
 
-} // namespace hgcal
+}  // namespace hgcal
 
 #endif

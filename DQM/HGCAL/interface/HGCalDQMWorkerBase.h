@@ -3,27 +3,29 @@
 
 #include "DQMServices/Core/interface/DQMStore.h"
 
-namespace edm { class LuminosityBlock; }
+namespace edm {
+  class LuminosityBlock;
+}
 
-namespace hgcal { namespace dqm {
+namespace hgcal {
+  namespace dqm {
 
-  // Matches DQMEDHarvester's own alias so worker signatures are identical.
-  using DQMStore = ::dqm::harvesting::DQMStore;
+    // Matches DQMEDHarvester's own alias so worker signatures are identical.
+    using DQMStore = ::dqm::harvesting::DQMStore;
 
-  class HGCalDQMGeometry;
+    class HGCalDQMGeometry;
 
-  // endLumi/endRun take non-const geometry: fills may open template files
-  // via moduleTemplateFile / trigTemplateFile, which mutate the TFile cache.
-  class HGCalDQMWorkerBase {
-  public:
-    virtual ~HGCalDQMWorkerBase() = default;
-    virtual void book   (DQMStore::IBooker&, HGCalDQMGeometry const&) = 0;
-    virtual void endLumi(DQMStore::IBooker&, DQMStore::IGetter&,
-                         HGCalDQMGeometry&, edm::LuminosityBlock const&) {}
-    virtual void endRun (DQMStore::IBooker&, DQMStore::IGetter&,
-                         HGCalDQMGeometry&) {}
-  };
+    // endLumi/endRun take non-const geometry: fills may open template files
+    // via moduleTemplateFile / trigTemplateFile, which mutate the TFile cache.
+    class HGCalDQMWorkerBase {
+    public:
+      virtual ~HGCalDQMWorkerBase() = default;
+      virtual void book(DQMStore::IBooker&, HGCalDQMGeometry const&) = 0;
+      virtual void endLumi(DQMStore::IBooker&, DQMStore::IGetter&, HGCalDQMGeometry&, edm::LuminosityBlock const&) {}
+      virtual void endRun(DQMStore::IBooker&, DQMStore::IGetter&, HGCalDQMGeometry&) {}
+    };
 
-}}  // hgcal::dqm
+  }  // namespace dqm
+}  // namespace hgcal
 
 #endif

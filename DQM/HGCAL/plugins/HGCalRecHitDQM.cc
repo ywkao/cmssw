@@ -33,7 +33,7 @@ public:
     bool zside, isSiPM;
     uint32_t layer, i1, i2, nErx, dqmIndex, fedid, modid, econdidx, cassette, endcap, moduleIndex, fedModuleIndex;
   };
-  typedef std::pair<uint32_t,uint32_t> MonitoredElementKey_t;
+  typedef std::pair<uint32_t, uint32_t> MonitoredElementKey_t;
   explicit HGCalRecHitDQM(const edm::ParameterSet&);
   ~HGCalRecHitDQM() override;
 
@@ -53,7 +53,7 @@ private:
   const unsigned int prescaleFactor_;
   unsigned int nProcessed_;
 
-  std::map<MonitoredElementKey_t,MonitoredElement_t> followedModules_;
+  std::map<MonitoredElementKey_t, MonitoredElement_t> followedModules_;
   std::map<uint32_t, std::vector<std::pair<MonitoredElementKey_t, MonitoredElement_t>>> modulesByFED_;
 
   std::map<int, std::map<int, std::map<int, std::map<std::string, MonitoredElement_t>>>> HGCALMap;
@@ -62,7 +62,7 @@ private:
   std::map<int, std::map<int, std::map<std::string, MonitorElement*>>> recHitSummariesLayers_;
   // per-module TProfile: <E_nMIPs> vs channel; consumed by harvester as avgrechit_nmips.
   std::map<MonitoredElementKey_t, MonitorElement*> avgRechitNmips_;
-  std::map<int, std::string> endCapKey = {{-1,"Minus"},{1,"Plus"}};
+  std::map<int, std::string> endCapKey = {{-1, "Minus"}, {1, "Plus"}};
 
   int trigTime, trigBx;
 };
@@ -72,17 +72,16 @@ private:
 //
 
 HGCalRecHitDQM::HGCalRecHitDQM(const edm::ParameterSet& iConfig)
-    :rechitsTkn_(consumes<HGCalSoARecHitsHostCollection>(iConfig.getParameter<edm::InputTag>("RecHits"))),
-    denseIndexInfoTkn_(esConsumes()),
-    moduleIdxTkn_(esConsumes<edm::Transition::BeginRun>()),
-    moduleInfoTkn_(esConsumes<edm::Transition::BeginRun>()),
-    metaDataTkn_(consumes<HGCalTestSystemTrigTimeCollection>(iConfig.getParameter<edm::InputTag>("MetaData"))),
-    minEvents_(iConfig.getParameter<unsigned int>("MinimumEvents")),
-    prescaleFactor_(std::max(1u, iConfig.getParameter<unsigned int>("PrescaleFactor"))),
-    nProcessed_(0)
-{ }
+    : rechitsTkn_(consumes<HGCalSoARecHitsHostCollection>(iConfig.getParameter<edm::InputTag>("RecHits"))),
+      denseIndexInfoTkn_(esConsumes()),
+      moduleIdxTkn_(esConsumes<edm::Transition::BeginRun>()),
+      moduleInfoTkn_(esConsumes<edm::Transition::BeginRun>()),
+      metaDataTkn_(consumes<HGCalTestSystemTrigTimeCollection>(iConfig.getParameter<edm::InputTag>("MetaData"))),
+      minEvents_(iConfig.getParameter<unsigned int>("MinimumEvents")),
+      prescaleFactor_(std::max(1u, iConfig.getParameter<unsigned int>("PrescaleFactor"))),
+      nProcessed_(0) {}
 
-HGCalRecHitDQM::~HGCalRecHitDQM() { }
+HGCalRecHitDQM::~HGCalRecHitDQM() {}
 
 // ------------ method called for each event  ------------
 void HGCalRecHitDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
@@ -109,23 +108,24 @@ void HGCalRecHitDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
   //read rechits and dense index info
   const auto& denseIndexInfo = iSetup.getData(denseIndexInfoTkn_);
   const auto& rechits = iEvent.getHandle(rechitsTkn_);
-  if (!rechits.isValid()) return;
+  if (!rechits.isValid())
+    return;
 
   //number of hits and dense indices
   const auto& denseIndexInfo_view = denseIndexInfo.const_view();
   int32_t ndii = denseIndexInfo_view.metadata().size();
   const auto& rechits_view = rechits->const_view();
   int32_t nhits = rechits_view.metadata().size();
-  assert(ndii>=nhits);
+  assert(ndii >= nhits);
 
   //fill histograms
   constexpr float knoise_thr(3.0);
 
   //prepare sums
-  std::map<int, std::map<int,float> > mipsum;
-  std::map<int, std::map<int,int> > hitsum;
-  for(const auto& [endcap, layerMap] : recHitSummariesLayers_) {
-    for(const auto& [layer, _] : layerMap) {
+  std::map<int, std::map<int, float>> mipsum;
+  std::map<int, std::map<int, int>> hitsum;
+  for (const auto& [endcap, layerMap] : recHitSummariesLayers_) {
+    for (const auto& [layer, _] : layerMap) {
       mipsum[endcap][layer] = 0.f;
       hitsum[endcap][layer] = 0;
     }
@@ -135,20 +135,18 @@ void HGCalRecHitDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
   // uses find() throughout so operator[] never inserts empty maps or nullptr
   // ME entries for unbooked keys.
   int cur_endcap = std::numeric_limits<int>::min();
-  int cur_layer  = std::numeric_limits<int>::min();
+  int cur_layer = std::numeric_limits<int>::min();
   bool cur_ok = false;
-  MonitorElement* h_energy     = nullptr;
+  MonitorElement* h_energy = nullptr;
   MonitorElement* h_energyvstt = nullptr;
-  MonitorElement* h_time       = nullptr;
-  MonitorElement* h_timevsE    = nullptr;
-  MonitorElement* h_timevstt   = nullptr;
+  MonitorElement* h_time = nullptr;
+  MonitorElement* h_timevsE = nullptr;
+  MonitorElement* h_timevstt = nullptr;
 
   //loop over hits
-  MonitoredElementKey_t cur_mod_key(std::numeric_limits<uint32_t>::max(),
-                                    std::numeric_limits<uint32_t>::max());
+  MonitoredElementKey_t cur_mod_key(std::numeric_limits<uint32_t>::max(), std::numeric_limits<uint32_t>::max());
   auto avgmips_it = avgRechitNmips_.end();
-  for(int i=0; i<nhits; i++) {
-
+  for (int i = 0; i < nhits; i++) {
     const auto& rechit = rechits->const_view()[i];
     const auto& layer = rechit.layer();
 
@@ -169,72 +167,77 @@ void HGCalRecHitDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
     if (avgmips_it != avgRechitNmips_.end())
       avgmips_it->second->Fill(indexinfo.chNumber(), nmips);
 
-    if(layer==0) continue;
-    if(rechit.energy()<knoise_thr*rechit.sigmaNoise()) continue;
+    if (layer == 0)
+      continue;
+    if (rechit.energy() < knoise_thr * rechit.sigmaNoise())
+      continue;
 
-    auto endcap = indexinfo.z()<0 ? -1 : 1;
+    auto endcap = indexinfo.z() < 0 ? -1 : 1;
 
     if (endcap != cur_endcap || static_cast<int>(layer) != cur_layer) {
       cur_endcap = endcap;
       cur_layer = static_cast<int>(layer);
       cur_ok = false;
       auto ec_it = recHitSummariesLayers_.find(endcap);
-      if (ec_it == recHitSummariesLayers_.end()) continue;
+      if (ec_it == recHitSummariesLayers_.end())
+        continue;
       auto lay_it = ec_it->second.find(layer);
-      if (lay_it == ec_it->second.end()) continue;
+      if (lay_it == ec_it->second.end())
+        continue;
       const auto& mmap = lay_it->second;
-      auto it_e   = mmap.find("rechitenergy");
+      auto it_e = mmap.find("rechitenergy");
       auto it_evt = mmap.find("rechitenergyvstrigtime");
-      auto it_t   = mmap.find("rechittime");
+      auto it_t = mmap.find("rechittime");
       auto it_tvE = mmap.find("rechittimevsenergy");
       auto it_tvT = mmap.find("rechittimevstrigtime");
-      if (it_e == mmap.end() || it_evt == mmap.end() ||
-          it_t == mmap.end() || it_tvE == mmap.end() || it_tvT == mmap.end())
+      if (it_e == mmap.end() || it_evt == mmap.end() || it_t == mmap.end() || it_tvE == mmap.end() ||
+          it_tvT == mmap.end())
         continue;
-      h_energy     = it_e->second;
+      h_energy = it_e->second;
       h_energyvstt = it_evt->second;
-      h_time       = it_t->second;
-      h_timevsE    = it_tvE->second;
-      h_timevstt   = it_tvT->second;
+      h_time = it_t->second;
+      h_timevsE = it_tvE->second;
+      h_timevstt = it_tvT->second;
       cur_ok = true;
     }
-    if (!cur_ok) continue;
+    if (!cur_ok)
+      continue;
 
     mipsum[endcap][layer] += nmips;
     hitsum[endcap][layer] += 1;
     h_energy->Fill(nmips);
-    h_energyvstt->Fill(trigTime,nmips);
-    if( time>0 ) {
+    h_energyvstt->Fill(trigTime, nmips);
+    if (time > 0) {
       h_time->Fill(time);
-      h_timevsE->Fill(nmips,time);
-      h_timevstt->Fill(trigTime,time);
+      h_timevsE->Fill(nmips, time);
+      h_timevstt->Fill(trigTime, time);
     }
   }
 
   //longitudinal profile versus layer
-  for(const auto& [endcap, layerMap] : mipsum) {
+  for (const auto& [endcap, layerMap] : mipsum) {
     auto ec_it = recHitSummariesEndcaps_.find(endcap);
-    if (ec_it == recHitSummariesEndcaps_.end()) continue;
+    if (ec_it == recHitSummariesEndcaps_.end())
+      continue;
     const auto& mmap = ec_it->second;
-    auto it_sum  = mmap.find("rechitsumenergy");
+    auto it_sum = mmap.find("rechitsumenergy");
     auto it_mult = mmap.find("rechitmultiplicity");
-    if (it_sum == mmap.end() || it_mult == mmap.end()) continue;
-    for(const auto& [layer, _] : layerMap) {
+    if (it_sum == mmap.end() || it_mult == mmap.end())
+      continue;
+    for (const auto& [layer, _] : layerMap) {
       it_sum->second->Fill(layer, mipsum[endcap][layer]);
       it_mult->second->Fill(layer, hitsum[endcap][layer]);
     }
   }
-
 }
 
 void HGCalRecHitDQM::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& run, edm::EventSetup const& iSetup) {
-
   const HGCalMappingModuleIndexer& moduleIndexer = iSetup.getData(moduleIdxTkn_);
   const hgcal::HGCalMappingModuleParamHost& moduleInfo = iSetup.getData(moduleInfoTkn_);
 
   for (const auto& [rawTypecode, fedData] : moduleIndexer.typecodeMap()) {
     const uint32_t fedid = fedData.first;
-    const uint32_t imod  = fedData.second;
+    const uint32_t imod = fedData.second;
 
     const uint32_t denseModIdx = moduleIndexer.getIndexForModule(fedid, imod);
     const auto& modInfo = moduleInfo.view()[denseModIdx];
@@ -270,29 +273,26 @@ void HGCalRecHitDQM::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& ru
   // per-module folder (harvester expects avgrechit_nmips alongside avgadc etc).
   for (const auto& [key, ele] : followedModules_) {
     std::string endcapStr = (ele.endcap == 1) ? "Plus" : "Minus";
-    std::string folder = "HGCAL/EndCap_" + endcapStr +
-                         "/Layer_" + std::to_string(ele.layer) +
-                         "/Cassette_" + std::to_string(ele.cassette) +
-                         "/(u" + std::to_string(ele.i1) +
-                         "-v" + std::to_string(ele.i2) + ") " +
-                         ele.typecode;
+    std::string folder = "HGCAL/EndCap_" + endcapStr + "/Layer_" + std::to_string(ele.layer) + "/Cassette_" +
+                         std::to_string(ele.cassette) + "/(u" + std::to_string(ele.i1) + "-v" + std::to_string(ele.i2) +
+                         ") " + ele.typecode;
     ibook.setCurrentFolder(folder);
     size_t nch = ele.nErx * 37;
     avgRechitNmips_[key] = ibook.bookProfile(
-        "avgrechit_nmips", ele.typecode + ";Channel; <E_{nMIPs}>",
-        nch, -0.5, nch - 0.5, 100, -100, 2000, "s");
+        "avgrechit_nmips", ele.typecode + ";Channel; <E_{nMIPs}>", nch, -0.5, nch - 0.5, 100, -100, 2000, "s");
   }
 
   for (const auto& [endcap, layerMap] : HGCALMap) {
-
     std::string endCapString = endCapKey[endcap];
     std::string endcapFolder = "HGCAL/EndCap_" + endCapString + "/";
     ibook.setCurrentFolder(endcapFolder);
 
-    std::string label(endcap>0 ? "CE+" : "CE-");
-    recHitSummariesEndcaps_[endcap]["rechitsumenergy"] = ibook.book2D("rechitsumenergy", label + ";Layer; <Energy> [MIPs]", 47, 0.5, 47.5, 150, 0, 2500);
+    std::string label(endcap > 0 ? "CE+" : "CE-");
+    recHitSummariesEndcaps_[endcap]["rechitsumenergy"] =
+        ibook.book2D("rechitsumenergy", label + ";Layer; <Energy> [MIPs]", 47, 0.5, 47.5, 150, 0, 2500);
 
-    recHitSummariesEndcaps_[endcap]["rechitmultiplicity"] = ibook.book2D("rechitmultiplicity", label + ";Layer; <#hits>", 47, 0.5, 47.5, 200, 0, 1500);
+    recHitSummariesEndcaps_[endcap]["rechitmultiplicity"] =
+        ibook.book2D("rechitmultiplicity", label + ";Layer; <#hits>", 47, 0.5, 47.5, 200, 0, 1500);
 
     for (const auto& [layer, _] : layerMap) {
       std::string layerFolder = endcapFolder + "Layer_" + std::to_string(layer) + "/";
@@ -301,11 +301,16 @@ void HGCalRecHitDQM::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& ru
 
       std::string label("Layer " + std::to_string(layer));
 
-      recHitSummariesLayers_[endcap][layer]["rechittime"] = ibook.book1D("rechittime", label + ";RecHit time [ps]; RecHits", 100, 0, 5000);
-      recHitSummariesLayers_[endcap][layer]["rechitenergy"] = ibook.book1D("rechitenergy", label + ";RecHit energy [MIPs]; RecHits", 100, 0, 250);
-      recHitSummariesLayers_[endcap][layer]["rechitenergyvstrigtime"] = ibook.book2D("rechitenergyvstrigtime", label + ";Trigger phase; RecHit energy [MIPs]", 224, -111.5, 112.5, 100, 0, 250);
-      recHitSummariesLayers_[endcap][layer]["rechittimevsenergy"] = ibook.book2D("rechittimevsenergy", label + ";Energy [MIP]; RecHit time [ps]", 100, -10, 1000, 100, 0, 5000);
-      recHitSummariesLayers_[endcap][layer]["rechittimevstrigtime"] = ibook.book2D("rechittimevstrigtime", label + ";Trigger phase; RecHit time [ps]", 224, -111.5, 112.5, 100, 0, 5000);
+      recHitSummariesLayers_[endcap][layer]["rechittime"] =
+          ibook.book1D("rechittime", label + ";RecHit time [ps]; RecHits", 100, 0, 5000);
+      recHitSummariesLayers_[endcap][layer]["rechitenergy"] =
+          ibook.book1D("rechitenergy", label + ";RecHit energy [MIPs]; RecHits", 100, 0, 250);
+      recHitSummariesLayers_[endcap][layer]["rechitenergyvstrigtime"] = ibook.book2D(
+          "rechitenergyvstrigtime", label + ";Trigger phase; RecHit energy [MIPs]", 224, -111.5, 112.5, 100, 0, 250);
+      recHitSummariesLayers_[endcap][layer]["rechittimevsenergy"] =
+          ibook.book2D("rechittimevsenergy", label + ";Energy [MIP]; RecHit time [ps]", 100, -10, 1000, 100, 0, 5000);
+      recHitSummariesLayers_[endcap][layer]["rechittimevstrigtime"] = ibook.book2D(
+          "rechittimevstrigtime", label + ";Trigger phase; RecHit time [ps]", 224, -111.5, 112.5, 100, 0, 5000);
     }
   }
 }
@@ -316,7 +321,7 @@ void HGCalRecHitDQM::fillDescriptions(edm::ConfigurationDescriptions& descriptio
   desc.add<edm::InputTag>("MetaData", edm::InputTag("hgcalTrigTimeProducer", ""));
   desc.add<unsigned int>("MinimumEvents", 5000);
   desc.add<unsigned int>("PrescaleFactor", 5000);
-  desc.add<bool>("isSimulation",false);
+  desc.add<bool>("isSimulation", false);
   descriptions.add("hgcalrechitdqm", desc);
 }
 

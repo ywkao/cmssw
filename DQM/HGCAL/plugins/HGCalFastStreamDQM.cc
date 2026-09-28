@@ -1,3 +1,4 @@
+#include <atomic>
 #include <string>
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -76,13 +77,14 @@ private:
   void analyzeBXComparison(const edm::Event& iEvent, const edm::EventSetup& iSetup);
   void analyzeLSFastStream(const edm::Event& iEvent, const edm::EventSetup& iSetup);
 
-  void fillPerFEDComparisonHistograms(uint32_t fedid, const std::map<std::string, std::map<std::string, double>>& values);
+  void fillPerFEDComparisonHistograms(uint32_t fedid,
+                                      const std::map<std::string, std::map<std::string, double>>& values);
   void recordEventInfo(const edm::Event& iEvent);
   void iterateEcondLSCounts(int layer, int flag);
 
   // ------------ member data ------------
   edm::LuminosityBlockNumber_t currentLS = -1;
-  
+
   MonitorElement *runNumberME, *lumiSectionME, *eventNumberME, *runStartME, *timeStampME;
   MonitorElement* me_econd_quality_layer;
   MonitorElement* fedSummaryME;
@@ -96,7 +98,7 @@ private:
 
   std::map<MonitoredElementKey_t, MonitoredElement_t> followedModules_;
   std::map<uint32_t, std::vector<std::pair<MonitoredElementKey_t, MonitoredElement_t>>> modulesByFED_;
-  
+
   std::map<uint32_t, int> fedIdToBinMap_;
 
   std::vector<uint32_t> followedFEDs_;
@@ -257,8 +259,7 @@ void HGCalFastStreamDQM::analyzeECONDFlags(const edm::Event& iEvent, const edm::
     // Apply its payload-quality gate before reading the matrix, retaining a
     // zero sample per channel for these events as in the reference histograms.
     // A BCID/Orbit mismatch alone can still have decoded CM in passthrough mode.
-    const bool hasCommonMode = hgcaldigi::htFlag(econd.econdFlag()) < 2 &&
-                               hgcaldigi::eboFlag(econd.econdFlag()) < 2 &&
+    const bool hasCommonMode = hgcaldigi::htFlag(econd.econdFlag()) < 2 && hgcaldigi::eboFlag(econd.econdFlag()) < 2 &&
                                hgcaldigi::matchFlag(econd.econdFlag()) && econd.payloadLength() > 0 &&
                                econd.cbFlag() != hgcal::backend::ECONDPacketStatus::OfflinePayloadCRCError &&
                                econd.cbFlag() != hgcal::backend::ECONDPacketStatus::InactiveECOND;
@@ -372,9 +373,7 @@ void HGCalFastStreamDQM::fillPerFEDComparisonHistograms(
   }
 }
 
-void HGCalFastStreamDQM::bookHistograms(DQMStore::IBooker& ibook,
-                                          edm::Run const& run,
-                                          edm::EventSetup const& iSetup) {
+void HGCalFastStreamDQM::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& run, edm::EventSetup const& iSetup) {
   // Book event information
   bookEventInfo(ibook);
 
@@ -437,8 +436,8 @@ void HGCalFastStreamDQM::bookHistograms(DQMStore::IBooker& ibook,
 }
 
 void HGCalFastStreamDQM::bookHistogramsFastStream(DQMStore::IBooker& ibook,
-                                                    edm::Run const& run,
-                                                    edm::EventSetup const& iSetup) {
+                                                  edm::Run const& run,
+                                                  edm::EventSetup const& iSetup) {
   size_t necondWithCBflags = hgcal::dqm::econdWithCBflags.size();
 
   //EndCap Level, no plots just for endcaps!
@@ -549,8 +548,9 @@ void HGCalFastStreamDQM::bookEventInfo(DQMStore::IBooker& ibooker) {
   eventNumberME = ibooker.bookInt("iEvent");            // INT
   runStartME = ibooker.bookFloat("runStartTimeStamp");  // REAL
 
-  static bool timeRecorded = false;
-  if (!timeRecorded) {  // record time stamp only once
+  // Shared by all stream instances: only the first one records the run-start time stamp.
+  static std::atomic<bool> timeRecorded{false};
+  if (!timeRecorded.exchange(true)) {
     auto now = std::chrono::system_clock::now();
     std::time_t timestamp = std::chrono::system_clock::to_time_t(now);
     double unixTimestamp = static_cast<double>(timestamp);
@@ -559,8 +559,6 @@ void HGCalFastStreamDQM::bookEventInfo(DQMStore::IBooker& ibooker) {
     TDatime dt(timestamp);
     TString timeString = dt.AsSQLString();
     timeStampME = ibooker.bookString("timeStamp", timeString);
-
-    timeRecorded = true;
   }
 }
 
