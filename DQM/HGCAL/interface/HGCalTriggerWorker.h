@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "HGCalCommissioning/DQM/interface/HGCalDQMWorkerBase.h"
+#include "DQM/HGCAL/interface/HGCalDQMWorkerBase.h"
 
 namespace hgcal { namespace dqm {
 

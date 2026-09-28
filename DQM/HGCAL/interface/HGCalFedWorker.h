@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "HGCalCommissioning/DQM/interface/HGCalDQMWorkerBase.h"
+#include "DQM/HGCAL/interface/HGCalDQMWorkerBase.h"
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 

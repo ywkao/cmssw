@@ -1,6 +1,6 @@
-#include "HGCalCommissioning/DQM/interface/HGCalFedWorker.h"
+#include "DQM/HGCAL/interface/HGCalFedWorker.h"
 
-#include "HGCalCommissioning/DQM/interface/HGCalDQMGeometry.h"
+#include "DQM/HGCAL/interface/HGCalDQMGeometry.h"
 
 namespace hgcal { namespace dqm {
 

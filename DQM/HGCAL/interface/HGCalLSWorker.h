@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "HGCalCommissioning/DQM/interface/HGCalDQMWorkerBase.h"
+#include "DQM/HGCAL/interface/HGCalDQMWorkerBase.h"
 
 namespace edm { class LuminosityBlock; }
 

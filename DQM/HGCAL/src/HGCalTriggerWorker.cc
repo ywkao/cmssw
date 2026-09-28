@@ -1,6 +1,6 @@
-#include "HGCalCommissioning/DQM/interface/HGCalTriggerWorker.h"
-#include "HGCalCommissioning/DQM/interface/HGCalDQMGeometry.h"
-#include "HGCalCommissioning/DQM/interface/HGCalSysValDQMCommon.h"
+#include "DQM/HGCAL/interface/HGCalTriggerWorker.h"
+#include "DQM/HGCAL/interface/HGCalDQMGeometry.h"
+#include "DQM/HGCAL/interface/HGCalSysValDQMCommon.h"
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/Utilities/interface/Exception.h"

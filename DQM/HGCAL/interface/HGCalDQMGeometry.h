@@ -19,7 +19,7 @@
 #include "CondFormats/HGCalObjects/interface/HGCalMappingModuleIndexerTrigger.h"
 #include "CondFormats/HGCalObjects/interface/HGCalMappingParameterHost.h"
 
-#include "HGCalCommissioning/DQM/interface/HGCalSysValDQMCommon.h"
+#include "DQM/HGCAL/interface/HGCalSysValDQMCommon.h"
 
 class TFile;
 class TGraph;

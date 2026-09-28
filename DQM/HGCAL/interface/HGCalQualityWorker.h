@@ -6,7 +6,7 @@
 #include <vector>
 #include <unordered_map>
 
-#include "HGCalCommissioning/DQM/interface/HGCalDQMWorkerBase.h"
+#include "DQM/HGCAL/interface/HGCalDQMWorkerBase.h"
 
 namespace hgcal { namespace dqm {
 

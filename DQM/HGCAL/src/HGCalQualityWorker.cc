@@ -1,7 +1,7 @@
-#include "HGCalCommissioning/DQM/interface/HGCalQualityWorker.h"
+#include "DQM/HGCAL/interface/HGCalQualityWorker.h"
 
-#include "HGCalCommissioning/DQM/interface/HGCalDQMGeometry.h"
-#include "HGCalCommissioning/DQM/interface/HGCalSysValDQMCommon.h"
+#include "DQM/HGCAL/interface/HGCalDQMGeometry.h"
+#include "DQM/HGCAL/interface/HGCalSysValDQMCommon.h"
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 

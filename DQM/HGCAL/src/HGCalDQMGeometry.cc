@@ -1,4 +1,4 @@
-#include "HGCalCommissioning/DQM/interface/HGCalDQMGeometry.h"
+#include "DQM/HGCAL/interface/HGCalDQMGeometry.h"
 
 #include <bitset>
 #include <cmath>

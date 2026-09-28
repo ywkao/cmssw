@@ -1,9 +1,9 @@
-#include "HGCalCommissioning/DQM/interface/HGCalLSWorker.h"
+#include "DQM/HGCAL/interface/HGCalLSWorker.h"
 
 #include "FWCore/Framework/interface/LuminosityBlock.h"
 
-#include "HGCalCommissioning/DQM/interface/HGCalDQMGeometry.h"
-#include "HGCalCommissioning/DQM/interface/HGCalSysValDQMCommon.h"
+#include "DQM/HGCAL/interface/HGCalDQMGeometry.h"
+#include "DQM/HGCAL/interface/HGCalSysValDQMCommon.h"
 
 namespace hgcal { namespace dqm {
 

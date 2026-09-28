@@ -1,7 +1,7 @@
-#include "HGCalCommissioning/DQM/interface/HGCalChannelWorker.h"
+#include "DQM/HGCAL/interface/HGCalChannelWorker.h"
 
-#include "HGCalCommissioning/DQM/interface/HGCalDQMGeometry.h"
-#include "HGCalCommissioning/DQM/interface/HGCalSysValDQMCommon.h"
+#include "DQM/HGCAL/interface/HGCalDQMGeometry.h"
+#include "DQM/HGCAL/interface/HGCalSysValDQMCommon.h"
 
 #include <cmath>
 #include <algorithm>
