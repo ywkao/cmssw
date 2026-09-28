@@ -13,7 +13,7 @@
 #include "CondFormats/HGCalObjects/interface/HGCalMappingModuleIndexer.h"
 #include "CondFormats/HGCalObjects/interface/HGCalMappingParameterHost.h"
 #include "HGCalCommissioning/SystemTestEventFilters/interface/HGCalTestSystemMetaData.h"
-#include "DQM/HGCAL/interface/HGCalSysValDQMCommon.h"
+#include "DQM/HGCAL/interface/HGCalDQMCommon.h"
 #include "CondFormats/DataRecord/interface/HGCalElectronicsMappingRcd.h"
 
 /**
@@ -157,7 +157,7 @@ void HGCalRecHitDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
     auto indexinfo = denseIndexInfo_view[denseIdx];
 
     // Per-module rechit profile is filled BEFORE the noise/layer cut, matching
-    // HGCalSysValDigisClient's original behaviour (harvester downstream expects
+    // the original monolithic client's behaviour (harvester downstream expects
     // an entry per channel per hit).
     MonitoredElementKey_t mod_key(indexinfo.fedId(), indexinfo.fedReadoutSeq());
     if (mod_key != cur_mod_key) {

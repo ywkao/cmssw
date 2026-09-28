@@ -1,7 +1,7 @@
 #include "DQM/HGCAL/interface/HGCalQualityWorker.h"
 
 #include "DQM/HGCAL/interface/HGCalDQMGeometry.h"
-#include "DQM/HGCAL/interface/HGCalSysValDQMCommon.h"
+#include "DQM/HGCAL/interface/HGCalDQMCommon.h"
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
@@ -186,7 +186,7 @@ namespace hgcal {
               // derive grade for overall module quality
               int xbin = findBinByLabel(
                   quality_me,
-                  typecode);  // quality and payload follow the same typecode-xbin mapping (as set in HGCalSysValDigisClient.cc)
+                  typecode);  // quality and payload follow the same typecode-xbin mapping (as set in HGCalFastStreamDQM)
               for (int ybin = 1; ybin <= nYbins; ++ybin) {
                 double content = quality_me->getBinContent(xbin, ybin);
                 int error_type_index = ybin - 1;

@@ -1,5 +1,5 @@
-#ifndef HGCalCommissioning_DQM_interface_HGCalDQMGeometry_h
-#define HGCalCommissioning_DQM_interface_HGCalDQMGeometry_h
+#ifndef DQM_HGCAL_interface_HGCalDQMGeometry_h
+#define DQM_HGCAL_interface_HGCalDQMGeometry_h
 
 #include <array>
 #include <chrono>
@@ -19,7 +19,7 @@
 #include "CondFormats/HGCalObjects/interface/HGCalMappingModuleIndexerTrigger.h"
 #include "CondFormats/HGCalObjects/interface/HGCalMappingParameterHost.h"
 
-#include "DQM/HGCAL/interface/HGCalSysValDQMCommon.h"
+#include "DQM/HGCAL/interface/HGCalDQMCommon.h"
 
 class TFile;
 class TGraph;

@@ -3,7 +3,7 @@
 #include "FWCore/Framework/interface/LuminosityBlock.h"
 
 #include "DQM/HGCAL/interface/HGCalDQMGeometry.h"
-#include "DQM/HGCAL/interface/HGCalSysValDQMCommon.h"
+#include "DQM/HGCAL/interface/HGCalDQMCommon.h"
 
 namespace hgcal {
   namespace dqm {

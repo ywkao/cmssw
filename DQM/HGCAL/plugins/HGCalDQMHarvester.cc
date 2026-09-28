@@ -27,7 +27,7 @@
 
 #include "DQM/HGCAL/interface/HGCalDQMGeometry.h"
 #include "DQM/HGCAL/interface/HGCalDQMWorkerBase.h"
-#include "DQM/HGCAL/interface/HGCalSysValDQMCommon.h"
+#include "DQM/HGCAL/interface/HGCalDQMCommon.h"
 
 #include "DQM/HGCAL/interface/HGCalChannelWorker.h"
 #include "DQM/HGCAL/interface/HGCalFedWorker.h"

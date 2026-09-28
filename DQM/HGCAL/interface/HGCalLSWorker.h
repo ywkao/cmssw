@@ -1,5 +1,5 @@
-#ifndef HGCalCommissioning_DQM_interface_HGCalLSWorker_h
-#define HGCalCommissioning_DQM_interface_HGCalLSWorker_h
+#ifndef DQM_HGCAL_interface_HGCalLSWorker_h
+#define DQM_HGCAL_interface_HGCalLSWorker_h
 
 #include <string>
 

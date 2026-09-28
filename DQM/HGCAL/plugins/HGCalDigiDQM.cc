@@ -20,7 +20,7 @@
 #include "CondFormats/DataRecord/interface/HGCalElectronicsMappingRcd.h"
 #include "CondFormats/HGCalObjects/interface/HGCalMappingModuleIndexer.h"
 #include "CondFormats/HGCalObjects/interface/HGCalMappingParameterHost.h"
-#include "DQM/HGCAL/interface/HGCalSysValDQMCommon.h"
+#include "DQM/HGCAL/interface/HGCalDQMCommon.h"
 
 /**
  * \class HGCalDigiDQM
@@ -90,9 +90,9 @@ void HGCalDigiDQM::bookModuleHistograms(DQMStore::IBooker& ibook, const Monitore
 
   std::string endcap = (ele.endcap == 1) ? "Plus" : "Minus";
 
-  // Folder path must match HGCalSysValDigisHarvester's expected layout
-  // (cassetteFolder + "(u<i1>-v<i2>) " + typecode), otherwise the harvester
-  // looks up nullptrs and crashes in runSlowStream.
+  // Folder path must match HGCalChannelWorker's expected layout
+  // (cassetteFolder + "(u<i1>-v<i2>) " + typecode), otherwise the worker
+  // cannot find these MEs and skips the module.
   std::string folder = "HGCAL/EndCap_" + endcap + "/Layer_" + std::to_string(ele.layer) + "/Cassette_" +
                        std::to_string(ele.cassette) + "/(u" + std::to_string(ele.i1) + "-v" + std::to_string(ele.i2) +
                        ") " + ele.typecode;

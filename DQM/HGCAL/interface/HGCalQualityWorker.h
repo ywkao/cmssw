@@ -1,5 +1,5 @@
-#ifndef HGCalCommissioning_DQM_interface_HGCalQualityWorker_h
-#define HGCalCommissioning_DQM_interface_HGCalQualityWorker_h
+#ifndef DQM_HGCAL_interface_HGCalQualityWorker_h
+#define DQM_HGCAL_interface_HGCalQualityWorker_h
 
 #include <map>
 #include <string>

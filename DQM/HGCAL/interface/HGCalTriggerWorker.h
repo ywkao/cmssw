@@ -1,5 +1,5 @@
-#ifndef HGCalCommissioning_DQM_interface_HGCalTriggerWorker_h
-#define HGCalCommissioning_DQM_interface_HGCalTriggerWorker_h
+#ifndef DQM_HGCAL_interface_HGCalTriggerWorker_h
+#define DQM_HGCAL_interface_HGCalTriggerWorker_h
 
 #include <map>
 #include <string>
@@ -10,7 +10,7 @@
 namespace hgcal {
   namespace dqm {
 
-    // Must match HGCalSysValDQMCommon.h's global convention — a harvesting-vs-impl
+    // Must match HGCalDQMCommon.h's global convention — a harvesting-vs-impl
     // mismatch yields different mangled symbols for EcontErrorSummarizer methods
     // and a link error.
     using MonitorElement = ::dqm::impl::MonitorElement;

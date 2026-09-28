@@ -1,5 +1,5 @@
-#ifndef HGCalCommissioning_DQM_interface_HGCalChannelWorker_h
-#define HGCalCommissioning_DQM_interface_HGCalChannelWorker_h
+#ifndef DQM_HGCAL_interface_HGCalChannelWorker_h
+#define DQM_HGCAL_interface_HGCalChannelWorker_h
 
 #include <array>
 #include <cstdint>

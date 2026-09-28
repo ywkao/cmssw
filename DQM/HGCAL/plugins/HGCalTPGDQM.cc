@@ -21,7 +21,7 @@
 #include "CondFormats/HGCalObjects/interface/HGCalMappingModuleIndexerTrigger.h"
 #include "CondFormats/HGCalObjects/interface/HGCalMappingParameterHost.h"
 #include "HGCalCommissioning/SystemTestEventFilters/interface/HGCalTestSystemMetaData.h"
-#include "DQM/HGCAL/interface/HGCalSysValDQMCommon.h"
+#include "DQM/HGCAL/interface/HGCalDQMCommon.h"
 
 namespace {
   std::vector<int> getECONTErrorBins(uint16_t exceptionFlags) {
@@ -601,7 +601,7 @@ void HGCalTPGDQM::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& run, 
   }
 
   // Per-(endcap,layer,cassette) ECON-T quality TH2: x = ECON-T module, y = exception flag.
-  // Consumed by HGCalSysValDigisHarvester (looked up as econtQualityCassette_<cassette>).
+  // Consumed by HGCalTriggerWorker (looked up as econtQualityCassette_<cassette>).
   size_t necontFlags = hgcal::dqm::econdTFlags.size();
   for (const auto& [endcap, layerMap] : HGCALTrigMap) {
     std::string endCapString = endCapKey[endcap];
@@ -629,7 +629,7 @@ void HGCalTPGDQM::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& run, 
   }
 
   // Per-FED ECON-T quality / BX0-from-Slink profile / Stage-1 TC profile.
-  // Consumed by HGCalSysValDigisHarvester (looked up as econtQualityFED_<fedid> etc).
+  // Displayed as booked; not read back by any harvester worker.
   ibook.setCurrentFolder("HGCAL/FED");
   for (const auto& [fedid, triggerModules] : triggerModulesByFED_) {
     if (triggerModules.empty())

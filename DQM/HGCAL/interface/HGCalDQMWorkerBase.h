@@ -1,5 +1,5 @@
-#ifndef HGCalCommissioning_DQM_interface_HGCalDQMWorkerBase_h
-#define HGCalCommissioning_DQM_interface_HGCalDQMWorkerBase_h
+#ifndef DQM_HGCAL_interface_HGCalDQMWorkerBase_h
+#define DQM_HGCAL_interface_HGCalDQMWorkerBase_h
 
 #include "DQMServices/Core/interface/DQMStore.h"
 

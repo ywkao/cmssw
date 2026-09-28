@@ -1,5 +1,5 @@
-#ifndef HGCalCommissioning_DQM_interface_HGCalSysValDQMCommon_h
-#define HGCalCommissioning_DQM_interface_HGCalSysValDQMCommon_h
+#ifndef DQM_HGCAL_interface_HGCalDQMCommon_h
+#define DQM_HGCAL_interface_HGCalDQMCommon_h
 
 #include <map>
 #include <string>

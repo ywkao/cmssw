@@ -1,4 +1,4 @@
-#include "DQM/HGCAL/interface/HGCalSysValDQMCommon.h"
+#include "DQM/HGCAL/interface/HGCalDQMCommon.h"
 #include "DataFormats/HGCalDigi/interface/HGCalECONDPacketInfoSoA.h"
 
 #include "FWCore/ParameterSet/interface/FileInPath.h"
