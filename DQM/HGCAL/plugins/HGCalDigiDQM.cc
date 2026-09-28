@@ -1,46 +1,38 @@
-// -*- C++ -*-
-//
-// Package:    DQM/HGCalDigiDQM
-// Class:      HGCalDigiDQM
-//
-/**\class HGCalDigiDQM HGCalDigiDQM.cc HGCalCommissioning/DQM/plugins/HGCalDigiDQM.cc
-
- Description: minimal digi DQM plugin for HGCal digis
-
-*/
-
 #include <algorithm>
 #include <cassert>
 #include <limits>
 #include <string>
-
 #include <map>
 #include <utility>
 
-// user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "DQMServices/Core/interface/DQMEDAnalyzer.h"
-
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
-
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Framework/interface/ConsumesCollector.h"
-
 #include "FWCore/Utilities/interface/InputTag.h"
-
 #include "DQMServices/Core/interface/MonitorElement.h"
-
 #include "DataFormats/HGCalDigi/interface/HGCalDigiHost.h"
 #include "DataFormats/HGCalDigi/interface/HGCalRawDataDefinitions.h"
 #include "HGCalCommissioning/SystemTestEventFilters/interface/HGCalTestSystemMetaData.h"
-
 #include "CondFormats/DataRecord/interface/HGCalDenseIndexInfoRcd.h"
 #include "CondFormats/DataRecord/interface/HGCalElectronicsMappingRcd.h"
 #include "CondFormats/HGCalObjects/interface/HGCalMappingModuleIndexer.h"
 #include "CondFormats/HGCalObjects/interface/HGCalMappingParameterHost.h"
 #include "DQM/HGCAL/interface/HGCalSysValDQMCommon.h"
 
+/**
+ * \class HGCalDigiDQM
+ *
+ * DQM client for HGCal digis. Reads digis in SoA format with the trigger-time
+ * metadata and fills per-module, per-channel profiles and distributions of ADC,
+ * ADC(-1), ADC-ADC(-1), CM, TOT and TOA. Once 500 events have been seen it picks,
+ * once per job, a seed channel per module (highest mean TOT, else highest mean
+ * ADC-ADC(-1)) and fills its ADC/TOT/TOA vs trigger phase. It processes the first
+ * MinimumEvents events and then every PrescaleFactor-th event. HGCalDQMHarvester
+ * (HGCalChannelWorker) turns these into summary plots.
+ */
 class HGCalDigiDQM : public DQMEDAnalyzer {
 typedef std::pair<uint32_t,uint32_t> MonitoredElementKey_t;
 struct MonitoredElement_t {

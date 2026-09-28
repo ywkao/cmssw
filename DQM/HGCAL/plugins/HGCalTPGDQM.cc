@@ -1,14 +1,3 @@
-// -*- C++ -*-
-//
-// Package:    DQM/HGCalTPGDQM
-// Class:      HGCalTPGDQM
-//
-/**\class HGCalTPGDQM HGCalTPGDQM.cc HGCalCommissioning/DQM/plugins/HGCalTPGDQM.cc
-
- Description: handle histograms for HGCalTPGDQM
-
-*/
-
 #include <algorithm>
 #include <map>
 #include <set>
@@ -16,17 +5,12 @@
 #include <string>
 #include <vector>
 
-// user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "DQMServices/Core/interface/DQMEDAnalyzer.h"
-
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
-
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-
 #include "DQMServices/Core/interface/MonitorElement.h"
-
 #include "DataFormats/HGCalDigi/interface/HGCalDigiTriggerHost.h"
 #include "DataFormats/HGCalDigi/interface/HGCalECONTPacketInfoHost.h"
 #include "DataFormats/HGCalDigi/interface/HGCalFEDTriggerPacketInfoHost.h"
@@ -52,10 +36,17 @@ namespace {
   }
 }  // namespace
 
-//
-// class declaration
-//
-
+/**
+ * \class HGCalTPGDQM
+ *
+ * DQM client for HGCal trigger primitives. Reads trigger digis and ECON-T and
+ * FED trigger packet info in SoA format and fills per-module TC occupancy and
+ * energy, MS/total energy vs BX, and ECON-T header checks. It also fills ECON-T
+ * exception quality per cassette, per FED and per layer, and resets the per-layer
+ * histogram each lumisection. With SkipTriggerDQM (default true) it books and
+ * fills nothing. Otherwise it processes the first MinimumEvents events and then
+ * every PrescaleFactor-th event.
+ */
 class HGCalTPGDQM : public DQMEDAnalyzer {
 public:
   struct TriggerMonitoredElement_t {

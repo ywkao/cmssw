@@ -1,31 +1,15 @@
-// -*- C++ -*-
-//
-// Package:    DQM/HGCalLayerClusterDQM
-// Class:      HGCalLayerClusterDQM
-//
-/**\class HGCalLayerClusterDQM HGCalLayerClusterDQM.cc HGCalCommissioning/DQM/plugins/HGCalLayerClusterDQM.cc
-
- Description: handle histograms for HGCalLayerClusterDQM
-
-*/
-
 #include <algorithm>
 #include <map>
 #include <numeric>
 #include <string>
 #include <vector>
 
-// user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "DQMServices/Core/interface/DQMEDAnalyzer.h"
-
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
-
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-
 #include "DQMServices/Core/interface/MonitorElement.h"
-
 #include "DataFormats/HGCalReco/interface/HGCalSoAClustersHostCollection.h"
 #include "DataFormats/HGCalReco/interface/HGCalSoARecHitsHostCollection.h"
 #include "CondFormats/DataRecord/interface/HGCalElectronicsMappingRcd.h"
@@ -33,10 +17,16 @@
 #include "CondFormats/HGCalObjects/interface/HGCalMappingParameterHost.h"
 #include "DQM/HGCAL/interface/HGCalSysValDQMCommon.h"
 
-//
-// class declaration
-//
-
+/**
+ * \class HGCalLayerClusterDQM
+ *
+ * DQM client for HGCal layer clusters. Reads layer clusters and rechits in SoA
+ * format and uses each cluster's seed rechit for the layer and the MIP scale.
+ * Clusters with one cell or fewer are skipped. It fills per-layer energy (GeV
+ * and MIPs), size and position, plus per-endcap summed energy, multiplicity
+ * and hits vs layer. It processes the first MinimumEvents events and then
+ * every PrescaleFactor-th event.
+ */
 class HGCalLayerClusterDQM : public DQMEDAnalyzer {
 public:
   struct MonitoredElement_t {

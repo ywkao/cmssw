@@ -1,42 +1,31 @@
-// -*- C++ -*-
-//
-// Package:    DQM/HGCalRecHitDQM
-// Class:      HGCalRecHitDQM
-//
-/**\class HGCalRecHitDQM HGCalRecHitDQM.cc HGCalCommissioning/DQM/plugins/HGCalRecHitDQM.cc
-
- Description: handle histograms for HGCalRecHitDQM
-
-*/
-
 #include <algorithm>
 #include <limits>
 #include <string>
 
-// user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "DQMServices/Core/interface/DQMEDAnalyzer.h"
-
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
-
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-
 #include "DQMServices/Core/interface/MonitorElement.h"
-
 #include "DataFormats/HGCalReco/interface/HGCalSoARecHitsHostCollection.h"
 #include "CondFormats/DataRecord/interface/HGCalDenseIndexInfoRcd.h"
 #include "CondFormats/HGCalObjects/interface/HGCalMappingModuleIndexer.h"
 #include "CondFormats/HGCalObjects/interface/HGCalMappingParameterHost.h"
 #include "HGCalCommissioning/SystemTestEventFilters/interface/HGCalTestSystemMetaData.h"
 #include "DQM/HGCAL/interface/HGCalSysValDQMCommon.h"
-
 #include "CondFormats/DataRecord/interface/HGCalElectronicsMappingRcd.h"
 
-//
-// class declaration
-//
-
+/**
+ * \class HGCalRecHitDQM
+ *
+ * DQM client for HGCal rechits. Reads rechits in SoA format with the
+ * trigger-time metadata and fills a per-module <E_nMIPs> vs channel profile
+ * from every hit. Hits above 3 sigma noise go into per-layer energy and time
+ * histograms (vs trigger phase), and into per-endcap summed energy and
+ * multiplicity vs layer. It processes the first MinimumEvents events and then
+ * every PrescaleFactor-th event.
+ */
 class HGCalRecHitDQM : public DQMEDAnalyzer {
 public:
   struct MonitoredElement_t {

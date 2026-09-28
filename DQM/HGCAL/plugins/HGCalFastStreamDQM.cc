@@ -1,31 +1,14 @@
-// -*- C++ -*-
-//
-// Package:    DQM/HGCalFastStreamDQM
-// Class:      HGCalFastStreamDQM
-//
-/**\class HGCalFastStreamDQM HGCalFastStreamDQM.cc HGCalCommissioning/DQM/plugins/HGCalFastStreamDQM.cc
-
- Description: handle histograms for HGCalFastStreamDQM
-
-*/
-
 #include <string>
 
-// user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "DQMServices/Core/interface/DQMEDAnalyzer.h"
-
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
-
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-
 #include "DQMServices/Core/interface/MonitorElement.h"
-
 #include "DQM/HGCAL/interface/HGCalSysValDQMCommon.h"
 #include "HGCalCommissioning/SystemTestEventFilters/interface/HGCalTestSystemMetaData.h"
-
 #include "DataFormats/HGCalDigi/interface/HGCalDigiHost.h"
 #include "DataFormats/HGCalDigi/interface/HGCalECONDPacketInfoSoA.h"
 #include "DataFormats/HGCalDigi/interface/HGCalECONDPacketInfoHost.h"
@@ -34,9 +17,7 @@
 #include "DataFormats/HGCalDigi/interface/HGCalRawDataDefinitions.h"
 #include "DataFormats/HGCalReco/interface/HGCalSoARecHitsHostCollection.h"
 #include "DataFormats/HGCalDigi/interface/HGCalDigiTriggerHost.h"
-
 #include "DataFormats/FEDRawData/interface/FEDRawDataCollection.h"
-
 #include "CondFormats/HGCalObjects/interface/HGCalMappingModuleIndexer.h"
 #include "CondFormats/DataRecord/interface/HGCalElectronicsMappingRcd.h"
 #include "CondFormats/HGCalObjects/interface/HGCalMappingParameterHost.h"
@@ -44,13 +25,19 @@
 #include <TFile.h>
 #include <TTree.h>
 
-//
-// class declaration
-//
-
 using namespace edm;
 using namespace hgcal::dqm;
 
+/**
+ * \class HGCalFastStreamDQM
+ *
+ * DQM client for the HGCal fast stream, run on every event. Reads FED and
+ * ECON-D packet info plus trigger-time metadata and fills FED unpacking flags
+ * and payload, ECON-D quality and payload per cassette and per FED, per-module
+ * common-mode profiles, and BX/L1A/orbit comparisons between CB, ECON-D and
+ * S-link. It also books event info, trigger time and L1A type histograms, and
+ * an ECON-D error vs layer histogram that it resets each lumisection.
+ */
 class HGCalFastStreamDQM : public DQMEDAnalyzer {
 public:
   explicit HGCalFastStreamDQM(const edm::ParameterSet&);

@@ -35,6 +35,17 @@
 #include "DQM/HGCAL/interface/HGCalQualityWorker.h"
 #include "DQM/HGCAL/interface/HGCalTriggerWorker.h"
 
+/**
+ * \class HGCalDQMHarvester
+ *
+ * DQMEDHarvester that post-processes the HGCal DQM client histograms. At the
+ * first end of lumisection it builds the HGCalDQMGeometry from the electronics
+ * mapping and module configuration, then runs its workers each lumisection
+ * and at end of run. The workers are HGCalQualityWorker, HGCalChannelWorker
+ * (unless SkipSlowStream), HGCalTriggerWorker (unless SkipTriggerDQM),
+ * HGCalLSWorker and HGCalFedWorker. Thresholds come from the
+ * dqmQualityThreshold JSON.
+ */
 class HGCalDQMHarvester : public DQMEDHarvester {
 public:
   explicit HGCalDQMHarvester(edm::ParameterSet const& ps);
