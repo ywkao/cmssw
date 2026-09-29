@@ -14,7 +14,6 @@
 <use name="EventFilter/Utilities"/>
 <use name="CondFormats/DataRecord"/>
 <use name="CondFormats/HGCalObjects"/>
-<use name="HGCalCommissioning/SystemTestEventFilters"/>
 <use name="json"/>
 <use name="rootcore"/>
 <use name="rootrio"/>

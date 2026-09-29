@@ -9,7 +9,6 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "DQMServices/Core/interface/MonitorElement.h"
 #include "DQM/HGCAL/interface/HGCalDQMCommon.h"
-#include "HGCalCommissioning/SystemTestEventFilters/interface/HGCalTestSystemMetaData.h"
 #include "DataFormats/HGCalDigi/interface/HGCalDigiHost.h"
 #include "DataFormats/HGCalDigi/interface/HGCalECONDPacketInfoSoA.h"
 #include "DataFormats/HGCalDigi/interface/HGCalECONDPacketInfoHost.h"
@@ -33,11 +32,11 @@ using namespace hgcal::dqm;
  * \class HGCalFastStreamDQM
  *
  * DQM client for the HGCal fast stream, run on every event. Reads FED and
- * ECON-D packet info plus trigger-time metadata and fills FED unpacking flags
+ * ECON-D packet info and fills FED unpacking flags
  * and payload, ECON-D quality and payload per cassette and per FED, per-module
  * common-mode profiles, and BX/L1A/orbit comparisons between CB, ECON-D and
- * S-link. It also books event info, trigger time and L1A type histograms, and
- * an ECON-D error vs layer histogram that it resets each lumisection.
+ * S-link. It also books event info and an ECON-D error vs layer histogram
+ * that it resets each lumisection.
  */
 class HGCalFastStreamDQM : public DQMEDAnalyzer {
 public:
@@ -72,7 +71,6 @@ private:
 
   void analyze(const edm::Event&, const edm::EventSetup&) override;
   void analyzeECONDFlags(const edm::Event& iEvent, const edm::EventSetup& iSetup);
-  void analyzeTriggerFastStream(const edm::Event& iEvent, const edm::EventSetup& iSetup);
   void analyzeFEDFlags(const edm::Event& iEvent, const edm::EventSetup& iSetup);
   void analyzeBXComparison(const edm::Event& iEvent, const edm::EventSetup& iSetup);
   void analyzeLSFastStream(const edm::Event& iEvent, const edm::EventSetup& iSetup);
@@ -89,12 +87,10 @@ private:
   MonitorElement* me_econd_quality_layer;
   MonitorElement* fedSummaryME;
   MonitorElement *fedQualityH_, *fedPayload2D_, *econdQualityH_, *econdPayload_;
-  MonitorElement *trigTimeH_, *trigTimeBxH_, *l1aTypeCountsH_;
 
   edm::ESGetToken<HGCalMappingModuleIndexer, HGCalElectronicsMappingRcd> moduleIdxTkn_;
   const edm::EDGetTokenT<hgcaldigi::HGCalECONDPacketInfoHost> econdInfoTkn_;
   const edm::EDGetTokenT<FEDRawDataCollection> fedRawToken_;
-  const edm::EDGetTokenT<HGCalTestSystemTrigTimeCollection> metaDataTkn_;
 
   std::map<MonitoredElementKey_t, MonitoredElement_t> followedModules_;
   std::map<uint32_t, std::vector<std::pair<MonitoredElementKey_t, MonitoredElement_t>>> modulesByFED_;
@@ -118,9 +114,6 @@ private:
 
   std::map<int, std::string> endCapKey = {{-1, "Minus"}, {1, "Plus"}};
 
-  int trigTime, trigBx;
-  uint16_t l1aType, l1aSubType;
-
   std::vector<std::pair<std::string, std::string>> comparisons = {{"CB", "ECOND"}, {"CB", "SLINK"}, {"ECOND", "SLINK"}};
 
   std::map<std::string, HistogramConfig> diffConfigs = {{"BxDiff", {"BxDiff", "BX", 11, -5.5, 5.5}},
@@ -141,7 +134,6 @@ HGCalFastStreamDQM::HGCalFastStreamDQM(const edm::ParameterSet& iConfig)
       econdInfoTkn_(
           consumes<hgcaldigi::HGCalECONDPacketInfoHost>(iConfig.getParameter<edm::InputTag>("ECONDPacketInfo"))),
       fedRawToken_(consumes<FEDRawDataCollection>(iConfig.getParameter<edm::InputTag>("Raw"))),
-      metaDataTkn_(consumes<HGCalTestSystemTrigTimeCollection>(iConfig.getParameter<edm::InputTag>("MetaData"))),
       fedInfoTkn_(consumes<hgcaldigi::HGCalFEDPacketInfoHost>(iConfig.getParameter<edm::InputTag>("FEDPacketInfo"))),
       moduleInfoTkn_(esConsumes<edm::Transition::BeginRun>()) {}
 
@@ -153,30 +145,11 @@ HGCalFastStreamDQM::~HGCalFastStreamDQM() {}
 
 // ------------ method called for each event  ------------
 void HGCalFastStreamDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
-  trigTime = 0;
-  trigBx = 0;
-  l1aType = 0;
-  l1aSubType = 0;
-  const auto& metadataHandle = iEvent.getHandle(metaDataTkn_);
-  if (metadataHandle.isValid() && metadataHandle->size() > 0) {
-    for (size_t i = 0; i < metadataHandle->size(); i++) {
-      const auto& elink = metadataHandle->at(i);
-      if (!elink.valid_)
-        continue;
-      trigTime = elink.time_;
-      trigBx = elink.bx_;
-      l1aType = elink.l1aType_;
-      l1aSubType = elink.l1aSubType_;
-      break;
-    }
-  }
-
   recordEventInfo(iEvent);
   analyzeLSFastStream(iEvent, iSetup);
   analyzeECONDFlags(iEvent, iSetup);
   analyzeFEDFlags(iEvent, iSetup);
   analyzeBXComparison(iEvent, iSetup);
-  analyzeTriggerFastStream(iEvent, iSetup);
 }
 
 // Fast Stream: Fills the Fed error histos.
@@ -508,19 +481,6 @@ void HGCalFastStreamDQM::bookHistogramsFastStream(DQMStore::IBooker& ibook,
 
   // Book versus LS plots
   bookLSSummary(ibook);
-
-  //trigtime
-  ibook.setCurrentFolder("HGCAL/Trigger/");
-  trigTimeH_ = ibook.book1D("trigtime", ";Ext. trigger time counts; Events", 224, -111.5, 112.5);
-  trigTimeBxH_ = ibook.book1D("trigtimebx", ";Ext. trigger bunch crossing; Events", 7, -3.5, 3.5);
-  l1aTypeCountsH_ = ibook.book2D("l1atypes", ";L1A type; L1A sub-type; Events", 16, 0.5, 16.5, 8, 0.5, 8.5);
-}
-
-// FastStream: creates trigger plots with basic timing and type (e.g. physics trigger) info.
-void HGCalFastStreamDQM::analyzeTriggerFastStream(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
-  trigTimeH_->Fill(trigTime);
-  trigTimeBxH_->Fill(trigBx);
-  l1aTypeCountsH_->Fill(l1aType, l1aSubType);
 }
 
 void HGCalFastStreamDQM::recordEventInfo(const edm::Event& iEvent) {
@@ -693,7 +653,6 @@ void HGCalFastStreamDQM::bookPerFEDComparisonHistograms(DQMStore::IBooker& ibook
 void HGCalFastStreamDQM::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
   desc.add<edm::InputTag>("Raw", edm::InputTag("rawDataCollector", ""));
-  desc.add<edm::InputTag>("MetaData", edm::InputTag("hgcalTrigTimeProducer", ""));
   desc.add<edm::InputTag>("ECONDPacketInfo", edm::InputTag("hgcalDigis", ""));  //ECON-D flags
   desc.add<edm::InputTag>("FEDPacketInfo", edm::InputTag("hgcalDigis", ""));    //UnpackerFlags
 

@@ -20,7 +20,6 @@
 #include "CondFormats/HGCalObjects/interface/HGCalMappingModuleIndexer.h"
 #include "CondFormats/HGCalObjects/interface/HGCalMappingModuleIndexerTrigger.h"
 #include "CondFormats/HGCalObjects/interface/HGCalMappingParameterHost.h"
-#include "HGCalCommissioning/SystemTestEventFilters/interface/HGCalTestSystemMetaData.h"
 #include "DQM/HGCAL/interface/HGCalDQMCommon.h"
 
 namespace {
@@ -77,7 +76,6 @@ private:
   edm::ESGetToken<hgcal::HGCalMappingModuleParamHost, HGCalElectronicsMappingRcd> moduleInfoTkn_;
   edm::ESGetToken<hgcal::HGCalMappingModuleTriggerParamHost, HGCalElectronicsMappingRcd> moduleTriggerInfoTkn_;
   edm::ESGetToken<hgcal::HGCalDenseIndexTriggerInfoHost, HGCalDenseIndexInfoRcd> denseIndexTriggerInfoTkn_;
-  const edm::EDGetTokenT<HGCalTestSystemTrigTimeCollection> metaDataTkn_;
 
   const unsigned int minEvents_;
   const unsigned int prescaleFactor_;
@@ -90,7 +88,6 @@ private:
   std::map<int, std::map<int, std::map<int, std::map<std::string, TriggerMonitoredElement_t>>>> HGCALTrigMap;
 
   std::map<std::string, std::map<MonitoredElementKey_t, MonitorElement*>> moduleTriggerHistos_;
-  std::map<std::string, std::map<MonitoredElementKey_t, std::map<int, MonitorElement*>>> moduleTriggerHistosByBx_;
   // endcap -> layer -> cassette -> ECON-T quality TH2 (consumed by harvester)
   std::map<int, std::map<int, std::map<int, MonitorElement*>>> econtQualityCassettes_;
   // per-FED ECON-T quality / BX0-from-Slink  (consumed by harvester)
@@ -104,8 +101,6 @@ private:
   std::vector<std::string> BXlist = {"BXm3", "BXm2", "BXm1", "BX0", "BXp1", "BXp2", "BXp3"};
   size_t nBX_ = BXlist.size();
   std::map<int, std::string> endCapKey = {{-1, "Minus"}, {1, "Plus"}};
-
-  int trigTime, trigBx;
 };
 
 //
@@ -123,7 +118,6 @@ HGCalTPGDQM::HGCalTPGDQM(const edm::ParameterSet& iConfig)
       moduleInfoTkn_(esConsumes<edm::Transition::BeginRun>()),
       moduleTriggerInfoTkn_(esConsumes<edm::Transition::BeginRun>()),
       denseIndexTriggerInfoTkn_(esConsumes()),
-      metaDataTkn_(consumes<HGCalTestSystemTrigTimeCollection>(iConfig.getParameter<edm::InputTag>("MetaData"))),
       minEvents_(iConfig.getParameter<unsigned int>("MinimumEvents")),
       prescaleFactor_(std::max(1u, iConfig.getParameter<unsigned int>("PrescaleFactor"))),
       nProcessed_(0),
@@ -186,21 +180,6 @@ void HGCalTPGDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           fedQ_it->second->Fill(trigModule.fedModuleIndex, errorID);
         iterateEcontLSCounts(directionalLayer, errorID);
       }
-    }
-  }
-
-  // trigger time
-  trigTime = 0;
-  trigBx = 0;
-  const auto& metadataHandle = iEvent.getHandle(metaDataTkn_);
-  if (metadataHandle.isValid() && metadataHandle->size() > 0) {
-    for (size_t index = 0; index < metadataHandle->size(); ++index) {
-      const auto& link = metadataHandle->at(index);
-      if (!link.valid_)
-        continue;
-      trigTime = link.time_;
-      trigBx = link.bx_;
-      break;
     }
   }
 
@@ -314,12 +293,6 @@ void HGCalTPGDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         if (ibx == centraliBx) {
           moduleTriggerHistos_["tcprofile_centbx"][key]->Fill(tcAdd, tcE);
           std::get<0>(tcEnergyStats[key][tcAdd]) += tcE;  // Add to central sum
-        }
-
-        // Fill 2D histogram: TCEnergy vs TrigTime for the current bunch crossing
-        if (moduleTriggerHistosByBx_["tcenergy_vs_trigtime"][key].find(ibx) !=
-            moduleTriggerHistosByBx_["tcenergy_vs_trigtime"][key].end()) {
-          moduleTriggerHistosByBx_["tcenergy_vs_trigtime"][key][ibx]->Fill(trigTime, tcE);
         }
       }  //valid bx
     }  //loop bx
@@ -555,15 +528,6 @@ void HGCalTPGDQM::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& run, 
     moduleTriggerHistos_["bx0vsbx"][key] =
         ibook.book1D("bx0vsbx", " BX0 vs BX ;Bx;Counts", nBX, -nBX / 2 - 0.5, nBX / 2 + 0.5);
 
-    // Book 2D histograms: TCEnergy vs TrigTime for each bunch crossing
-    for (int ibx = 0; ibx < nBX; ++ibx) {
-      std::string bxLabel = BXlist[ibx];
-      std::string histName = "tcenergy_vs_trigtime_" + bxLabel;
-      std::string histTitle = "TC Energy vs Trigger Time (" + bxLabel + ");Trigger Time;TC Energy";
-      moduleTriggerHistosByBx_["tcenergy_vs_trigtime"][key][ibx] =
-          ibook.book2D(histName, histTitle, 200, 0, 200, 100, 0, 1000);
-    }
-
     // TC Profile histograms: Energy as a function of Trigger Channel (TC Address)
     moduleTriggerHistos_["tcprofile"][key] =
         ibook.bookProfile("tcprofile",
@@ -680,7 +644,6 @@ void HGCalTPGDQM::fillDescriptions(edm::ConfigurationDescriptions& descriptions)
   desc.add<unsigned int>("MinimumEvents", 5000);
   desc.add<unsigned int>("PrescaleFactor", 5000);
   desc.add<bool>("SkipTriggerDQM", true);
-  desc.add<edm::InputTag>("MetaData", edm::InputTag("hgcalTrigTimeProducer", ""));
   descriptions.add("hgcaltpgdqm", desc);
 }
 

@@ -15,7 +15,6 @@
 #include "DQMServices/Core/interface/MonitorElement.h"
 #include "DataFormats/HGCalDigi/interface/HGCalDigiHost.h"
 #include "DataFormats/HGCalDigi/interface/HGCalRawDataDefinitions.h"
-#include "HGCalCommissioning/SystemTestEventFilters/interface/HGCalTestSystemMetaData.h"
 #include "CondFormats/DataRecord/interface/HGCalDenseIndexInfoRcd.h"
 #include "CondFormats/DataRecord/interface/HGCalElectronicsMappingRcd.h"
 #include "CondFormats/HGCalObjects/interface/HGCalMappingModuleIndexer.h"
@@ -25,11 +24,11 @@
 /**
  * \class HGCalDigiDQM
  *
- * DQM client for HGCal digis. Reads digis in SoA format with the trigger-time
- * metadata and fills per-module, per-channel profiles and distributions of ADC,
+ * DQM client for HGCal digis. Reads digis in SoA format and fills per-module,
+ * per-channel profiles and distributions of ADC,
  * ADC(-1), ADC-ADC(-1), CM, TOT and TOA. Once 500 events have been seen it picks,
  * once per job, a seed channel per module (highest mean TOT, else highest mean
- * ADC-ADC(-1)) and fills its ADC/TOT/TOA vs trigger phase. It processes the first
+ * ADC-ADC(-1)) and fills its ADC/TOT/TOA distributions. It processes the first
  * MinimumEvents events and then every PrescaleFactor-th event. HGCalDQMHarvester
  * (HGCalChannelWorker) turns these into summary plots.
  */
@@ -56,7 +55,6 @@ private:
 
   // ------------ member data ------------
   edm::EDGetTokenT<hgcaldigi::HGCalDigiHost> digisTkn_;
-  const edm::EDGetTokenT<HGCalTestSystemTrigTimeCollection> metaDataTkn_;
   edm::ESGetToken<hgcal::HGCalDenseIndexInfoHost, HGCalDenseIndexInfoRcd> denseIndexInfoTkn_;
 
   edm::ESGetToken<HGCalMappingModuleIndexer, HGCalElectronicsMappingRcd> moduleIdxTkn_;
@@ -67,12 +65,10 @@ private:
   std::map<std::string, std::map<MonitoredElementKey_t, MonitorElement*> > moduleHistos_;
   std::map<MonitoredElementKey_t, MonitoredElement_t> followedModules_;
   std::map<MonitoredElementKey_t, uint32_t> moduleSeeds_;
-  int trigTime, trigBx;
 };
 
 HGCalDigiDQM::HGCalDigiDQM(const edm::ParameterSet& iConfig)
     : digisTkn_(consumes<hgcaldigi::HGCalDigiHost>(iConfig.getParameter<edm::InputTag>("Digis"))),
-      metaDataTkn_(consumes<HGCalTestSystemTrigTimeCollection>(iConfig.getParameter<edm::InputTag>("MetaData"))),
       denseIndexInfoTkn_(esConsumes()),
       moduleIdxTkn_(esConsumes<edm::Transition::BeginRun>()),
       moduleInfoTkn_(esConsumes<edm::Transition::BeginRun>()),
@@ -124,55 +120,14 @@ void HGCalDigiDQM::bookModuleHistograms(DQMStore::IBooker& ibook, const Monitore
       ibook.book1D("deltaadc", typecode + ";ADC-ADC_{-1}; Counts (all channels)", 150, -49.5, 200.5);
   moduleHistos_["seedadc"][key] =
       ibook.book1D("seedadc", typecode + ";ADC of channel with max <ADC-ADC_{-1}>; Counts", 100, 0, 1024);
-  moduleHistos_["seedadcvstrigtime"][key] =
-      ibook.book2D("seedadcvstrigtime",
-                   typecode + ";trigger phase; ADC of channel with max <ADC-ADC_{-1}> or TOT",
-                   224,
-                   -111.5,
-                   112.5,
-                   100,
-                   0,
-                   1024);
   moduleHistos_["seedtot"][key] =
       ibook.book1D("seedtot", typecode + ";TOT of channel with max <ADC-ADC_{-1}> or TOT; Counts", 100, 0, 4096);
-  moduleHistos_["seedtotvstrigtime"][key] =
-      ibook.book2D("seedtotvstrigtime",
-                   typecode + ";trigger phase; TOT of channel with max <ADC-ADC_{-1}> or TOT",
-                   224,
-                   -111.5,
-                   112.5,
-                   100,
-                   0,
-                   4096);
   moduleHistos_["seedtoa"][key] =
       ibook.book1D("seedtoa", typecode + ";TOA of channel with max <ADC-ADC_{-1}>; Counts", 100, 0, 1024);
-  moduleHistos_["seedtoavstrigtime"][key] =
-      ibook.book2D("seedtoavstrigtime",
-                   typecode + ";trigger phase; TOA of channel with max <ADC-ADC_{-1}>",
-                   224,
-                   -111.5,
-                   112.5,
-                   100,
-                   0,
-                   1024);
 }
 
 void HGCalDigiDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
   ++nProcessed_;
-
-  trigTime = 0;
-  trigBx = 0;
-  const auto& metadataHandle = iEvent.getHandle(metaDataTkn_);
-  if (metadataHandle.isValid() && metadataHandle->size() > 0) {
-    for (size_t index = 0; index < metadataHandle->size(); ++index) {
-      const auto& link = metadataHandle->at(index);
-      if (!link.valid_)
-        continue;
-      trigTime = link.time_;
-      trigBx = link.bx_;
-      break;
-    }
-  }
 
   bool toProcess = (nProcessed_ < minEvents_) || (nProcessed_ % prescaleFactor_ == 0);
   if (!toProcess)
@@ -207,11 +162,8 @@ void HGCalDigiDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   auto& mh_avgtoa = moduleHistos_.at("avgtoa");
   auto& mh_toa = moduleHistos_.at("toa");
   auto& mh_seedadc = moduleHistos_.at("seedadc");
-  auto& mh_seedadcvstt = moduleHistos_.at("seedadcvstrigtime");
   auto& mh_seedtot = moduleHistos_.at("seedtot");
-  auto& mh_seedtotvstt = moduleHistos_.at("seedtotvstrigtime");
   auto& mh_seedtoa = moduleHistos_.at("seedtoa");
-  auto& mh_seedtoavstt = moduleHistos_.at("seedtoavstrigtime");
 
   // Cache per-key iterators so we only refresh when the key changes (digis are
   // grouped by module, so this saves lookups). Using find() also prevents
@@ -322,28 +274,20 @@ void HGCalDigiDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     auto tctp = digi.tctp();
 
     auto it_seedadc_k = mh_seedadc.find(key);
-    auto it_seedadcvstt_k = mh_seedadcvstt.find(key);
-    if (it_seedadc_k == mh_seedadc.end() || it_seedadcvstt_k == mh_seedadcvstt.end())
+    if (it_seedadc_k == mh_seedadc.end())
       continue;
     if (tctp == 0) {
       double deltaadc = adc - adcm;
       it_seedadc_k->second->Fill(deltaadc);
-      it_seedadcvstt_k->second->Fill(trigTime, deltaadc);
     } else if (tctp == 3) {
       auto it_seedtot_k = mh_seedtot.find(key);
-      auto it_seedtotvstt_k = mh_seedtotvstt.find(key);
-      if (it_seedtot_k != mh_seedtot.end() && it_seedtotvstt_k != mh_seedtotvstt.end()) {
+      if (it_seedtot_k != mh_seedtot.end())
         it_seedtot_k->second->Fill(tot);
-        it_seedtotvstt_k->second->Fill(trigTime, tot);
-      }
     }
     if (toa > 0) {
       auto it_seedtoa_k = mh_seedtoa.find(key);
-      auto it_seedtoavstt_k = mh_seedtoavstt.find(key);
-      if (it_seedtoa_k != mh_seedtoa.end() && it_seedtoavstt_k != mh_seedtoavstt.end()) {
+      if (it_seedtoa_k != mh_seedtoa.end())
         it_seedtoa_k->second->Fill(digi.toa());
-        it_seedtoavstt_k->second->Fill(trigTime, digi.toa());
-      }
     }
   }
 }
@@ -425,7 +369,6 @@ void HGCalDigiDQM::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& run,
 void HGCalDigiDQM::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
   desc.add<edm::InputTag>("Digis", edm::InputTag("hgcalDigis", ""));
-  desc.add<edm::InputTag>("MetaData", edm::InputTag("hgcalTrigTimeProducer", ""));
   desc.add<unsigned int>("MinimumEvents", 5000);
   desc.add<unsigned int>("PrescaleFactor", 5000);
   descriptions.add("hgcaldigidqm", desc);

@@ -12,17 +12,15 @@
 #include "CondFormats/DataRecord/interface/HGCalDenseIndexInfoRcd.h"
 #include "CondFormats/HGCalObjects/interface/HGCalMappingModuleIndexer.h"
 #include "CondFormats/HGCalObjects/interface/HGCalMappingParameterHost.h"
-#include "HGCalCommissioning/SystemTestEventFilters/interface/HGCalTestSystemMetaData.h"
 #include "DQM/HGCAL/interface/HGCalDQMCommon.h"
 #include "CondFormats/DataRecord/interface/HGCalElectronicsMappingRcd.h"
 
 /**
  * \class HGCalRecHitDQM
  *
- * DQM client for HGCal rechits. Reads rechits in SoA format with the
- * trigger-time metadata and fills a per-module <E_nMIPs> vs channel profile
- * from every hit. Hits above 3 sigma noise go into per-layer energy and time
- * histograms (vs trigger phase), and into per-endcap summed energy and
+ * DQM client for HGCal rechits. Reads rechits in SoA format and fills a
+ * per-module <E_nMIPs> vs channel profile from every hit. Hits above 3 sigma
+ * noise go into per-layer energy and time histograms, and into per-endcap summed energy and
  * multiplicity vs layer. It processes the first MinimumEvents events and then
  * every PrescaleFactor-th event.
  */
@@ -48,7 +46,6 @@ private:
   edm::ESGetToken<hgcal::HGCalDenseIndexInfoHost, HGCalDenseIndexInfoRcd> denseIndexInfoTkn_;
   edm::ESGetToken<HGCalMappingModuleIndexer, HGCalElectronicsMappingRcd> moduleIdxTkn_;
   edm::ESGetToken<hgcal::HGCalMappingModuleParamHost, HGCalElectronicsMappingRcd> moduleInfoTkn_;
-  const edm::EDGetTokenT<HGCalTestSystemTrigTimeCollection> metaDataTkn_;
   const unsigned int minEvents_;
   const unsigned int prescaleFactor_;
   unsigned int nProcessed_;
@@ -63,8 +60,6 @@ private:
   // per-module TProfile: <E_nMIPs> vs channel; consumed by harvester as avgrechit_nmips.
   std::map<MonitoredElementKey_t, MonitorElement*> avgRechitNmips_;
   std::map<int, std::string> endCapKey = {{-1, "Minus"}, {1, "Plus"}};
-
-  int trigTime, trigBx;
 };
 
 //
@@ -76,7 +71,6 @@ HGCalRecHitDQM::HGCalRecHitDQM(const edm::ParameterSet& iConfig)
       denseIndexInfoTkn_(esConsumes()),
       moduleIdxTkn_(esConsumes<edm::Transition::BeginRun>()),
       moduleInfoTkn_(esConsumes<edm::Transition::BeginRun>()),
-      metaDataTkn_(consumes<HGCalTestSystemTrigTimeCollection>(iConfig.getParameter<edm::InputTag>("MetaData"))),
       minEvents_(iConfig.getParameter<unsigned int>("MinimumEvents")),
       prescaleFactor_(std::max(1u, iConfig.getParameter<unsigned int>("PrescaleFactor"))),
       nProcessed_(0) {}
@@ -86,20 +80,6 @@ HGCalRecHitDQM::~HGCalRecHitDQM() {}
 // ------------ method called for each event  ------------
 void HGCalRecHitDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
   ++nProcessed_;
-
-  trigTime = 0;
-  trigBx = 0;
-  const auto& metadataHandle = iEvent.getHandle(metaDataTkn_);
-  if (metadataHandle.isValid() && metadataHandle->size() > 0) {
-    for (size_t index = 0; index < metadataHandle->size(); ++index) {
-      const auto& link = metadataHandle->at(index);
-      if (!link.valid_)
-        continue;
-      trigTime = link.time_;
-      trigBx = link.bx_;
-      break;
-    }
-  }
 
   bool toProcess = (nProcessed_ < minEvents_) || (nProcessed_ % prescaleFactor_ == 0);
   if (!toProcess)
@@ -138,10 +118,8 @@ void HGCalRecHitDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
   int cur_layer = std::numeric_limits<int>::min();
   bool cur_ok = false;
   MonitorElement* h_energy = nullptr;
-  MonitorElement* h_energyvstt = nullptr;
   MonitorElement* h_time = nullptr;
   MonitorElement* h_timevsE = nullptr;
-  MonitorElement* h_timevstt = nullptr;
 
   //loop over hits
   MonitoredElementKey_t cur_mod_key(std::numeric_limits<uint32_t>::max(), std::numeric_limits<uint32_t>::max());
@@ -186,18 +164,13 @@ void HGCalRecHitDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
         continue;
       const auto& mmap = lay_it->second;
       auto it_e = mmap.find("rechitenergy");
-      auto it_evt = mmap.find("rechitenergyvstrigtime");
       auto it_t = mmap.find("rechittime");
       auto it_tvE = mmap.find("rechittimevsenergy");
-      auto it_tvT = mmap.find("rechittimevstrigtime");
-      if (it_e == mmap.end() || it_evt == mmap.end() || it_t == mmap.end() || it_tvE == mmap.end() ||
-          it_tvT == mmap.end())
+      if (it_e == mmap.end() || it_t == mmap.end() || it_tvE == mmap.end())
         continue;
       h_energy = it_e->second;
-      h_energyvstt = it_evt->second;
       h_time = it_t->second;
       h_timevsE = it_tvE->second;
-      h_timevstt = it_tvT->second;
       cur_ok = true;
     }
     if (!cur_ok)
@@ -206,11 +179,9 @@ void HGCalRecHitDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
     mipsum[endcap][layer] += nmips;
     hitsum[endcap][layer] += 1;
     h_energy->Fill(nmips);
-    h_energyvstt->Fill(trigTime, nmips);
     if (time > 0) {
       h_time->Fill(time);
       h_timevsE->Fill(nmips, time);
-      h_timevstt->Fill(trigTime, time);
     }
   }
 
@@ -305,12 +276,8 @@ void HGCalRecHitDQM::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& ru
           ibook.book1D("rechittime", label + ";RecHit time [ps]; RecHits", 100, 0, 5000);
       recHitSummariesLayers_[endcap][layer]["rechitenergy"] =
           ibook.book1D("rechitenergy", label + ";RecHit energy [MIPs]; RecHits", 100, 0, 250);
-      recHitSummariesLayers_[endcap][layer]["rechitenergyvstrigtime"] = ibook.book2D(
-          "rechitenergyvstrigtime", label + ";Trigger phase; RecHit energy [MIPs]", 224, -111.5, 112.5, 100, 0, 250);
       recHitSummariesLayers_[endcap][layer]["rechittimevsenergy"] =
           ibook.book2D("rechittimevsenergy", label + ";Energy [MIP]; RecHit time [ps]", 100, -10, 1000, 100, 0, 5000);
-      recHitSummariesLayers_[endcap][layer]["rechittimevstrigtime"] = ibook.book2D(
-          "rechittimevstrigtime", label + ";Trigger phase; RecHit time [ps]", 224, -111.5, 112.5, 100, 0, 5000);
     }
   }
 }
@@ -318,7 +285,6 @@ void HGCalRecHitDQM::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& ru
 void HGCalRecHitDQM::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
   desc.add<edm::InputTag>("RecHits", edm::InputTag("hgcalRecHits", ""));
-  desc.add<edm::InputTag>("MetaData", edm::InputTag("hgcalTrigTimeProducer", ""));
   desc.add<unsigned int>("MinimumEvents", 5000);
   desc.add<unsigned int>("PrescaleFactor", 5000);
   desc.add<bool>("isSimulation", false);
