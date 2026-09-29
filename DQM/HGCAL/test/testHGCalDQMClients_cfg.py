@@ -15,12 +15,7 @@ process.load("Configuration.Geometry.GeometryExtendedRun4D104Reco_cff")
 
 process.DQMStore = cms.Service("DQMStore")
 
-process.load("DQM.HGCAL.hgcalfaststreamdqm_cfi")
-process.load("DQM.HGCAL.hgcaldigidqm_cfi")
-process.load("DQM.HGCAL.hgcaltpgdqm_cfi")
-process.load("DQM.HGCAL.hgcalrechitdqm_cfi")
-process.load("DQM.HGCAL.hgcallayerclusterdqm_cfi")
+process.load("DQM.HGCAL.hgcalDQM_cff")
 process.hgcaltpgdqm.SkipTriggerDQM = False
 
-process.p = cms.Path(process.hgcalfaststreamdqm + process.hgcaldigidqm + process.hgcaltpgdqm +
-                     process.hgcalrechitdqm + process.hgcallayerclusterdqm)
+process.p = cms.Path(process.hgcalDQMSources + process.hgcalRecoDQMSources)
