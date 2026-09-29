@@ -129,7 +129,7 @@ void HGCalDQMHarvester::fillDescriptions(edm::ConfigurationDescriptions& descrip
   desc.add<bool>("SkipTriggerDQM", false);
   desc.add<bool>("SkipSlowStream", false);
   desc.add<bool>("EnableOverflowMarkers", true);
-  desc.add<std::string>("FolderRoot", "HGCAL_v2");
+  desc.add<std::string>("FolderRoot", "HGCAL");
   desc.add<std::string>("dqmQualityThreshold", "HGCalCommissioning/DQM/data/dqm_quality_threshold.json");
   descriptions.addWithDefaultLabel(desc);
 }
