@@ -124,13 +124,13 @@ HGCalDQMHarvester::HGCalDQMHarvester(edm::ParameterSet const& ps)
 
 void HGCalDQMHarvester::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
-  desc.add<std::string>("TemplateFiles", "HGCalCommissioning/DQM/data");
+  desc.add<std::string>("TemplateFiles", "Geometry/HGCalMapping/data/DQM");
   desc.add<std::string>("Era", "");
   desc.add<bool>("SkipTriggerDQM", false);
   desc.add<bool>("SkipSlowStream", false);
   desc.add<bool>("EnableOverflowMarkers", true);
   desc.add<std::string>("FolderRoot", "HGCAL");
-  desc.add<std::string>("dqmQualityThreshold", "HGCalCommissioning/DQM/data/dqm_quality_threshold.json");
+  desc.add<std::string>("dqmQualityThreshold", "Geometry/HGCalMapping/data/DQM/dqm_quality_threshold.json");
   descriptions.addWithDefaultLabel(desc);
 }
 
