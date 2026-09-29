@@ -295,7 +295,7 @@ void HGCalDigiDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 void HGCalDigiDQM::findModuleSeeds(uint32_t minProcessed) {
   if (nProcessed_ < minProcessed)
     return;
-  if (moduleSeeds_.size() > 0)
+  if (!moduleSeeds_.empty())
     return;
 
   auto outer_it = moduleHistos_.find("avgdeltaadc");

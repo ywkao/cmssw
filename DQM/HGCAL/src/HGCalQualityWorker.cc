@@ -116,13 +116,13 @@ namespace hgcal {
 
             // set bin labels
             std::string binlabel = "Cassette" + std::to_string(cassette);
-            econdQualityLayer_[endcap][layer]->setBinLabel(cassette_idx + 1, binlabel.c_str(), 1);
+            econdQualityLayer_[endcap][layer]->setBinLabel(cassette_idx + 1, binlabel, 1);
 
             cassette_idx++;
           }
 
           // set bin labels
-          me_econd_quality_summary_->setBinLabel(layer_idx + 1, std::to_string(layer).c_str(), 1);
+          me_econd_quality_summary_->setBinLabel(layer_idx + 1, std::to_string(layer), 1);
           layer_idx++;
         }
       }

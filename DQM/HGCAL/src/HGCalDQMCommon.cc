@@ -40,7 +40,7 @@ namespace hgcal {
     //--------------------------------------------------
     void addBinLabels(std::vector<std::string>& binlabels, MonitorElement* hist, int binPos) {
       for (size_t i = 0; i < binlabels.size(); i++) {
-        hist->setBinLabel(i + 1, binlabels[i].c_str(), binPos);
+        hist->setBinLabel(i + 1, binlabels[i], binPos);
       }
     }
 

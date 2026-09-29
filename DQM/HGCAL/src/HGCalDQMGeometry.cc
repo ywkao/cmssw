@@ -268,7 +268,7 @@ namespace hgcal {
 
       flag_tileboard_exists_ = false;
 
-      for (auto it : moduleIndexer.typecodeMap()) {
+      for (const auto& it : moduleIndexer.typecodeMap()) {
         timerStart();
 
         uint32_t fedid = it.second.first;
@@ -324,7 +324,7 @@ namespace hgcal {
 
         trigBinstates_.resize(moduleIndexerTrigger.typecodeMap().size(), nullptr);
 
-        for (auto it : moduleIndexerTrigger.typecodeMap()) {
+        for (const auto& it : moduleIndexerTrigger.typecodeMap()) {
           std::string typecode = it.first;
           std::replace(typecode.begin(), typecode.end(), '-', '_');
 

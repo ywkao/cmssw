@@ -34,7 +34,7 @@ namespace hgcal {
 
       const std::string TriggerFolder = folderRoot_ + "/Trigger";
 
-      for (std::string BX : BXlist_) {
+      for (const std::string& BX : BXlist_) {
         for (int layer : unique_directionallayers) {
           float xmin = corners_layer.at(layer)[0];
           float xmax = corners_layer.at(layer)[1];
@@ -190,7 +190,7 @@ namespace hgcal {
               }
 
               std::map<std::string, float> value_module;
-              for (std::string BX : BXlist_) {
+              for (const std::string& BX : BXlist_) {
                 value_module.emplace(BX + "_location", 0.0f);
                 value_module.emplace(BX + "_energy", 0.0f);
               }
@@ -230,7 +230,7 @@ namespace hgcal {
                 }
 
                 uint32_t i_BX(0);
-                for (std::string BX : BXlist_) {
+                for (const std::string& BX : BXlist_) {
                   uint32_t occupancy = occ_me->getBinContent(i_BX + 1, chIdx + 1);
                   double energy_count = energy_me->getBinContent(i_BX + 1, chIdx + 1);
                   double rms_energy_count = energy2_me->getBinContent(i_BX + 1, chIdx + 1);
@@ -286,7 +286,7 @@ namespace hgcal {
 
               TGraph* trigBin = geom.triggerModuleBin(trModule.dqmIndex);
 
-              for (std::string BX : BXlist_) {
+              for (const std::string& BX : BXlist_) {
                 hexTriggerLayer_[layer][BX + "_energy"]->addBin(trigBin);
                 hexTriggerLayer_[layer][BX + "_energy"]->setBinContent(layerBinIdx + 1, value_module[BX + "_energy"]);
 
@@ -332,14 +332,14 @@ namespace hgcal {
             }
 
             std::string binlabel = "Cassette" + std::to_string(cassette);
-            layerMe->setBinLabel(cassette_idx + 1, binlabel.c_str(), 1);
+            layerMe->setBinLabel(cassette_idx + 1, binlabel, 1);
             econt_error_summarizer_.processAndFill(quality_me, layerMe, cassette_idx, ProcessMode::STAT_TO_GRADE);
             ++cassette_idx;
           }
 
           if (me_econt_quality_summary_) {
             int directionalLayer = layer * endcap;
-            me_econt_quality_summary_->setBinLabel(trig_layer_idx + 1, std::to_string(directionalLayer).c_str(), 1);
+            me_econt_quality_summary_->setBinLabel(trig_layer_idx + 1, std::to_string(directionalLayer), 1);
             econt_error_summarizer_.processAndFill(
                 layerMe, me_econt_quality_summary_, trig_layer_idx, ProcessMode::GRADE_TO_GRADE);
           }

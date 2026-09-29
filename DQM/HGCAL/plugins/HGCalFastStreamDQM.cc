@@ -208,7 +208,7 @@ void HGCalFastStreamDQM::analyzeECONDFlags(const edm::Event& iEvent, const edm::
     int cassette = mod.cassette;
     std::string typecode = mod.typecode;
 
-    std::string binlabels = typecode;
+    const std::string& binlabels = typecode;
     auto binlabel = binlabels.c_str();
     int bin_id = HGCALMap[endcap][layer][cassette][typecode].moduleIndex;
     econdQualityH_ = econdQualityCassettes_[endcap][layer][cassette];
@@ -528,8 +528,10 @@ void HGCalFastStreamDQM::bookLSSummary(DQMStore::IBooker& ibooker) {
   size_t necondWithCBflags = hgcal::dqm::econdWithCBflags.size();
   int nLayers = unique_directionallayers.size();
   std::vector<std::string> layer_labels;
-  for (int n : unique_directionallayers)
+  layer_labels.reserve(unique_directionallayers.size());
+  for (int n : unique_directionallayers) {
     layer_labels.push_back(std::to_string(n));
+  }
   // Book Error FLag versus Layer, this is cleared for each LS.
   me_econd_quality_layer =
       ibooker.book2D("econd_lastLS", ";Layer;Error;", nLayers, 0, nLayers, necondWithCBflags, 0, necondWithCBflags);

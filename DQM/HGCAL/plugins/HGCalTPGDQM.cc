@@ -445,7 +445,7 @@ void HGCalTPGDQM::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& run, 
   ibook.setCurrentFolder("HGCAL/Trigger/");
 
   // Trigger histograms
-  for (auto it : followedTriggerModules_) {
+  for (const auto& it : followedTriggerModules_) {
     MonitoredElementKey_t key = it.first;
     TriggerMonitoredElement_t trigModule = it.second;
 
@@ -585,7 +585,7 @@ void HGCalTPGDQM::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& run, 
                                necontFlags);
         hgcal::dqm::addBinLabels(hgcal::dqm::econdTFlags, h, 2);
         for (const auto& [typecode, trigModule] : econtMap) {
-          h->setBinLabel(trigModule.moduleIndex + 1, trigModule.typecode.c_str(), 1);
+          h->setBinLabel(trigModule.moduleIndex + 1, trigModule.typecode, 1);
         }
         econtQualityCassettes_[endcap][layer][cassette] = h;
       }
@@ -618,8 +618,8 @@ void HGCalTPGDQM::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& run, 
     hgcal::dqm::addBinLabels(hgcal::dqm::econdTFlags, econtQualityFEDs_[fedid], 2);
     for (const auto& trigPair : triggerModules) {
       const auto& trigModule = trigPair.second;
-      econtBx0_[fedid]->setBinLabel(trigModule.econtidx + 1, trigModule.typecode.c_str(), 1);
-      econtQualityFEDs_[fedid]->setBinLabel(trigModule.fedModuleIndex + 1, trigModule.typecode.c_str(), 1);
+      econtBx0_[fedid]->setBinLabel(trigModule.econtidx + 1, trigModule.typecode, 1);
+      econtQualityFEDs_[fedid]->setBinLabel(trigModule.fedModuleIndex + 1, trigModule.typecode, 1);
     }
   }
 
@@ -627,8 +627,10 @@ void HGCalTPGDQM::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& run, 
   ibook.setCurrentFolder("HGCAL");
   int nLayers = static_cast<int>(unique_directional_layers_.size());
   std::vector<std::string> layer_labels;
-  for (int n : unique_directional_layers_)
+  layer_labels.reserve(unique_directional_layers_.size());
+  for (int n : unique_directional_layers_) {
     layer_labels.push_back(std::to_string(n));
+  }
   me_econt_quality_layer =
       ibook.book2D("econt_lastLS", ";Layer;Exception;", nLayers, 0, nLayers, necontFlags, 0, necontFlags);
   hgcal::dqm::addBinLabels(layer_labels, me_econt_quality_layer, 1);
