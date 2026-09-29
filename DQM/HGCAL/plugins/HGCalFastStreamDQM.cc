@@ -168,27 +168,27 @@ void HGCalFastStreamDQM::analyzeFEDFlags(const edm::Event& iEvent, const edm::Ev
 
     auto flags = fed.FEDUnpackingFlag();
     if (hgcaldigi::isNotNormalFED(flags))
-      fedQualityH_->Fill(fedid, 1);
+      fedQualityH_->Fill(fedBinX, 0);
     if (hgcaldigi::hasGenericUnpackError(flags))
-      fedQualityH_->Fill(fedid, 2);
+      fedQualityH_->Fill(fedBinX, 1);
     if (hgcaldigi::hasHeaderUnpackError(flags))
-      fedQualityH_->Fill(fedid, 3);
+      fedQualityH_->Fill(fedBinX, 2);
     if (hgcaldigi::hasPayloadUnpackError(flags))
-      fedQualityH_->Fill(fedid, 4);
+      fedQualityH_->Fill(fedBinX, 3);
     if (hgcaldigi::hasCBHeaderError(flags))
-      fedQualityH_->Fill(fedid, 5);
+      fedQualityH_->Fill(fedBinX, 4);
     if (hgcaldigi::hasCBActiveFlags(flags))
-      fedQualityH_->Fill(fedid, 6);
+      fedQualityH_->Fill(fedBinX, 5);
     if (hgcaldigi::hasErrorECONDHeader(flags))
-      fedQualityH_->Fill(fedid, 7);
+      fedQualityH_->Fill(fedBinX, 6);
     if (hgcaldigi::hasECONDPayloadLengthOverflow(flags))
-      fedQualityH_->Fill(fedid, 8);
+      fedQualityH_->Fill(fedBinX, 7);
     if (hgcaldigi::hasECONDPayloadLengthMismatch(flags))
-      fedQualityH_->Fill(fedid, 9);
+      fedQualityH_->Fill(fedBinX, 8);
     if (hgcaldigi::hasErrorSLinkTrailer(flags))
-      fedQualityH_->Fill(fedid, 10);
+      fedQualityH_->Fill(fedBinX, 9);
     if (hgcaldigi::hasEarlySLinkEnd(flags))
-      fedQualityH_->Fill(fedid, 11);
+      fedQualityH_->Fill(fedBinX, 10);
   }
 }
 
