@@ -89,7 +89,7 @@ HGCalDQMHarvester::HGCalDQMHarvester(edm::ParameterSet const& ps)
       moduleInfoTriggerTkn_(esConsumes<edm::Transition::EndLuminosityBlock>()),
       moduleConfigTkn_(esConsumes<edm::Transition::EndLuminosityBlock>()),
       geometry_(std::make_unique<hgcal::dqm::HGCalDQMGeometry>(ps.getParameter<std::string>("TemplateFiles"),
-                                                               std::string("/geometry_v16.5.root"),
+                                                               std::string("/geometry_v16p6.root"),
                                                                ps.getParameter<bool>("SkipTriggerDQM"),
                                                                ps.getParameter<std::string>("Era"))),
       error_summarizer_(
