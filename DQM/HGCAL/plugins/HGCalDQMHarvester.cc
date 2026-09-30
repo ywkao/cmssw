@@ -89,7 +89,7 @@ HGCalDQMHarvester::HGCalDQMHarvester(edm::ParameterSet const& ps)
       moduleInfoTriggerTkn_(esConsumes<edm::Transition::EndLuminosityBlock>()),
       moduleConfigTkn_(esConsumes<edm::Transition::EndLuminosityBlock>()),
       geometry_(std::make_unique<hgcal::dqm::HGCalDQMGeometry>(ps.getParameter<std::string>("TemplateFiles"),
-                                                               std::string("/geometry_v16p6.root"),
+                                                               "/" + ps.getParameter<std::string>("GeometryTemplate"),
                                                                ps.getParameter<bool>("SkipTriggerDQM"),
                                                                ps.getParameter<std::string>("Era"))),
       error_summarizer_(
@@ -125,6 +125,8 @@ HGCalDQMHarvester::HGCalDQMHarvester(edm::ParameterSet const& ps)
 void HGCalDQMHarvester::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
   desc.add<std::string>("TemplateFiles", "Geometry/HGCalMapping/data/DQM");
+  desc.add<std::string>("GeometryTemplate", "geometry_v16p6.root")
+      ->setComment("module-position template, looked up in TemplateFiles");
   desc.add<std::string>("Era", "");
   desc.add<bool>("SkipTriggerDQM", false);
   desc.add<bool>("SkipSlowStream", false);
