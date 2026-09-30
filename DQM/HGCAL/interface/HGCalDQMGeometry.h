@@ -59,7 +59,10 @@ namespace hgcal {
         std::vector<long long> getModuleVariables;
       };
 
-      HGCalDQMGeometry(std::string templateDir, std::string geometryTemplate, bool skipTriggerDQM, std::string era = "");
+      HGCalDQMGeometry(std::string templateDir,
+                       std::string geometryTemplate,
+                       bool skipTriggerDQM,
+                       std::string tileboardTemplateSuffix = "_tileboard.root");
       ~HGCalDQMGeometry();
       HGCalDQMGeometry(HGCalDQMGeometry const&) = delete;
       HGCalDQMGeometry& operator=(HGCalDQMGeometry const&) = delete;
@@ -141,7 +144,7 @@ namespace hgcal {
       // ---- config ----
       std::string templateDir_;
       std::string geometryTemplate_;
-      std::string era_;
+      std::string tileboardTemplateSuffix_;
       bool skipTriggerDQM_;
 
       // ---- GROUP 1 storage ----

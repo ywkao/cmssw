@@ -88,10 +88,11 @@ HGCalDQMHarvester::HGCalDQMHarvester(edm::ParameterSet const& ps)
       moduleInfoTkn_(esConsumes<edm::Transition::EndLuminosityBlock>()),
       moduleInfoTriggerTkn_(esConsumes<edm::Transition::EndLuminosityBlock>()),
       moduleConfigTkn_(esConsumes<edm::Transition::EndLuminosityBlock>()),
-      geometry_(std::make_unique<hgcal::dqm::HGCalDQMGeometry>(ps.getParameter<std::string>("TemplateFiles"),
-                                                               "/" + ps.getParameter<std::string>("GeometryTemplate"),
-                                                               ps.getParameter<bool>("SkipTriggerDQM"),
-                                                               ps.getParameter<std::string>("Era"))),
+      geometry_(
+          std::make_unique<hgcal::dqm::HGCalDQMGeometry>(ps.getParameter<std::string>("TemplateFiles"),
+                                                         "/" + ps.getParameter<std::string>("GeometryTemplate"),
+                                                         ps.getParameter<bool>("SkipTriggerDQM"),
+                                                         ps.getParameter<std::string>("TileboardTemplateSuffix"))),
       error_summarizer_(
           loadJson(ps.getParameter<std::string>("dqmQualityThreshold")).value("econd", nlohmann::json({}))),
       econt_error_summarizer_(
@@ -127,7 +128,8 @@ void HGCalDQMHarvester::fillDescriptions(edm::ConfigurationDescriptions& descrip
   desc.add<std::string>("TemplateFiles", "Geometry/HGCalMapping/data/DQM");
   desc.add<std::string>("GeometryTemplate", "geometry_v16p6.root")
       ->setComment("module-position template, looked up in TemplateFiles");
-  desc.add<std::string>("Era", "");
+  desc.add<std::string>("TileboardTemplateSuffix", "_tileboard.root")
+      ->setComment("file-name suffix of the SiPM-on-tile templates, e.g. _TB2026_tileboard.root");
   desc.add<bool>("SkipTriggerDQM", false);
   desc.add<bool>("SkipSlowStream", false);
   desc.add<bool>("EnableOverflowMarkers", true);

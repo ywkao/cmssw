@@ -24,10 +24,10 @@ namespace hgcal {
     HGCalDQMGeometry::HGCalDQMGeometry(std::string templateDir,
                                        std::string geometryTemplate,
                                        bool skipTriggerDQM,
-                                       std::string era)
+                                       std::string tileboardTemplateSuffix)
         : templateDir_(std::move(templateDir)),
           geometryTemplate_(std::move(geometryTemplate)),
-          era_(std::move(era)),
+          tileboardTemplateSuffix_(std::move(tileboardTemplateSuffix)),
           skipTriggerDQM_(skipTriggerDQM) {}
 
     HGCalDQMGeometry::~HGCalDQMGeometry() {
@@ -71,9 +71,7 @@ namespace hgcal {
 
     TFile* HGCalDQMGeometry::moduleTemplateFile(std::string const& typecode, bool isSiPM) const {
       std::string key = isSiPM ? sipmLookupKeyFromTypecode(typecode) : typecode.substr(0, 4);
-      std::string suffix = isSiPM ? "_tileboard.root" : "_wafer.root";
-      if (isSiPM && era_.find("TB2026") != std::string::npos)
-        suffix = "_TB2026_tileboard.root";
+      std::string const suffix = isSiPM ? tileboardTemplateSuffix_ : "_wafer.root";
       edm::FileInPath fip(templateDir_ + "/geometry_" + key + suffix);
       return templateFile(fip.fullPath());
     }
