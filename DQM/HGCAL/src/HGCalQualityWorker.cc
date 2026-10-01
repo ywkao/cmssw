@@ -9,8 +9,8 @@
 namespace hgcal {
   namespace dqm {
 
-    HGCalQualityWorker::HGCalQualityWorker(std::string folderRoot, ErrorSummarizer& errorSummarizer)
-        : folderRoot_(std::move(folderRoot)), error_summarizer_(errorSummarizer) {}
+    HGCalQualityWorker::HGCalQualityWorker(std::string folderRoot, EcondErrorSummarizer& econdErrorSummarizer)
+        : folderRoot_(std::move(folderRoot)), econd_error_summarizer_(econdErrorSummarizer) {}
 
     /**
 * @brief Find bin index by label with caching
@@ -171,7 +171,7 @@ namespace hgcal {
             }
 
             // fill layer-level ECON-D TH2F
-            error_summarizer_.processAndFill(quality_me, econdQuality_, cassette_idx, ProcessMode::STAT_TO_GRADE);
+            econd_error_summarizer_.processAndFill(quality_me, econdQuality_, cassette_idx, ProcessMode::STAT_TO_GRADE);
             econdPayload_->getTH1()->Add(payload_me->getTH1());
 
             // collect statistics from modules for layer-level TH2Poly
@@ -191,14 +191,14 @@ namespace hgcal {
               for (int ybin = 1; ybin <= nYbins; ++ybin) {
                 double content = quality_me->getBinContent(xbin, ybin);
                 int error_type_index = ybin - 1;
-                int grade = error_summarizer_.calculateGrade(error_type_index, static_cast<int>(content));
+                int grade = econd_error_summarizer_.calculateGrade(error_type_index, static_cast<int>(content));
                 if (grade > maxGrade) {
                   maxGrade = grade;
                 }
 
                 // sanity check
                 if (first_run_) {
-                  if (!error_summarizer_.validateHistogramLabels(quality_me)) {
+                  if (!econd_error_summarizer_.validateHistogramLabels(quality_me)) {
                     throw cms::Exception("HGCalQualityWorker") << "ECON-D quality labels of " << cassetteQualityPath
                                                                << " do not match the dqmQualityThreshold configuration";
                   }
@@ -228,7 +228,7 @@ namespace hgcal {
           }  // end of cassette loop
 
           // fill summary-level ECON-D TH2F
-          error_summarizer_.processAndFill(
+          econd_error_summarizer_.processAndFill(
               econdQuality_, me_econd_quality_summary_, layer_idx, ProcessMode::GRADE_TO_GRADE);
           layer_idx++;
         }  // end of layer loop

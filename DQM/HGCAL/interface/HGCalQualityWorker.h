@@ -13,14 +13,14 @@ namespace hgcal {
 
     using MonitorElement = ::dqm::impl::MonitorElement;
 
-    class ErrorSummarizer;  // injected; plugin owns
+    class EcondErrorSummarizer;  // injected; plugin owns
 
     // Books/fills ECON-D quality + payload summaries (fast-stream cadence).
     // The ECON-T equivalent lives in HGCalTriggerWorker.
     // TODO: move to endLumi once ECON-D/T per-LS updates land.
     class HGCalQualityWorker : public HGCalDQMWorkerBase {
     public:
-      HGCalQualityWorker(std::string folderRoot, ErrorSummarizer& errorSummarizer);
+      HGCalQualityWorker(std::string folderRoot, EcondErrorSummarizer& econdErrorSummarizer);
       ~HGCalQualityWorker() override = default;
 
       void book(DQMStore::IBooker&, HGCalDQMGeometry const&) override;
@@ -28,8 +28,8 @@ namespace hgcal {
 
     private:
       std::string folderRoot_;
-      ErrorSummarizer& error_summarizer_;  // NOT owned; plugin owns
-      bool first_run_ = true;              // label validation runs once per worker
+      EcondErrorSummarizer& econd_error_summarizer_;  // NOT owned; plugin owns
+      bool first_run_ = true;                         // label validation runs once per worker
 
       int findBinByLabel(MonitorElement* me, const std::string& label) const;
 

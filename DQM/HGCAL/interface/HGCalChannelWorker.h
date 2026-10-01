@@ -14,7 +14,7 @@ namespace hgcal {
 
     using MonitorElement = ::dqm::impl::MonitorElement;
 
-    class ErrorSummarizer;  // injected; plugin owns
+    class EcondErrorSummarizer;  // injected; plugin owns
 
     // Books/fills per-module channel-level TH2Poly plots, per-cassette +
     // per-layer TH2Poly summaries over ~13 variables, and per-FED
@@ -22,7 +22,7 @@ namespace hgcal {
     class HGCalChannelWorker : public HGCalDQMWorkerBase {
     public:
       HGCalChannelWorker(std::string folderRoot,
-                         ErrorSummarizer& errorSummarizer,
+                         EcondErrorSummarizer& econdErrorSummarizer,
                          float overflowThreshold,
                          float saturatedAdcThreshold,
                          bool enableOverflowMarkers);
@@ -33,7 +33,7 @@ namespace hgcal {
 
     private:
       std::string folderRoot_;
-      ErrorSummarizer& error_summarizer_;  // NOT owned; plugin owns
+      EcondErrorSummarizer& econd_error_summarizer_;  // NOT owned; plugin owns
 
       float overflow_threshold_;
       float saturated_adc_threshold_;

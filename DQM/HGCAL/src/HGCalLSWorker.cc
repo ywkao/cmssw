@@ -9,11 +9,11 @@ namespace hgcal {
   namespace dqm {
 
     HGCalLSWorker::HGCalLSWorker(std::string folderRoot,
-                                 ErrorSummarizer& errorSummarizer,
+                                 EcondErrorSummarizer& econdErrorSummarizer,
                                  EcontErrorSummarizer& econtErrorSummarizer,
                                  bool skipTriggerDQM)
         : folderRoot_(std::move(folderRoot)),
-          error_summarizer_(errorSummarizer),
+          econd_error_summarizer_(econdErrorSummarizer),
           econt_error_summarizer_(econtErrorSummarizer),
           skipTriggerDQM_(skipTriggerDQM) {}
 
@@ -81,7 +81,7 @@ namespace hgcal {
       // ECON-D fill
       me_econd_quality_layer_ = igetter.get(folderRoot_ + "/econd_lastLS");
       if (me_econd_quality_layer_) {
-        error_summarizer_.processAndFillLS(
+        econd_error_summarizer_.processAndFillLS(
             me_econd_quality_layer_, binNumber, me_econd_quality_LS_, me_econd_finequality_LS_, me_econd_layer_LS_);
       }
 

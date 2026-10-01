@@ -76,7 +76,7 @@ namespace hgcal {
       NUM_CATEGORIES = 3
     };
 
-    // Define process mode for ErrorSummarizer::processAndFill() method
+    // Define process mode for EcondErrorSummarizer::processAndFill() method
     enum class ProcessMode { STAT_TO_STAT = 0, STAT_TO_GRADE = 1, GRADE_TO_GRADE = 2, STAT_TO_GRADE_X = 3 };
 
     enum class EconTErrorType { NTC_NOT_MATCHING = 0, SUBPACKET_ERROR = 1, TDAQIDX_OUT_RANGE = 2, NUM_ERROR_TYPES = 3 };
@@ -173,11 +173,11 @@ namespace hgcal {
     };
 
     // Summarize error from a provided monitor element
-    class ErrorSummarizer {
+    class EcondErrorSummarizer {
     public:
-      ErrorSummarizer();
-      ErrorSummarizer(const json& config_data);
-      ~ErrorSummarizer() = default;
+      EcondErrorSummarizer();
+      EcondErrorSummarizer(const json& config_data);
+      ~EcondErrorSummarizer() = default;
 
       // accumulate stats from srouce and fill the total stat into a specified bin of target monitor element
       void processAndFill(const MonitorElement* source_me,

@@ -14,7 +14,7 @@ namespace hgcal {
 
     using MonitorElement = ::dqm::impl::MonitorElement;
 
-    class ErrorSummarizer;
+    class EcondErrorSummarizer;
     class EcontErrorSummarizer;
 
     // Per-LS quality trend plots using SetRangeUser approach.
@@ -23,7 +23,7 @@ namespace hgcal {
     class HGCalLSWorker : public HGCalDQMWorkerBase {
     public:
       HGCalLSWorker(std::string folderRoot,
-                    ErrorSummarizer& errorSummarizer,
+                    EcondErrorSummarizer& econdErrorSummarizer,
                     EcontErrorSummarizer& econtErrorSummarizer,
                     bool skipTriggerDQM);
       ~HGCalLSWorker() override = default;
@@ -34,7 +34,7 @@ namespace hgcal {
 
     private:
       std::string folderRoot_;
-      ErrorSummarizer& error_summarizer_;
+      EcondErrorSummarizer& econd_error_summarizer_;
       EcontErrorSummarizer& econt_error_summarizer_;
       bool skipTriggerDQM_;
 

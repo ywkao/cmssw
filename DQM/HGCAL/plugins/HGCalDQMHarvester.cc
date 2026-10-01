@@ -69,7 +69,7 @@ private:
 
   std::unique_ptr<hgcal::dqm::HGCalDQMGeometry> geometry_;
   nlohmann::json qualityThresholds_;  // must precede the summarizers it initialises
-  hgcal::dqm::ErrorSummarizer error_summarizer_;
+  hgcal::dqm::EcondErrorSummarizer econd_error_summarizer_;
   hgcal::dqm::EcontErrorSummarizer econt_error_summarizer_;
   std::vector<std::unique_ptr<hgcal::dqm::HGCalDQMWorkerBase>> workers_;
   bool firstLS_;
@@ -95,7 +95,7 @@ HGCalDQMHarvester::HGCalDQMHarvester(edm::ParameterSet const& ps)
                                                          ps.getParameter<bool>("SkipTriggerDQM"),
                                                          ps.getParameter<std::string>("TileboardTemplateSuffix"))),
       qualityThresholds_(loadJson(ps.getParameter<std::string>("dqmQualityThreshold"))),
-      error_summarizer_(qualityThresholds_.value("econd", nlohmann::json({}))),
+      econd_error_summarizer_(qualityThresholds_.value("econd", nlohmann::json({}))),
       econt_error_summarizer_(qualityThresholds_.value("econt", nlohmann::json({}))),
       firstLS_(true) {
   std::string const folderRoot = "HGCAL";  // top folder booked by the HGCAL DQM clients
@@ -103,14 +103,14 @@ HGCalDQMHarvester::HGCalDQMHarvester(edm::ParameterSet const& ps)
   bool skipSlowStream = ps.getParameter<bool>("SkipSlowStream");
   bool enableOverflowM = ps.getParameter<bool>("EnableOverflowMarkers");
 
-  float overflowThreshold = error_summarizer_.getThreshold("stdadc_overflow_threshold");
-  float saturatedAdcThreshold = error_summarizer_.getThreshold("saturated_adc_threshold");
+  float overflowThreshold = econd_error_summarizer_.getThreshold("stdadc_overflow_threshold");
+  float saturatedAdcThreshold = econd_error_summarizer_.getThreshold("saturated_adc_threshold");
 
-  workers_.push_back(std::make_unique<hgcal::dqm::HGCalQualityWorker>(folderRoot, error_summarizer_));
+  workers_.push_back(std::make_unique<hgcal::dqm::HGCalQualityWorker>(folderRoot, econd_error_summarizer_));
 
   if (!skipSlowStream) {
     workers_.push_back(std::make_unique<hgcal::dqm::HGCalChannelWorker>(
-        folderRoot, error_summarizer_, overflowThreshold, saturatedAdcThreshold, enableOverflowM));
+        folderRoot, econd_error_summarizer_, overflowThreshold, saturatedAdcThreshold, enableOverflowM));
   }
 
   if (!skipTriggerDQM) {
@@ -118,7 +118,7 @@ HGCalDQMHarvester::HGCalDQMHarvester(edm::ParameterSet const& ps)
   }
 
   workers_.push_back(std::make_unique<hgcal::dqm::HGCalLSWorker>(
-      folderRoot, error_summarizer_, econt_error_summarizer_, skipTriggerDQM));
+      folderRoot, econd_error_summarizer_, econt_error_summarizer_, skipTriggerDQM));
 
   workers_.push_back(std::make_unique<hgcal::dqm::HGCalFedWorker>(folderRoot));
 }

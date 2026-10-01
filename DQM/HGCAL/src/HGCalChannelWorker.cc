@@ -39,12 +39,12 @@ namespace hgcal {
     }  // namespace
 
     HGCalChannelWorker::HGCalChannelWorker(std::string folderRoot,
-                                           ErrorSummarizer& errorSummarizer,
+                                           EcondErrorSummarizer& econdErrorSummarizer,
                                            float overflowThreshold,
                                            float saturatedAdcThreshold,
                                            bool enableOverflowMarkers)
         : folderRoot_(std::move(folderRoot)),
-          error_summarizer_(errorSummarizer),
+          econd_error_summarizer_(econdErrorSummarizer),
           overflow_threshold_(overflowThreshold),
           saturated_adc_threshold_(saturatedAdcThreshold),
           enable_overflow_markers_(enableOverflowMarkers) {}
@@ -617,8 +617,8 @@ namespace hgcal {
                   if (vi == enumIDX_stdadc) {
                     hexLayer_[layer][variable]->setBinContent(module_count + 1, value_module[vi]);
 
-                    auto const stats =
-                        error_summarizer_.analyzeChannelQuality(modulePlots[enumIDX_stdadc], "channel_noise_threshold");
+                    auto const stats = econd_error_summarizer_.analyzeChannelQuality(modulePlots[enumIDX_stdadc],
+                                                                                     "channel_noise_threshold");
 
                     int const noisy_channels = stats.at("noisy");
                     int const stuck_channels = stats.at("stuck");

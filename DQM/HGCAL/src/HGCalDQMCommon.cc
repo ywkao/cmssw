@@ -254,11 +254,13 @@ namespace hgcal {
     //--------------------------------------------------
     // Methods in summarizer
     //--------------------------------------------------
-    ErrorSummarizer::ErrorSummarizer() : config_data_(json{}) {}
+    EcondErrorSummarizer::EcondErrorSummarizer() : config_data_(json{}) {}
 
-    ErrorSummarizer::ErrorSummarizer(const json& config_data) : config_data_(config_data) { loadMatrixConfiguration(); }
+    EcondErrorSummarizer::EcondErrorSummarizer(const json& config_data) : config_data_(config_data) {
+      loadMatrixConfiguration();
+    }
 
-    void ErrorSummarizer::loadMatrixConfiguration() {
+    void EcondErrorSummarizer::loadMatrixConfiguration() {
       try {
         if (config_data_.contains("error_thresholds_matrix")) {
           auto matrix_json = config_data_["error_thresholds_matrix"];
@@ -274,16 +276,16 @@ namespace hgcal {
         }
 
         if (error_thresholds_matrix_.size() != error_type_labels_.size()) {
-          edm::LogWarning("HGCalDQMErrorSummarizer") << "Matrix size (" << error_thresholds_matrix_.size()
-                                                     << ") != Labels size (" << error_type_labels_.size() << ")";
+          edm::LogWarning("HGCalDQMEcondErrorSummarizer") << "Matrix size (" << error_thresholds_matrix_.size()
+                                                          << ") != Labels size (" << error_type_labels_.size() << ")";
         }
 
       } catch (const std::exception& e) {
-        edm::LogError("HGCalDQMErrorSummarizer") << "Error loading matrix configuration: " << e.what();
+        edm::LogError("HGCalDQMEcondErrorSummarizer") << "Error loading matrix configuration: " << e.what();
       }
     }
 
-    std::vector<double> ErrorSummarizer::sumAxis(MonitorElement* me, int axis) {
+    std::vector<double> EcondErrorSummarizer::sumAxis(MonitorElement* me, int axis) {
       int nbinsX = me->getNbinsX();
       int nbinsY = me->getNbinsY();
       std::vector<double> sums;
@@ -293,7 +295,7 @@ namespace hgcal {
           for (int x = 0; x < nbinsX; ++x) {
             sum += me->getBinContent(x + 1, y + 1);
           }
-          LogDebug("HGCalDQMErrorSummarizer") << "ysum " << sum;
+          LogDebug("HGCalDQMEcondErrorSummarizer") << "ysum " << sum;
           sums.push_back(sum);
         }
       } else if (axis == 2) {  // x-axis
@@ -310,11 +312,11 @@ namespace hgcal {
       return sums;
     }
 
-    void ErrorSummarizer::processAndFillLS(MonitorElement* source_quality_layer,
-                                           int binNumber,
-                                           MonitorElement* target_quality_LS,
-                                           MonitorElement* target_finequality_LS,
-                                           MonitorElement* target_layer_LS) {
+    void EcondErrorSummarizer::processAndFillLS(MonitorElement* source_quality_layer,
+                                                int binNumber,
+                                                MonitorElement* target_quality_LS,
+                                                MonitorElement* target_finequality_LS,
+                                                MonitorElement* target_layer_LS) {
       // This is the raw sums for EconD versus LS
       processAndFill(source_quality_layer, target_finequality_LS, binNumber, ProcessMode::STAT_TO_STAT);
       // This is EconD quality versus LS
@@ -324,10 +326,10 @@ namespace hgcal {
     }
 
     // accumulate stats from srouce and fill the total stat into a specified bin of target monitor element
-    void ErrorSummarizer::processAndFill(const MonitorElement* source_me,
-                                         MonitorElement* target_me,
-                                         const int target_bin_id,
-                                         const ProcessMode mode) {
+    void EcondErrorSummarizer::processAndFill(const MonitorElement* source_me,
+                                              MonitorElement* target_me,
+                                              const int target_bin_id,
+                                              const ProcessMode mode) {
       switch (mode) {
         case ProcessMode::STAT_TO_STAT:
           for (int ybin = 1; ybin <= source_me->getNbinsY(); ++ybin) {
@@ -405,15 +407,15 @@ namespace hgcal {
         } break;
 
         default:
-          edm::LogError("HGCalDQMErrorSummarizer") << "Invalid mode " << static_cast<int>(mode);
+          edm::LogError("HGCalDQMEcondErrorSummarizer") << "Invalid mode " << static_cast<int>(mode);
           break;
       }
     }
 
     // Calculate quality grade (1=best, 5=worst) based on error count for given flag
-    int ErrorSummarizer::calculateGrade(int error_type_index, int num_errors) {
+    int EcondErrorSummarizer::calculateGrade(int error_type_index, int num_errors) {
       if (error_type_index < 0 || error_type_index >= static_cast<int>(error_thresholds_matrix_.size())) {
-        edm::LogError("HGCalDQMErrorSummarizer") << "Invalid error type index " << error_type_index;
+        edm::LogError("HGCalDQMEcondErrorSummarizer") << "Invalid error type index " << error_type_index;
         return 5;
       }
 
@@ -427,7 +429,7 @@ namespace hgcal {
     }
 
     // checking channel stats of a polygonal histogram
-    std::map<std::string, int> ErrorSummarizer::analyzeChannelQuality(MonitorElement* me, double threshold) {
+    std::map<std::string, int> EcondErrorSummarizer::analyzeChannelQuality(MonitorElement* me, double threshold) {
       std::map<std::string, int> stats = {{"noisy", 0}, {"stuck", 0}, {"normal", 0}, {"total", 0}};
 
       if (!me)
@@ -457,8 +459,8 @@ namespace hgcal {
     }
 
     // Instance method for config-based threshold
-    std::map<std::string, int> ErrorSummarizer::analyzeChannelQuality(MonitorElement* me,
-                                                                      const std::string& threshold_key) {
+    std::map<std::string, int> EcondErrorSummarizer::analyzeChannelQuality(MonitorElement* me,
+                                                                           const std::string& threshold_key) {
       try {
         double threshold = config_data_[threshold_key];
         return analyzeChannelQuality(me, threshold);
@@ -467,7 +469,7 @@ namespace hgcal {
       }
     }
 
-    std::map<std::string, int> ErrorSummarizer::count_zero_std_bins(const TProfile* profile, int nMax) {
+    std::map<std::string, int> EcondErrorSummarizer::count_zero_std_bins(const TProfile* profile, int nMax) {
       std::map<std::string, int> stats = {{"vacant", 0}, {"stuck", 0}};
       for (int i = 1; i <= nMax; i++) {
         double content = profile->GetBinContent(i);
@@ -483,7 +485,7 @@ namespace hgcal {
     }
     //--------------------------------------------------
 
-    Report ErrorSummarizer::aggregateReports(const std::vector<Report>& reports) {
+    Report EcondErrorSummarizer::aggregateReports(const std::vector<Report>& reports) {
       Report aggregatedReport;
 
       // Aggregate all categorized counters from all reports
@@ -502,8 +504,8 @@ namespace hgcal {
       return aggregatedReport;
     }
 
-    Report ErrorSummarizer::analysisWithCategories(MonitorElement* me,
-                                                   const std::function<CategoryID(int)>& categorizer) {
+    Report EcondErrorSummarizer::analysisWithCategories(MonitorElement* me,
+                                                        const std::function<CategoryID(int)>& categorizer) {
       Report output;
 
       if (!me || me->kind() != MonitorElement::Kind::TH2F) {
@@ -532,12 +534,12 @@ namespace hgcal {
       return output;
     }
 
-    void ErrorSummarizer::fillHistogramFromCategoryReport(MonitorElement* me,
-                                                          const Report& report,
-                                                          CategoryID category) {
+    void EcondErrorSummarizer::fillHistogramFromCategoryReport(MonitorElement* me,
+                                                               const Report& report,
+                                                               CategoryID category) {
       // Ensure the monitor element is a TH2F
       if (!me || me->kind() != MonitorElement::Kind::TH2F) {
-        edm::LogError("HGCalDQMErrorSummarizer") << "MonitorElement is not a TH2F histogram";
+        edm::LogError("HGCalDQMEcondErrorSummarizer") << "MonitorElement is not a TH2F histogram";
         return;
       }
 
@@ -554,21 +556,21 @@ namespace hgcal {
     //--------------------------------------------------
     // functions for sanity check
     //--------------------------------------------------
-    size_t ErrorSummarizer::getMatrixSize() const { return error_thresholds_matrix_.size(); }
+    size_t EcondErrorSummarizer::getMatrixSize() const { return error_thresholds_matrix_.size(); }
 
-    float ErrorSummarizer::getThreshold(const std::string& threshold_name) const {
+    float EcondErrorSummarizer::getThreshold(const std::string& threshold_name) const {
       return config_data_[threshold_name];
     }
 
-    std::string ErrorSummarizer::getErrorLabel(int error_type_index) const {
+    std::string EcondErrorSummarizer::getErrorLabel(int error_type_index) const {
       if (error_type_index >= 0 && error_type_index < static_cast<int>(error_type_labels_.size())) {
         return error_type_labels_[error_type_index];
       }
       return "UNKNOWN";
     }
 
-    void ErrorSummarizer::printConfigurationSummary() const {
-      edm::LogPrint msg("HGCalDQMErrorSummarizer");
+    void EcondErrorSummarizer::printConfigurationSummary() const {
+      edm::LogPrint msg("HGCalDQMEcondErrorSummarizer");
       msg << "\n========== DQM Configuration Summary ==========\n";
       msg << "Total error types: " << error_thresholds_matrix_.size() << "\n";
 
@@ -586,7 +588,7 @@ namespace hgcal {
       msg << "===============================================";
     }
 
-    bool ErrorSummarizer::validateHistogramLabels(const MonitorElement* me) const {
+    bool EcondErrorSummarizer::validateHistogramLabels(const MonitorElement* me) const {
       if (!me || me->kind() != MonitorElement::Kind::TH2F) {
         return false;
       }
@@ -602,7 +604,7 @@ namespace hgcal {
         std::string expected_label = getErrorLabel(expected_index);
 
         if (bin_label != expected_label) {
-          edm::LogError("HGCalDQMErrorSummarizer")
+          edm::LogError("HGCalDQMEcondErrorSummarizer")
               << "MISMATCH at bin " << ybin << ": histogram='" << bin_label << "' vs config='" << expected_label << "'";
           all_match = false;
         }
