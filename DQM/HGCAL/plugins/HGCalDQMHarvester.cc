@@ -98,7 +98,7 @@ HGCalDQMHarvester::HGCalDQMHarvester(edm::ParameterSet const& ps)
       error_summarizer_(qualityThresholds_.value("econd", nlohmann::json({}))),
       econt_error_summarizer_(qualityThresholds_.value("econt", nlohmann::json({}))),
       firstLS_(true) {
-  auto folderRoot = ps.getParameter<std::string>("FolderRoot");
+  std::string const folderRoot = "HGCAL";  // top folder booked by the HGCAL DQM clients
   bool skipTriggerDQM = ps.getParameter<bool>("SkipTriggerDQM");
   bool skipSlowStream = ps.getParameter<bool>("SkipSlowStream");
   bool enableOverflowM = ps.getParameter<bool>("EnableOverflowMarkers");
@@ -133,7 +133,6 @@ void HGCalDQMHarvester::fillDescriptions(edm::ConfigurationDescriptions& descrip
   desc.add<bool>("SkipTriggerDQM", true);
   desc.add<bool>("SkipSlowStream", false);
   desc.add<bool>("EnableOverflowMarkers", true);
-  desc.add<std::string>("FolderRoot", "HGCAL");
   desc.add<std::string>("dqmQualityThreshold", "Geometry/HGCalMapping/data/DQM/dqm_quality_threshold.json");
   descriptions.addWithDefaultLabel(desc);
 }
