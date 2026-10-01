@@ -39,9 +39,7 @@ namespace hgcal {
       float saturated_adc_threshold_;
       bool enable_overflow_markers_;
 
-      // OPT-5: integer indices into a fixed-size array replace std::map<string, T>
-      // lookups in the per-channel inner loop (endRun()). The enum below is the
-      // single source of truth - its order MUST match the `variables_` initializer.
+      // Index into variables_ used in the per-channel loop; the order must match variables_.
       enum VarIdx {
         enumIDX_occupancy = 0,          // "occupancy"
         enumIDX_avgcm = 1,              // "avgcm"

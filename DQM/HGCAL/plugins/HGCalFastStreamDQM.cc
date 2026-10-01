@@ -225,8 +225,8 @@ void HGCalFastStreamDQM::analyzeECONDFlags(const edm::Event& iEvent, const edm::
     }
 
     // HGCalUnpacker leaves the CM matrix unset when it rejects the payload.
-    // Apply its payload-quality gate before reading the matrix, retaining a
-    // zero sample per channel for these events as in the reference histograms.
+    // Apply its payload-quality gate before reading the matrix, and fill a zero
+    // sample per channel for these events.
     // A BCID/Orbit mismatch alone can still have decoded CM in passthrough mode.
     const bool hasCommonMode = hgcaldigi::htFlag(econd.econdFlag()) < 2 && hgcaldigi::eboFlag(econd.econdFlag()) < 2 &&
                                hgcaldigi::matchFlag(econd.econdFlag()) && econd.payloadLength() > 0 &&

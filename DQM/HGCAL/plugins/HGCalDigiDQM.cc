@@ -74,9 +74,6 @@ HGCalDigiDQM::HGCalDigiDQM(const edm::ParameterSet& iConfig)
 HGCalDigiDQM::~HGCalDigiDQM() {}
 
 void HGCalDigiDQM::bookModuleHistograms(DQMStore::IBooker& ibook, const MonitoredElementKey_t& key) {
-  // uint32_t fedId = key.first;
-  // uint32_t seq = key.second;
-
   auto& ele = followedModules_[key];
 
   std::string endcap = (ele.endcap == 1) ? "Plus" : "Minus";
@@ -141,10 +138,7 @@ void HGCalDigiDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
   assert(ndigis == ndii);
 
-  // Cache references to per-type inner maps once per event. Using at() throws
-  // if a histogram type was never booked, which is a real bug we want surfaced.
-  // This avoids the non-const operator[] on the outer map, which would insert
-  // an empty inner map on a missing key.
+  // at() throws if a histogram type was never booked, instead of inserting an empty map.
   auto& mh_avgadc = moduleHistos_.at("avgadc");
   auto& mh_avgcm2 = moduleHistos_.at("avgcm2");
   auto& mh_adc = moduleHistos_.at("adc");
@@ -160,9 +154,7 @@ void HGCalDigiDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   auto& mh_seedtot = moduleHistos_.at("seedtot");
   auto& mh_seedtoa = moduleHistos_.at("seedtoa");
 
-  // Cache per-key iterators so we only refresh when the key changes (digis are
-  // grouped by module, so this saves lookups). Using find() also prevents
-  // operator[] from inserting nullptr entries for keys that were not booked.
+  // Per-module iterators, refreshed only when the module changes (digis are grouped by module).
   MonitoredElementKey_t cur_key(std::numeric_limits<uint32_t>::max(), std::numeric_limits<uint32_t>::max());
   bool cur_key_ok = false;
   auto it_avgadc = mh_avgadc.end();

@@ -10,9 +10,7 @@
 namespace hgcal {
   namespace dqm {
 
-    // Must match HGCalDQMCommon.h's global convention — a harvesting-vs-impl
-    // mismatch yields different mangled symbols for EcontErrorSummarizer methods
-    // and a link error.
+    // Same MonitorElement type as HGCalDQMCommon.h; another one would not link with EcontErrorSummarizer.
     using MonitorElement = ::dqm::impl::MonitorElement;
 
     class EcontErrorSummarizer;  // injected by plugin; forward-declared to keep

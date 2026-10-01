@@ -40,8 +40,7 @@ namespace hgcal {
       return (it != labelMap.end()) ? it->second : -1;
     }
 
-    // books histograms from runFastStream, except for ECON-T (in a separate helper) and cassette level polygons (only need to be filled)
-    // also deals with bin labels
+    // Books the ECON-D quality/payload summaries and their bin labels (ECON-T: HGCalTriggerWorker).
     void HGCalQualityWorker::book(DQMStore::IBooker& ibooker, HGCalDQMGeometry const& geom) {
       auto const& HGCALMap = geom.hgcalMap();
       auto const& corners_layer = geom.cornersLayer();

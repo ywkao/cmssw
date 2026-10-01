@@ -88,12 +88,12 @@ private:
   std::map<int, std::map<int, std::map<int, std::map<std::string, TriggerMonitoredElement_t>>>> HGCALTrigMap;
 
   std::map<std::string, std::map<MonitoredElementKey_t, MonitorElement*>> moduleTriggerHistos_;
-  // endcap -> layer -> cassette -> ECON-T quality TH2 (consumed by harvester)
+  // endcap -> layer -> cassette -> ECON-T quality TH2 (read by HGCalTriggerWorker)
   std::map<int, std::map<int, std::map<int, MonitorElement*>>> econtQualityCassettes_;
-  // per-FED ECON-T quality / BX0-from-Slink  (consumed by harvester)
+  // per-FED ECON-T quality / BX0-from-Slink (not read by the harvester)
   std::map<uint32_t, MonitorElement*> econtQualityFEDs_;
   std::map<uint32_t, MonitorElement*> econtBx0_;
-  // ECON-T exception vs directional layer, reset every LS (consumed by harvester)
+  // ECON-T exception vs directional layer, reset every LS (read by HGCalLSWorker)
   MonitorElement* me_econt_quality_layer = nullptr;
   std::set<int> unique_directional_layers_;
   edm::LuminosityBlockNumber_t currentLS_ = -1;
@@ -140,8 +140,7 @@ void HGCalTPGDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   if (skipTriggerDQM_)
     return;
 
-  // Reset the per-LS ECON-T quality-vs-layer histogram on LS boundaries
-  // (mirrors the reference's analyzeLSFastStream).
+  // Reset the per-LS ECON-T quality-vs-layer histogram on LS boundaries.
   edm::LuminosityBlockNumber_t lumi = iEvent.luminosityBlock();
   if (lumi != currentLS_ && me_econt_quality_layer != nullptr) {
     me_econt_quality_layer->Reset();
@@ -365,9 +364,8 @@ void HGCalTPGDQM::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& run, 
   const HGCalMappingModuleIndexerTrigger& moduleIndexerTrigger = iSetup.getData(moduleIdxTriggerBookingTkn_);
   const hgcal::HGCalMappingModuleTriggerParamHost& moduleInfoTrigger = iSetup.getData(moduleTriggerInfoTkn_);
 
-  // The reference client locates trigger modules by matching their typecode to
-  // the detector-module mapping.  Keep that behavior here: the trigger mapping
-  // does not always carry the same physical location for a given typecode.
+  // Take the physical location of each trigger module from the DAQ mapping, matched by
+  // typecode: the trigger mapping does not always carry the right location.
   std::map<std::string, hgcal::dqm::HGCalDQMModule> detectorModulesByTypecode;
   for (auto const& mod : hgcal::dqm::readoutModules(moduleIndexer, moduleInfo))
     detectorModulesByTypecode[mod.typecode] = mod;
@@ -606,7 +604,7 @@ void HGCalTPGDQM::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& run, 
     }
   }
 
-  // ECON-T exception vs directional layer, reset every LS. Consumed by harvester.
+  // ECON-T exception vs directional layer, reset every LS. Read by HGCalLSWorker.
   ibook.setCurrentFolder("HGCAL");
   int nLayers = static_cast<int>(unique_directional_layers_.size());
   std::vector<std::string> layer_labels;

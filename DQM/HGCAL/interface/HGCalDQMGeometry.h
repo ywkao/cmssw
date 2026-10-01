@@ -32,9 +32,6 @@ namespace hgcal {
     // are owned by the plugin; this class does not esConsumes.
     class HGCalDQMGeometry {
     public:
-      // -----------------------------------------------------------------------
-      // GROUP 1 TYPES (pure data)
-      // -----------------------------------------------------------------------
       using MonitoredElementKey_t = std::pair<uint32_t, uint32_t>;
 
       struct MonitoredElement_t {
@@ -77,10 +74,6 @@ namespace hgcal {
               moduleInfoTriggerTkn,
           edm::ESGetToken<HGCalConfiguration, HGCalModuleConfigurationRcd> const& moduleConfigTkn);
 
-      // ======================================================================
-      // GROUP 1 — PURE DATA
-      // All POD/STL. Candidate for an ESProducer conditions product later.
-      // ======================================================================
       auto const& hgcalMap() const { return HGCALMap_; }
       auto const& trigHgcalMap() const { return TrigHGCALMap_; }
       auto const& triggerModuleMap() const { return TriggerModuleMap_; }
@@ -98,29 +91,20 @@ namespace hgcal {
       bool tileboardExists() const { return flag_tileboard_exists_; }
       Timings const& timings() const { return timings_; }
 
-      // ======================================================================
-      // GROUP 2 — ROOT OBJECT OWNERSHIP
-      // Pointers into TFile handles owned here. Valid for this class's
-      // lifetime. NEVER hand to a conditions product. Callers must not
-      // delete/close.
-      // ======================================================================
+      // Objects read from the cached template files: valid for the lifetime of this
+      // object; callers must not delete them or close the files.
       TGraph* moduleBin(uint32_t dqmIndex) const;
       TGraph* triggerModuleBin(uint32_t dqmIndex) const;
 
-      // Two semantic entry points, one cache. Both resolve their filename and
-      // route through the private templateFile(path) accessor — no other open
-      // paths exist.
+      // Each template file is opened once and cached (see templateFile()).
       TFile* moduleTemplateFile(std::string const& typecode, bool isSiPM) const;  // → wafer.root or tileboard.root
       TFile* trigTemplateFile(std::string const& typecode, bool isSiPM);          // → TC_wafer.root
 
-      // -----------------------------------------------------------------------
       // Stateless geometry utilities.
-      // -----------------------------------------------------------------------
       static void rotateShape(TGraph* gr, char irot, double offset = 0.0);
       static void translateBin(TGraph* gr, float x0, float y0);
 
-      // Exposed for cache-invariant regression checks (returns the number of
-      // distinct template files opened over the lifetime of this instance).
+      // Number of distinct template files opened so far.
       size_t cachedFileCount() const { return templateFiles_.size(); }
 
     private:
@@ -147,7 +131,7 @@ namespace hgcal {
       std::string tileboardTemplateSuffix_;
       bool skipTriggerDQM_;
 
-      // ---- GROUP 1 storage ----
+      // ---- geometry data ----
       std::map<int, std::map<int, std::map<int, std::map<std::string, MonitoredElement_t>>>> HGCALMap_;
       std::map<int, std::map<int, std::map<int, std::set<MonitoredElementKey_t>>>> TrigHGCALMap_;
       std::map<MonitoredElementKey_t, TriggerMonitoredElement_t> TriggerModuleMap_;
@@ -163,7 +147,7 @@ namespace hgcal {
       bool flag_tileboard_exists_{false};
       Timings timings_;
 
-      // ---- GROUP 2 storage ----
+      // ---- objects owned by the template files ----
       std::vector<TGraph*> binstates_;                       // moduleBin(dqmIndex) → binstates_[dqmIndex]
       std::vector<TGraph*> trigBinstates_;                   // triggerModuleBin(dqmIndex) → trigBinstates_[dqmIndex]
       mutable std::map<std::string, TFile*> templateFiles_;  // closed/deleted in dtor

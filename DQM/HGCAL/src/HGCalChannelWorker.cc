@@ -30,7 +30,6 @@ namespace hgcal {
           {"n_vacant_channels", "Occupancy"},
           {"avgmips", getLabelForSummaryIndex(SummaryIndices_t::NMIPSAVG)},
           {"stdmips", getLabelForSummaryIndex(SummaryIndices_t::NMIPSSTD)},
-          // The reference leaves these summary axis labels empty.
           {"toaoccupancy", ""},
           {"totoccupancy", ""},
           {"noisy", "Number of Noisy Channels"},
@@ -254,10 +253,8 @@ namespace hgcal {
                                     HGCalDQMGeometry& geom) {
       auto const& HGCALMap = geom.hgcalMap();
 
-      // Preserve the reference's FED-summary indexing, including its legacy quirk:
-      // it records a global module ordinal here but looks it up by layer_idx below.
-      // Modules in the same layer therefore overwrite a bin. Changing this to a
-      // per-module index requires a coordinated change to the reference outputs.
+      // Known issue: fed_module_bin is keyed by a global module ordinal but looked up by
+      // layer_idx below, so modules of the same layer share one bin of summaryPerModule_FED<id>.
       std::map<uint32_t, int> fed_module_count;
       std::map<uint32_t, std::vector<std::string>> fed_modules_typecode_map;
       std::map<uint32_t, std::map<uint32_t, int>> fed_module_bin;
@@ -294,7 +291,7 @@ namespace hgcal {
           std::string const layerFolder = endcapFolder + layerStr + "/";
 
           int module_count = 0;
-          float value_layer[N_VARS] = {};  // zero-initialised, OPT-5
+          float value_layer[N_VARS] = {};
 
           for (auto const& cassettePair : cassetteMap) {
             int const cassette = cassettePair.first;
@@ -316,8 +313,7 @@ namespace hgcal {
               auto const* avgdeltaadc_me = igetter.get(plotFolder + "/avgdeltaadc");
               auto const* avgmips_me = igetter.get(plotFolder + "/avgrechit_nmips");
 
-              // These five MEs are required by the legacy channel harvesting.
-              // avgrechit_nmips remains optional.
+              // avgrechit_nmips is optional: it is only booked when HGCalRecHitDQM runs.
               if (!avgadc_me || !avgtot_me || !avgtoa_me || !avgcm_me || !avgdeltaadc_me) {
                 edm::LogWarning("HGCalChannelWorker")
                     << "Skipping module " << typecode << " because required client MonitorElements are missing in "
@@ -341,7 +337,7 @@ namespace hgcal {
               double const x0 = ele.x0y0[0];
               double const y0 = ele.x0y0[1];
 
-              float value_module[N_VARS] = {};  // zero-initialised, OPT-5
+              float value_module[N_VARS] = {};
               float saturated_channels = 0.f;
 
               TKey* key = nullptr;
@@ -379,8 +375,7 @@ namespace hgcal {
 
                 auto* gr = static_cast<TGraph*>(obj);
 
-                // Skip common-mode and known non-connected channels,
-                // following the legacy runSlowStream logic.
+                // Skip common-mode and known non-connected channels.
                 bool const isCM = (iobj % 39 == 37) || (iobj % 39 == 38);
 
                 bool isNC = false;
@@ -606,7 +601,7 @@ namespace hgcal {
                 grModule->SetName(typecode.c_str());
 
                 for (size_t vi = 0; vi < variables_.size(); ++vi) {
-                  std::string const& variable = variables_[vi];  // still needed for hexLayer_ key
+                  std::string const& variable = variables_[vi];
 
                   if (vi != enumIDX_occupancy && vi != enumIDX_n_vacant_channels) {
                     value_module[vi] /= norm_cells;

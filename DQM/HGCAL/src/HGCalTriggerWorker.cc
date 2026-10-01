@@ -24,7 +24,7 @@ namespace hgcal {
     HGCalTriggerWorker::HGCalTriggerWorker(std::string folderRoot, EcontErrorSummarizer& econtErrorSummarizer)
         : folderRoot_(std::move(folderRoot)), econt_error_summarizer_(econtErrorSummarizer) {}
 
-    // book(): ported from bookTriggerHexaPlots; also pre-books ECON-T quality.
+    // Books the trigger hex plots and the ECON-T quality summaries.
     void HGCalTriggerWorker::book(DQMStore::IBooker& ibooker, HGCalDQMGeometry const& geom) {
       auto const& unique_directionallayers = geom.uniqueDirectionalLayers();
       auto const& cassettesPerLayer = geom.cassettesPerLayer();
@@ -119,7 +119,7 @@ namespace hgcal {
         }
       }
 
-      // ECON-T quality surfaces (ported from old harvester runSlowStream).
+      // ECON-T quality summaries.
       const std::vector<std::string> categoryNames = {"Unpacking Errors", "Header/Trailer"};
       const int nCategories = static_cast<int>(EconTErrorCategory::NUM_CATEGORIES);
       const size_t nLayers = geom.nLayers();
@@ -155,7 +155,7 @@ namespace hgcal {
       fillEcontQuality(igetter, geom);
     }
 
-    // Ported from dqmTriggerHexaPlots. Reads client MEs at "HGCAL/Trigger/...".
+    // Fills the trigger hex plots from the HGCalTPGDQM MEs under HGCAL/Trigger/.
     void HGCalTriggerWorker::fillHexaPlots(DQMStore::IGetter& igetter, HGCalDQMGeometry& geom) {
       auto const& TrigHGCALMap = geom.trigHgcalMap();
       auto const& TriggerModuleMap = geom.triggerModuleMap();

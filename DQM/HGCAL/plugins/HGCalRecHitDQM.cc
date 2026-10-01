@@ -107,9 +107,7 @@ void HGCalRecHitDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
     }
   }
 
-  // Per-(endcap,layer) cached Fill targets. Refreshed only when key changes;
-  // uses find() throughout so operator[] never inserts empty maps or nullptr
-  // ME entries for unbooked keys.
+  // Fill targets of the current (endcap, layer), refreshed only when it changes.
   int cur_endcap = std::numeric_limits<int>::min();
   int cur_layer = std::numeric_limits<int>::min();
   bool cur_ok = false;
@@ -130,9 +128,7 @@ void HGCalRecHitDQM::analyze(const edm::Event& iEvent, const edm::EventSetup& iS
     const auto& denseIdx = rechit.recHitIndex();
     auto indexinfo = denseIndexInfo_view[denseIdx];
 
-    // Per-module rechit profile is filled BEFORE the noise/layer cut, matching
-    // the original monolithic client's behaviour (harvester downstream expects
-    // an entry per channel per hit).
+    // Filled before the noise/layer cut: the harvester expects an entry per channel per hit.
     MonitoredElementKey_t mod_key(indexinfo.fedId(), indexinfo.fedReadoutSeq());
     if (mod_key != cur_mod_key) {
       cur_mod_key = mod_key;

@@ -230,7 +230,7 @@ namespace hgcal {
     }
 
     // ------------------------------------------------------------------------
-    //  build() — extractModuleInformation + calculatePlotsCorners.
+    //  build(): module positions from the mapping and templates, then plot ranges.
     // ------------------------------------------------------------------------
     void HGCalDQMGeometry::build(
         edm::EventSetup const& iSetup,
