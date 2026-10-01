@@ -224,8 +224,9 @@ namespace hgcal {
                 }
 
                 double angleOffset = -3 * M_PI / 6.;
-                bool special_handle_TB2026_Sipm = ((typecode == "TL_L44S1_1") || (typecode == "TL_L44S1_2"));
-                if (!special_handle_TB2026_Sipm) {
+                // Tileboard trigger-cell templates are drawn in detector coordinates; silicon ones are module-local.
+                bool const inGlobalCoordinates = trModule.isSiPM;
+                if (!inGlobalCoordinates) {
                   HGCalDQMGeometry::rotateShape(TCBin, trModule.irot, angleOffset);
                 }
 
@@ -260,7 +261,7 @@ namespace hgcal {
                   TGraph* TCBinCassette = new TGraph(*static_cast<TGraph*>(TCBin));
                   double x0 = trModule.x0y0[0];
                   double y0 = trModule.x0y0[1];
-                  if (!special_handle_TB2026_Sipm) {
+                  if (!inGlobalCoordinates) {
                     HGCalDQMGeometry::translateBin(TCBinCassette, x0, y0);
                   }
 
