@@ -29,11 +29,7 @@
  */
 class HGCalLayerClusterDQM : public DQMEDAnalyzer {
 public:
-  struct MonitoredElement_t {
-    std::string typecode;
-    bool zside, isSiPM;
-    uint32_t layer, i1, i2, nErx, dqmIndex, fedid, modid, econdidx, cassette, endcap, moduleIndex, fedModuleIndex;
-  };
+  using MonitoredElement_t = hgcal::dqm::HGCalDQMModule;
   typedef std::pair<uint32_t, uint32_t> MonitoredElementKey_t;
 
   explicit HGCalLayerClusterDQM(const edm::ParameterSet&);
@@ -184,29 +180,10 @@ void HGCalLayerClusterDQM::bookHistograms(DQMStore::IBooker& ibook,
   const HGCalMappingModuleIndexer& moduleIndexer = iSetup.getData(moduleIdxTkn_);
   const hgcal::HGCalMappingModuleParamHost& moduleInfo = iSetup.getData(moduleInfoTkn_);
 
-  for (const auto& [rawTypecode, fedData] : moduleIndexer.typecodeMap()) {
-    const uint32_t fedid = fedData.first;
-    const uint32_t imod = fedData.second;
-    const uint32_t denseModIdx = moduleIndexer.getIndexForModule(fedid, imod);
-    const auto& modInfo = moduleInfo.view()[denseModIdx];
-
-    std::string typecode = rawTypecode;
-    std::replace(typecode.begin(), typecode.end(), '-', '_');
-
-    MonitoredElement_t ele;
-    ele.dqmIndex = denseModIdx;
-    ele.typecode = typecode;
-    ele.nErx = moduleIndexer.getNumERxs(fedid, imod);
-    ele.zside = modInfo.zside();
-    ele.endcap = ele.zside ? 1 : -1;
-    ele.isSiPM = modInfo.isSiPM();
-    ele.layer = modInfo.plane();
-    ele.i1 = modInfo.i1();
-    ele.i2 = modInfo.i2();
-    ele.fedid = fedid;
-    ele.modid = imod;
-    ele.econdidx = modInfo.econdidx();
-    ele.cassette = modInfo.cassette();
+  for (auto ele : hgcal::dqm::readoutModules(moduleIndexer, moduleInfo)) {
+    const uint32_t fedid = ele.fedid;
+    const uint32_t imod = ele.modid;
+    const std::string& typecode = ele.typecode;
 
     MonitoredElementKey_t key(fedid, imod);
     ele.fedModuleIndex = modulesByFED_[fedid].size();

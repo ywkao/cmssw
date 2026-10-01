@@ -5,6 +5,10 @@
 #include <string>
 #include <vector>
 #include <nlohmann/json.hpp>
+// The SoA headers pulled in below need Eigen/Core first, or later SoA layouts with Eigen columns fail to compile.
+#include <Eigen/Core>
+#include "CondFormats/HGCalObjects/interface/HGCalMappingModuleIndexer.h"
+#include "CondFormats/HGCalObjects/interface/HGCalMappingParameterHost.h"
 #include "DQMServices/Core/interface/MonitorElement.h"
 
 using json = nlohmann::json;
@@ -216,6 +220,20 @@ namespace hgcal {
       std::vector<std::vector<int>> error_thresholds_matrix_;
       std::vector<std::string> error_type_labels_;
     };
+
+    // A DAQ module of the electronics mapping, as used by the DQM clients.
+    // typecode has '-' replaced by '_'; endcap is +1/-1 stored as uint32_t, as the clients use it.
+    // moduleIndex and fedModuleIndex are left for the caller to fill.
+    struct HGCalDQMModule {
+      std::string typecode;
+      bool zside{false}, isSiPM{false};
+      uint32_t layer{0}, i1{0}, i2{0}, nErx{0}, dqmIndex{0}, fedid{0}, modid{0}, econdidx{0}, cassette{0}, endcap{0},
+          moduleIndex{0}, fedModuleIndex{0};
+    };
+
+    // All modules of the mapping, in moduleIndexer.typecodeMap() order.
+    std::vector<HGCalDQMModule> readoutModules(HGCalMappingModuleIndexer const& moduleIndexer,
+                                               hgcal::HGCalMappingModuleParamHost const& moduleInfo);
 
   }  // namespace dqm
 

@@ -4,6 +4,7 @@
 #include "FWCore/ParameterSet/interface/FileInPath.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <sstream>
@@ -787,6 +788,35 @@ namespace hgcal {
       }
 
       return all_match;
+    }
+
+    std::vector<HGCalDQMModule> readoutModules(HGCalMappingModuleIndexer const& moduleIndexer,
+                                               hgcal::HGCalMappingModuleParamHost const& moduleInfo) {
+      std::vector<HGCalDQMModule> modules;
+      modules.reserve(moduleIndexer.typecodeMap().size());
+      for (auto const& [rawTypecode, fedData] : moduleIndexer.typecodeMap()) {
+        auto const [fedid, imod] = fedData;
+        uint32_t const denseModIdx = moduleIndexer.getIndexForModule(fedid, imod);
+        auto const& modInfo = moduleInfo.view()[denseModIdx];
+
+        HGCalDQMModule ele;
+        ele.typecode = rawTypecode;
+        std::replace(ele.typecode.begin(), ele.typecode.end(), '-', '_');
+        ele.dqmIndex = denseModIdx;
+        ele.nErx = moduleIndexer.getNumERxs(fedid, imod);
+        ele.zside = modInfo.zside();
+        ele.endcap = ele.zside ? 1 : -1;
+        ele.isSiPM = modInfo.isSiPM();
+        ele.layer = modInfo.plane();
+        ele.i1 = modInfo.i1();
+        ele.i2 = modInfo.i2();
+        ele.fedid = fedid;
+        ele.modid = imod;
+        ele.econdidx = modInfo.econdidx();
+        ele.cassette = modInfo.cassette();
+        modules.push_back(std::move(ele));
+      }
+      return modules;
     }
 
   }  // namespace dqm

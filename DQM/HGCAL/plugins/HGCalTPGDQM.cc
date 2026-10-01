@@ -369,24 +369,16 @@ void HGCalTPGDQM::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& run, 
   // the detector-module mapping.  Keep that behavior here: the trigger mapping
   // does not always carry the same physical location for a given typecode.
   std::map<std::string, TriggerMonitoredElement_t> detectorModulesByTypecode;
-  for (const auto& [rawTypecode, fedData] : moduleIndexer.typecodeMap()) {
-    const uint32_t fedid = fedData.first;
-    const uint32_t imod = fedData.second;
-    const uint32_t denseModIdx = moduleIndexer.getIndexForModule(fedid, imod);
-    const auto& modInfo = moduleInfo.view()[denseModIdx];
-
-    std::string typecode = rawTypecode;
-    std::replace(typecode.begin(), typecode.end(), '-', '_');
-
+  for (auto const& mod : hgcal::dqm::readoutModules(moduleIndexer, moduleInfo)) {
     TriggerMonitoredElement_t ele{};
-    ele.zside = modInfo.zside();
-    ele.endcap = ele.zside ? 1 : -1;
-    ele.isSiPM = modInfo.isSiPM();
-    ele.layer = modInfo.plane();
-    ele.i1 = modInfo.i1();
-    ele.i2 = modInfo.i2();
-    ele.cassette = modInfo.cassette();
-    detectorModulesByTypecode[typecode] = ele;
+    ele.zside = mod.zside;
+    ele.endcap = mod.endcap;
+    ele.isSiPM = mod.isSiPM;
+    ele.layer = mod.layer;
+    ele.i1 = mod.i1;
+    ele.i2 = mod.i2;
+    ele.cassette = mod.cassette;
+    detectorModulesByTypecode[mod.typecode] = ele;
   }
 
   for (const auto& [rawTypecode, fedData] : moduleIndexerTrigger.typecodeMap()) {

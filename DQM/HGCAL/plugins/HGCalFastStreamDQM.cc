@@ -45,11 +45,7 @@ public:
 
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
-  struct MonitoredElement_t {
-    std::string typecode;
-    bool zside, isSiPM;
-    uint32_t layer, i1, i2, nErx, dqmIndex, fedid, modid, econdidx, cassette, endcap, moduleIndex, fedModuleIndex;
-  };
+  using MonitoredElement_t = hgcal::dqm::HGCalDQMModule;
 
   struct HistogramConfig {
     std::string name, title;
@@ -365,32 +361,11 @@ void HGCalFastStreamDQM::bookHistograms(DQMStore::IBooker& ibook, edm::Run const
   }
 
   // Loop over available modules and select those to track
-  for (const auto& [rawTypecode, fedData] : moduleIndexer.typecodeMap()) {
-    const uint32_t fedid = fedData.first;
-    const uint32_t imod = fedData.second;
-    const uint32_t denseModIdx = moduleIndexer.getIndexForModule(fedid, imod);
-    const auto& modInfo = moduleInfo.view()[denseModIdx];
-
-    // Format typecode for use in map key
-    std::string typecode = rawTypecode;
-    std::replace(typecode.begin(), typecode.end(), '-', '_');
-
-    // Construct the monitored element
-    MonitoredElement_t ele;
-    ele.dqmIndex = denseModIdx;
-    ele.typecode = typecode;
-    ele.nErx = moduleIndexer.getNumERxs(fedid, imod);
-    ele.zside = modInfo.zside();
-    ele.endcap = ele.zside ? 1 : -1;
-    ele.isSiPM = modInfo.isSiPM();
-    ele.layer = modInfo.plane();
-    ele.i1 = modInfo.i1();
-    ele.i2 = modInfo.i2();
-    ele.fedid = fedid;
-    ele.modid = imod;
-    ele.econdidx = modInfo.econdidx();
-    ele.cassette = modInfo.cassette();
-    unique_directionallayers.insert(modInfo.zside() ? modInfo.plane() : -modInfo.plane());
+  for (auto ele : hgcal::dqm::readoutModules(moduleIndexer, moduleInfo)) {
+    const uint32_t fedid = ele.fedid;
+    const uint32_t imod = ele.modid;
+    const std::string& typecode = ele.typecode;
+    unique_directionallayers.insert(ele.zside ? static_cast<int>(ele.layer) : -static_cast<int>(ele.layer));
 
     // Store in maps
     MonitoredElementKey_t key(fedid, imod);
