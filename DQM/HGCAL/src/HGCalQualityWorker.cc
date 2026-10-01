@@ -4,6 +4,7 @@
 #include "DQM/HGCAL/interface/HGCalDQMCommon.h"
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "FWCore/Utilities/interface/Exception.h"
 
 namespace hgcal {
   namespace dqm {
@@ -198,7 +199,8 @@ namespace hgcal {
                 // sanity check
                 if (first_run_) {
                   if (!error_summarizer_.validateHistogramLabels(quality_me)) {
-                    throw std::runtime_error("Configuration mismatch!");
+                    throw cms::Exception("HGCalQualityWorker") << "ECON-D quality labels of " << cassetteQualityPath
+                                                               << " do not match the dqmQualityThreshold configuration";
                   }
                   first_run_ = false;
                 }

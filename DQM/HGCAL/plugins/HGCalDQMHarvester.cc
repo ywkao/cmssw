@@ -68,6 +68,7 @@ private:
   edm::ESGetToken<HGCalConfiguration, HGCalModuleConfigurationRcd> moduleConfigTkn_;
 
   std::unique_ptr<hgcal::dqm::HGCalDQMGeometry> geometry_;
+  nlohmann::json qualityThresholds_;  // must precede the summarizers it initialises
   hgcal::dqm::ErrorSummarizer error_summarizer_;
   hgcal::dqm::EcontErrorSummarizer econt_error_summarizer_;
   std::vector<std::unique_ptr<hgcal::dqm::HGCalDQMWorkerBase>> workers_;
@@ -93,10 +94,9 @@ HGCalDQMHarvester::HGCalDQMHarvester(edm::ParameterSet const& ps)
                                                          "/" + ps.getParameter<std::string>("GeometryTemplate"),
                                                          ps.getParameter<bool>("SkipTriggerDQM"),
                                                          ps.getParameter<std::string>("TileboardTemplateSuffix"))),
-      error_summarizer_(
-          loadJson(ps.getParameter<std::string>("dqmQualityThreshold")).value("econd", nlohmann::json({}))),
-      econt_error_summarizer_(
-          loadJson(ps.getParameter<std::string>("dqmQualityThreshold")).value("econt", nlohmann::json({}))),
+      qualityThresholds_(loadJson(ps.getParameter<std::string>("dqmQualityThreshold"))),
+      error_summarizer_(qualityThresholds_.value("econd", nlohmann::json({}))),
+      econt_error_summarizer_(qualityThresholds_.value("econt", nlohmann::json({}))),
       firstLS_(true) {
   auto folderRoot = ps.getParameter<std::string>("FolderRoot");
   bool skipTriggerDQM = ps.getParameter<bool>("SkipTriggerDQM");
@@ -130,7 +130,7 @@ void HGCalDQMHarvester::fillDescriptions(edm::ConfigurationDescriptions& descrip
       ->setComment("module-position template, looked up in TemplateFiles");
   desc.add<std::string>("TileboardTemplateSuffix", "_tileboard.root")
       ->setComment("file-name suffix of the SiPM-on-tile templates, e.g. _TB2026_tileboard.root");
-  desc.add<bool>("SkipTriggerDQM", false);
+  desc.add<bool>("SkipTriggerDQM", true);
   desc.add<bool>("SkipSlowStream", false);
   desc.add<bool>("EnableOverflowMarkers", true);
   desc.add<std::string>("FolderRoot", "HGCAL");
