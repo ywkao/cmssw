@@ -368,18 +368,9 @@ void HGCalTPGDQM::bookHistograms(DQMStore::IBooker& ibook, edm::Run const& run, 
   // The reference client locates trigger modules by matching their typecode to
   // the detector-module mapping.  Keep that behavior here: the trigger mapping
   // does not always carry the same physical location for a given typecode.
-  std::map<std::string, TriggerMonitoredElement_t> detectorModulesByTypecode;
-  for (auto const& mod : hgcal::dqm::readoutModules(moduleIndexer, moduleInfo)) {
-    TriggerMonitoredElement_t ele{};
-    ele.zside = mod.zside;
-    ele.endcap = mod.endcap;
-    ele.isSiPM = mod.isSiPM;
-    ele.layer = mod.layer;
-    ele.i1 = mod.i1;
-    ele.i2 = mod.i2;
-    ele.cassette = mod.cassette;
-    detectorModulesByTypecode[mod.typecode] = ele;
-  }
+  std::map<std::string, hgcal::dqm::HGCalDQMModule> detectorModulesByTypecode;
+  for (auto const& mod : hgcal::dqm::readoutModules(moduleIndexer, moduleInfo))
+    detectorModulesByTypecode[mod.typecode] = mod;
 
   for (const auto& [rawTypecode, fedData] : moduleIndexerTrigger.typecodeMap()) {
     const uint32_t fedid = fedData.first;
