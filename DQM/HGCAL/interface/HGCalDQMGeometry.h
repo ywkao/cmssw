@@ -2,7 +2,6 @@
 #define DQM_HGCAL_interface_HGCalDQMGeometry_h
 
 #include <array>
-#include <chrono>
 #include <cstdint>
 #include <map>
 #include <set>
@@ -51,11 +50,6 @@ namespace hgcal {
         std::vector<double> x0y0;
       };
 
-      struct Timings {
-        long long getModuleIndexer{0}, resizeVectors{0}, getModuleInfo{0}, openTFile{0}, calculateCorners{0};
-        std::vector<long long> getModuleVariables;
-      };
-
       HGCalDQMGeometry(std::string templateDir,
                        std::string geometryTemplate,
                        bool skipTriggerDQM,
@@ -89,7 +83,6 @@ namespace hgcal {
       auto const& uniqueDirectionalLayers() const { return unique_directionallayers_; }
       size_t nLayers() const { return nLayers_; }
       bool tileboardExists() const { return flag_tileboard_exists_; }
-      Timings const& timings() const { return timings_; }
 
       // Objects read from the cached template files: valid for the lifetime of this
       // object; callers must not delete them or close the files.
@@ -103,9 +96,6 @@ namespace hgcal {
       // Stateless geometry utilities.
       static void rotateShape(TGraph* gr, char irot, double offset = 0.0);
       static void translateBin(TGraph* gr, float x0, float y0);
-
-      // Number of distinct template files opened so far.
-      size_t cachedFileCount() const { return templateFiles_.size(); }
 
     private:
       // Sole open path. Opens on miss, returns cached on hit.
@@ -122,8 +112,6 @@ namespace hgcal {
       BoundingBox readModuleChannelScope(TFile* file, char irot, int v) const;
 
       void calculatePlotsCorners();
-      void timerStart();
-      long long timerSave();
 
       // ---- config ----
       std::string templateDir_;
@@ -145,14 +133,11 @@ namespace hgcal {
       std::set<int> unique_directionallayers_;
       size_t nLayers_{0};
       bool flag_tileboard_exists_{false};
-      Timings timings_;
 
       // ---- objects owned by the template files ----
       std::vector<TGraph*> binstates_;                       // moduleBin(dqmIndex) → binstates_[dqmIndex]
       std::vector<TGraph*> trigBinstates_;                   // triggerModuleBin(dqmIndex) → trigBinstates_[dqmIndex]
       mutable std::map<std::string, TFile*> templateFiles_;  // closed/deleted in dtor
-
-      std::chrono::time_point<std::chrono::high_resolution_clock> startTime_;
     };
 
   }  // namespace dqm

@@ -240,11 +240,8 @@ namespace hgcal {
         edm::ESGetToken<hgcal::HGCalMappingModuleTriggerParamHost, HGCalElectronicsMappingRcd> const&
             moduleInfoTriggerTkn,
         edm::ESGetToken<HGCalConfiguration, HGCalModuleConfigurationRcd> const& moduleConfigTkn) {
-      timerStart();
       auto const& moduleIndexer = iSetup.getData(moduleIdxTkn);
-      timings_.getModuleIndexer = timerSave();
 
-      timerStart();
       size_t ntypecodes = moduleIndexer.typecodeMap().size();
       typecodes_.resize(ntypecodes, "");
       directionallayerstates_.resize(typecodes_.size(), 0);
@@ -252,23 +249,16 @@ namespace hgcal {
       module_scopes_.resize(ntypecodes);
       module_channel_scopes_.resize(ntypecodes);
       binstates_.resize(ntypecodes, nullptr);
-      timings_.resizeVectors = timerSave();
 
-      timerStart();
       auto const& moduleInfo = iSetup.getData(moduleInfoTkn);
       auto const& moduleConfig = iSetup.getData(moduleConfigTkn);
-      timings_.getModuleInfo = timerSave();
 
-      timerStart();
       edm::FileInPath fiptemp(templateDir_ + geometryTemplate_);
       TFile* file = templateFile(fiptemp.fullPath());
-      timings_.openTFile = timerSave();
 
       flag_tileboard_exists_ = false;
 
       for (const auto& it : moduleIndexer.typecodeMap()) {
-        timerStart();
-
         uint32_t fedid = it.second.first;
         uint32_t imod = it.second.second;
         uint32_t dqmIndex = moduleIndexer.getIndexForModule(fedid, imod);
@@ -312,8 +302,6 @@ namespace hgcal {
         auto& cassetteMap = HGCALMap_[ele.endcap][ele.layer][ele.cassette];
         cassetteMap[typecode] = ele;
         cassetteMap[typecode].moduleIndex = cassetteMap.size() - 1;
-
-        timings_.getModuleVariables.push_back(timerSave());
       }
 
       if (!skipTriggerDQM_) {
@@ -367,8 +355,6 @@ namespace hgcal {
     }
 
     void HGCalDQMGeometry::calculatePlotsCorners() {
-      timerStart();
-
       constexpr float INIT_MIN = 1000.0f;
       constexpr float INIT_MAX = -1000.0f;
       constexpr float MARGIN = 20.0f;
@@ -413,14 +399,6 @@ namespace hgcal {
           cornersC[3] += MARGIN;
         }
       }
-
-      timings_.calculateCorners = timerSave();
-    }
-
-    void HGCalDQMGeometry::timerStart() { startTime_ = std::chrono::high_resolution_clock::now(); }
-    long long HGCalDQMGeometry::timerSave() {
-      auto now = std::chrono::high_resolution_clock::now();
-      return std::chrono::duration_cast<std::chrono::microseconds>(now - startTime_).count();
     }
 
   }  // namespace dqm
