@@ -12,17 +12,17 @@ namespace hgcal {
 
     using MonitorElement = ::dqm::impl::MonitorElement;
 
-    // Projects HGCAL/FED/fedPayload onto its Y axis and books
-    // HGCAL/FED/fed_payload_distribution (TH1F). FED-scoped quality MEs
-    // (econdQualityFED_*, econtQualityFED_*) are client MEs not touched here.
+    // Books HGCAL/FED/fed_payload_distribution and refills it every lumisection with the
+    // Y projection of HGCAL/FED/fedPayload. FED-scoped quality MEs (econdQualityFED_*,
+    // econtQualityFED_*) are client MEs not touched here.
     class HGCalFedWorker : public HGCalDQMWorkerBase {
     public:
       explicit HGCalFedWorker(std::string folderRoot);
       ~HGCalFedWorker() override = default;
 
-      void book(DQMStore::IBooker&, HGCalDQMGeometry const&) override {}
+      void book(DQMStore::IBooker&, HGCalDQMGeometry const&) override;
 
-      void endRun(DQMStore::IBooker&, DQMStore::IGetter&, HGCalDQMGeometry&) override;
+      void endLumi(DQMStore::IBooker&, DQMStore::IGetter&, HGCalDQMGeometry&, edm::LuminosityBlock const&) override;
 
     private:
       std::string folderRoot_;

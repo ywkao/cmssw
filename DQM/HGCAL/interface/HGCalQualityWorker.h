@@ -15,16 +15,15 @@ namespace hgcal {
 
     class EcondErrorSummarizer;  // injected; plugin owns
 
-    // Books/fills ECON-D quality + payload summaries (fast-stream cadence).
+    // Books/fills ECON-D quality + payload summaries, updated every lumisection.
     // The ECON-T equivalent lives in HGCalTriggerWorker.
-    // TODO: move to endLumi once ECON-D/T per-LS updates land.
     class HGCalQualityWorker : public HGCalDQMWorkerBase {
     public:
       HGCalQualityWorker(std::string folderRoot, EcondErrorSummarizer& econdErrorSummarizer);
       ~HGCalQualityWorker() override = default;
 
       void book(DQMStore::IBooker&, HGCalDQMGeometry const&) override;
-      void endRun(DQMStore::IBooker&, DQMStore::IGetter&, HGCalDQMGeometry&) override;
+      void endLumi(DQMStore::IBooker&, DQMStore::IGetter&, HGCalDQMGeometry&, edm::LuminosityBlock const&) override;
 
     private:
       std::string folderRoot_;

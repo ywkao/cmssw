@@ -96,6 +96,11 @@ namespace hgcal {
                                    ymin,
                                    ymax);
           }
+          // Module outlines are added once; endLumi only updates the bin contents, in the same module order.
+          for (const auto& cassettePair : cassetteMap)
+            for (const auto& econdPair : cassettePair.second)
+              for (const std::string& plotKey : hexPlotsFastStreamKey_)
+                hexPlotsFastStream_[plotKey][layer]->addBin(geom.moduleBin(econdPair.second.dqmIndex));
 
           // register layer-level summaries of the ECON-D
           econdQualityLayer_[endcap][layer] = ibooker.book2D("econdQuality" + layerStr,
@@ -128,9 +133,10 @@ namespace hgcal {
       }
     }
 
-    void HGCalQualityWorker::endRun(DQMStore::IBooker& /*ibooker*/,
-                                    DQMStore::IGetter& igetter,
-                                    HGCalDQMGeometry& geom) {
+    void HGCalQualityWorker::endLumi(DQMStore::IBooker& /*ibooker*/,
+                                     DQMStore::IGetter& igetter,
+                                     HGCalDQMGeometry& geom,
+                                     edm::LuminosityBlock const& /*iLumi*/) {
       auto const& HGCALMap = geom.hgcalMap();
 
       // fills layer level histograms
@@ -150,6 +156,8 @@ namespace hgcal {
           MonitorElement *econdQuality_, *econdPayload_;
           econdQuality_ = econdQualityLayer_[endcap][layer];
           econdPayload_ = econdPayloadLayer_[endcap][layer];
+          // The cassette payloads accumulate over the run: rebuild the layer sum instead of adding to it.
+          econdPayload_->Reset();
 
           int cassette_idx = 0;
           int module_bin_index = 0;  // TH2Poly bin index for current layer
@@ -211,13 +219,8 @@ namespace hgcal {
               hexModuleEntries["avgPayload"] = meanPayload;
               hexModuleEntries["stdPayload"] = stdPayload;
 
-              // fill polygonal histograms
+              // fill polygonal histograms (bins added in book())
               for (const std::string& plotKey : hexPlotsFastStreamKey_) {
-                // add polygonal bin
-                const auto dqmIndex = econdPair.second.dqmIndex;
-                TGraph* gr = geom.moduleBin(dqmIndex);
-                hexPlotsFastStream_[plotKey][layer]->addBin(gr);
-                // set bin value
                 int errorCode = hexModuleEntries[plotKey];
                 hexPlotsFastStream_[plotKey][layer]->setBinContent(module_bin_index + 1, errorCode);
               }
